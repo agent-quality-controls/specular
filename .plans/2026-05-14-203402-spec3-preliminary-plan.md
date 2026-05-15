@@ -35,13 +35,19 @@ That proves only that the current verifier agrees with current code. It does not
 `spec3` lives in its own repository:
 
 ```text
-/Users/tartakovsky/Projects/websmasher/spec3
+/Users/tartakovsky/Projects/agent-quality-controls/spec3
 ```
 
 Package and binary name:
 
 ```text
 spec3
+```
+
+Remote:
+
+```text
+https://github.com/agent-quality-controls/spec3
 ```
 
 # Agent Starting Context
@@ -61,6 +67,28 @@ Do not implement language-specific Rust or TypeScript export parsing in the firs
 
 Do not add command execution as a requirement category in V1.
 
+# Plan Review Result
+
+The V1 plan is sound because it keeps `spec3` limited to contract verification:
+
+- lock reviewed plan, spec, and verifier inputs
+- refuse drift before checking implementation
+- implement universal checks first
+- keep behavior output comparison in `fixture3`
+- keep architecture and style validation in `g3rs` and `g3ts`
+
+The implementation agent must preserve these boundaries:
+
+- `spec3` checks whether planned structural contracts exist.
+- `fixture3` checks whether command output changed.
+- `g3rs` and `g3ts` check repository guardrails.
+
+Corrections from review:
+
+- repository path is now the moved `agent-quality-controls/spec3` path
+- `schemas` must not run broad JSON Schema validation in V1
+- `dependencies`, `exports`, `enumerations`, `schemas`, `commands`, and `cli` must not become active implementation checks before their verifier model is designed
+
 # Source Format
 
 Support two source formats:
@@ -79,8 +107,9 @@ JSONC handling:
 
 Implementation dependency decision:
 
-- Candidate parser: `jsonc-parser`.
-- Before adding the dependency, verify current maintenance, license, transitive dependencies, and compatibility with this repo's Rust version.
+- Use `jsonc-parser` unless dependency verification later finds a blocking issue.
+- Local verification on 2026-05-15 found crates.io version `0.32.4`, MIT license, repository `https://github.com/dprint/jsonc-parser`, and optional `serde` / `serde_json` features.
+- Before committing the dependency, verify the resolved transitive dependency tree after the Rust workspace exists.
 
 # Canonical Contract
 
@@ -463,7 +492,6 @@ Example:
 
 V1 approach:
 
-- spec3 can validate JSON schemas against JSON files if the dependency choice is safe
 - SQL and language model extraction starts external
 - do not implement broad schema verification before the external verifier fact format is designed, except for spec3's own source and lock models
 
