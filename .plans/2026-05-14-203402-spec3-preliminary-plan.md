@@ -2,12 +2,12 @@
 
 Build `spec3`: a Rust CLI and library for deterministic spec-driven development.
 
-`spec3` verifies that implementation matches a reviewed machine-readable spec. It does not replace behavior fixtures. Behavior fixtures detect output drift after implementation. `spec3` checks whether the planned structure and contracts were built.
+`spec3` verifies that implementation matches a machine-readable spec. It does not know about prose plans, Markdown descriptions, or how the spec was produced. It does not replace behavior fixtures. Behavior fixtures detect output drift after implementation. `spec3` checks whether the structured contract was satisfied.
 
 Core flow:
 
 ```text
-prose plan -> reviewed spec -> locked spec -> implementation -> deterministic conformance check
+machine-readable spec -> locked spec -> implementation -> deterministic conformance check
 ```
 
 # Problem
@@ -17,18 +17,17 @@ Current manifest-driven development is too easy to weaken.
 The failure mode is:
 
 ```text
-agent writes plan
-agent writes manifest
+agent writes machine-readable spec
 agent writes verifier script
 agent edits code
-agent edits manifest or verifier when blocked
+agent edits spec or verifier when blocked
 verifier passes
 agent claims done
 ```
 
-That proves only that the current verifier agrees with current code. It does not prove that the code matches the reviewed plan.
+That proves only that the current verifier agrees with current code. It does not prove that the code matches the machine-readable contract that was locked earlier.
 
-`spec3` must make contract changes explicit. Once a spec is locked, implementation verification must fail if the plan, spec, or verifier files changed.
+`spec3` must make contract changes explicit. Once a spec is locked, implementation verification must fail if the spec or verifier files changed.
 
 # Repository
 
@@ -59,7 +58,7 @@ The agent should assume no prior conversation context except:
 - `spec3` is a spec-driven development tool.
 - `fixture3` is a separate behavior-fixture tool.
 - `g3rs` is the Rust guardrail validator used in these repositories.
-- Implementation must strengthen the contract boundary between plan, spec, verifier, and code.
+- Implementation must strengthen the contract boundary between spec, lock, verifier, and code.
 
 Do not rebuild `fixture3` behavior in `spec3`.
 
@@ -71,7 +70,7 @@ Do not add command execution as a requirement category in V1.
 
 The V1 plan is sound because it keeps `spec3` limited to contract verification:
 
-- lock reviewed plan, spec, and verifier inputs
+- lock machine-readable spec and verifier inputs
 - refuse drift before checking implementation
 - implement universal checks first
 - keep behavior output comparison in `fixture3`
@@ -79,13 +78,14 @@ The V1 plan is sound because it keeps `spec3` limited to contract verification:
 
 The implementation agent must preserve these boundaries:
 
-- `spec3` checks whether planned structural contracts exist.
+- `spec3` checks whether machine-readable structural contracts exist.
 - `fixture3` checks whether command output changed.
 - `g3rs` and `g3ts` check repository guardrails.
 
 Corrections from review:
 
 - repository path is now the moved `agent-quality-controls/spec3` path
+- the library boundary starts at the machine-readable spec, not at a prose plan or Markdown description
 - `schemas` must not run broad JSON Schema validation in V1
 - `dependencies`, `exports`, `enumerations`, `schemas`, `commands`, and `cli` must not become active implementation checks before their verifier model is designed
 
@@ -103,7 +103,7 @@ The current plan defines file checks, but not a complete spec validation model.
 
 Decisions:
 
-- Requirements do not need source references back to prose-plan lines.
+- Requirements do not need source references back to prose-plan lines because prose plans are outside the `spec3` input boundary.
 - Requirements do not need a separate `verificationMethod` field in V1.
 - Every non-empty supported requirement category must have a checker.
 - Non-empty unsupported requirement categories fail. They are not silently ignored.
@@ -121,35 +121,38 @@ Plain examples:
 
 References to evaluate:
 
-- ISO/IEC/IEEE 29148 requirements engineering and traceability model.
-- Requirements traceability matrix practice: source -> requirement -> design or implementation artifact -> verification evidence.
-- NASA SWE-059 bidirectional traceability practice.
+- Requirements traceability practice, limited to requirement ID -> checker -> evidence within the machine-readable spec boundary.
 
 Reason:
 
-- `spec3` is meant to prevent plan/code drift. Without traceability, it only becomes a file linter with hashes.
+- `spec3` is meant to prevent spec/code drift. Without requirement-to-evidence coverage, it only becomes a file linter with hashes.
 
 ## Contract Semantics
 
-The current plan does not define whether a spec entry is a declarative requirement, a policy, a postcondition, or a fixture reference.
+The current plan does not define which failures are invalid input, stale lock, requirement failure, or invalid checker output.
 
-Open questions:
+Decision:
 
-- Should each requirement have explicit preconditions, postconditions, and invariants?
-- Should `tree` and `text` entries be treated as postconditions over repository state?
-- Should lock drift checks be treated as preconditions for running implementation verification?
-- Should global properties such as "no Rust tests exist" be modeled as invariants?
-- Should `spec3` expose these terms in the JSON model, or keep them internal?
+- Do not expose precondition, postcondition, or invariant terms in the spec format.
+- Use simpler implementation phases: input validity, lock validity, requirement conformance, and output validity.
+- All user-authored requirements remain requirements. They should pass, or verification fails.
+
+Use cases for the internal split:
+
+- Input validity: duplicate requirement IDs make result mapping unsafe, so `lint` fails before checking repository files.
+- Lock validity: if the spec changed after locking, `verify` fails before checking repository files.
+- Requirement conformance: if `README.md` is required and missing, `verify` fails as a contract failure.
+- Output validity: if a checker reports a result for an unknown requirement ID, `verify` fails because the evidence is invalid.
 
 References to evaluate:
 
-- Design by Contract: preconditions, postconditions, invariants.
+- Design by Contract only as an internal design reference.
 - Policy-as-code systems such as Open Policy Agent.
 - CUE's constraint model for data validation.
 
 Reason:
 
-- If the contract model is informal, each category will invent its own semantics and the tool will become inconsistent.
+- If the verification phases are informal, each category will invent its own failure semantics and the tool will become inconsistent.
 
 ## Formal Model Boundary
 
@@ -158,7 +161,7 @@ The current plan does not say which parts need formal modeling before code.
 Open questions:
 
 - Does the lock/status/verify state machine need a small Alloy or TLA+ model before implementation?
-- What are the allowed states for source spec, lock, plan, verifier files, worktree cleanliness, and implementation conformance?
+- What are the allowed states for source spec, lock, verifier files, worktree cleanliness, and implementation conformance?
 - Which transitions are allowed: lint, normalize, lock, status, verify?
 - What must be impossible: verifying against drifted inputs, accepting orphan verifier output, treating unlocked specs as trusted?
 - Can this be represented as a compact finite-state model instead of prose?
@@ -167,7 +170,7 @@ References to evaluate:
 
 - TLA+ for checking high-level system state transitions.
 - Alloy for lightweight relational modeling and invariant checking.
-- AWS formal methods practice: prose design first, then precise model for critical design pieces.
+- AWS formal methods practice: informal design first, then precise model for critical design pieces. This is outside the `spec3` runtime boundary.
 
 Reason:
 
@@ -197,7 +200,7 @@ Reason:
 
 ## Canonicalization And Locking
 
-The current plan says "canonical JSON" but does not define the algorithm.
+The current plan says "canonical internal contract" but does not define the algorithm.
 
 Open questions:
 
@@ -205,7 +208,7 @@ Open questions:
 - Should the spec format forbid JSON numbers entirely except integer-like values where needed?
 - Should duplicate object keys be rejected before canonicalization?
 - Should strings be accepted only when they satisfy I-JSON constraints?
-- Should `sourceHash` be recorded only for diagnostics, separate from the canonical contract hash?
+- Should raw `sourceHash` be recorded only for diagnostics, separate from the canonical contract hash?
 
 References to evaluate:
 
@@ -292,7 +295,7 @@ Open questions:
 
 - What is the minimal fixture3 suite before coding starts?
 - Should fixtures cover every CLI command from the first implementation slice?
-- Should there be fixtures for invalid JSONC, duplicate keys, canonicalization stability, plan drift, spec drift, verifier drift, tree pass/fail, and text pass/fail?
+- Should there be fixtures for invalid source specs, duplicate keys where applicable, canonicalization stability, spec drift, verifier drift, tree pass/fail, and text pass/fail?
 - Should fixtures be written before or alongside the first CLI behavior?
 - How does `fixture3` handle expected failure exit codes and stderr/stdout separation?
 
@@ -343,24 +346,23 @@ Goal:
 
 Inputs:
 
-- ISO/IEC/IEEE 29148 summary material.
-- NASA SWE-059 bidirectional traceability guidance.
 - Existing plan in this file.
+- Requirement coverage models that do not require prose-source traceability.
 
 Output:
 
-- A proposed spec shape for requirement source, verification method, and evidence links.
+- A proposed spec shape for requirement IDs, checker coverage, and evidence links.
 - A decision on whether orphan requirements and orphan verifier outputs are fatal.
 
 Done when:
 
 - The plan states exact required metadata for every requirement.
 
-## R-002 Contract Model
+## R-002 Verification Phase Model
 
 Goal:
 
-- Decide whether `spec3` uses precondition, postcondition, and invariant terms.
+- Define the verification phases without exposing formal-methods terminology in the user-facing spec.
 
 Inputs:
 
@@ -369,7 +371,7 @@ Inputs:
 
 Output:
 
-- A precise model for lock drift checks, implementation checks, and global invariants.
+- A precise model for input validity, lock validity, implementation checks, and evidence validity.
 
 Done when:
 
@@ -384,7 +386,7 @@ Goal:
 Inputs:
 
 - Current command list.
-- Drift scenarios for plan, spec, verifier files, and implementation files.
+- Drift scenarios for spec, verifier files, and implementation files.
 - Alloy or TLA+ documentation.
 
 Output:
@@ -427,7 +429,7 @@ Inputs:
 
 - RFC 8785.
 - Rust JCS crate candidates.
-- JSONC parser behavior around duplicate keys and invalid input.
+- Source-format parser behavior around duplicate keys and invalid input.
 
 Output:
 
@@ -486,7 +488,7 @@ Done when:
 
 Goal:
 
-- Define how `spec3` detects drift in plan, spec, and verifier files.
+- Define how `spec3` detects drift in spec and verifier files.
 
 Inputs:
 
@@ -522,23 +524,36 @@ Done when:
 
 - The plan says what fixtures must exist before V1 is considered mechanically verified.
 
-# Source Format
+# Machine-Readable Input Boundary
 
-Support two source formats:
+`spec3` starts with a machine-readable spec file.
 
-- `.spec3.jsonc`
-- `.spec3.json`
+It does not read or validate prose plans, Markdown briefs, issue descriptions, chat transcripts, or prompts.
 
-JSONC is the human authoring format. Plain JSON is accepted for generated specs or users who do not want comments.
+Open source format decision:
 
-JSONC handling:
+- strict JSON
+- JSONC
+- CUE
+- Pkl
+- HCL
+- Dhall
+- another machine-readable configuration language that passes the dependency and tooling gates
+
+V1 must choose one source format or a small set of source formats before implementation starts.
+
+Whatever input syntax is chosen, it must compile into the same typed internal spec model.
+
+JSONC remains only a candidate. It is not committed as the V1 source format.
+
+If JSONC is chosen:
 
 - Use a real JSONC parser.
 - Do not strip comments with regex.
 - Comments must not affect the canonical contract hash.
 - Requirement explanations that matter must be in explicit fields such as `reason`, not only comments.
 
-Implementation dependency decision:
+JSONC dependency state:
 
 - Do not use `jsonc-parser` without an explicit exception or replacement decision.
 - Local verification on 2026-05-15 found crates.io version `0.32.4`, MIT license, repository `https://github.com/dprint/jsonc-parser`, optional `serde` / `serde_json` features, 58 GitHub stars, and latest commit 2026-05-10.
@@ -547,24 +562,24 @@ Implementation dependency decision:
 
 # Canonical Contract
 
-The source spec is parsed into a typed Rust model, then emitted as canonical strict JSON.
+The machine-readable source spec is parsed into a typed Rust model, then emitted as an explicitly chosen canonical internal form.
 
 Pipeline:
 
 ```text
-.spec3.jsonc or .spec3.json
+machine-readable source spec
 -> parse source
 -> deserialize into typed spec3 model
 -> validate typed model
--> emit canonical strict JSON
--> hash canonical JSON
+-> emit canonical internal contract
+-> hash canonical internal contract
 ```
 
-The lock file stores the canonical contract hash, not the raw JSONC source hash.
+The lock file stores the canonical contract hash, not the raw source-file hash.
 
 Open decision:
 
-- Store optional `sourceHash` for comment-only change reporting.
+- Store optional raw `sourceHash` for diagnostics.
 - Do not use `sourceHash` to decide conformance validity.
 
 # Files
@@ -572,18 +587,8 @@ Open decision:
 Recommended naming:
 
 ```text
-.plans/my-plan.md
-.plans/my-plan.spec3.jsonc
-.plans/my-plan.spec3.lock.json
-```
-
-The spec source references the prose plan:
-
-```json
-{
-  "version": 1,
-  "plan": ".plans/my-plan.md"
-}
+.spec3/spec
+.spec3/spec.lock.json
 ```
 
 # Commands
@@ -604,7 +609,7 @@ Validates the source spec without writing a lock or checking implementation.
 
 Checks:
 
-- source parses as JSONC or JSON
+- source parses as the selected machine-readable format
 - typed model deserializes
 - schema version is supported
 - requirement IDs are unique
@@ -614,25 +619,25 @@ Checks:
 
 ## `normalize`
 
-Prints canonical strict JSON for a source spec.
+Prints the canonical internal contract for a source spec.
 
 Use cases:
 
-- inspect what JSONC becomes after parsing
+- inspect what the source spec becomes after parsing
 - debug lock diffs
 - feed generated tooling
 
 ## `lock`
 
-Creates or updates a lock after the spec has been reviewed.
+Creates or updates a lock for the current machine-readable spec.
 
 Lock includes:
 
 - spec3 version
-- plan path
-- plan hash
 - source spec path
 - canonical spec hash
+- checker map hash
+- optional checker map for diagnostics
 - verifier file hashes
 - created time
 
@@ -644,9 +649,9 @@ Checks implementation against the locked contract.
 
 Before running any implementation checks:
 
-- plan hash must match lock
 - canonical spec hash must match lock
 - verifier file hashes must match lock
+- checker map hash must match lock
 
 Then it runs the relevant built-in and external verifiers.
 
@@ -659,13 +664,13 @@ Exit codes:
 Dirty worktree policy:
 
 - `spec3 lock` should fail by default if the Git worktree is dirty.
-- `spec3 verify` should fail by default if any locked plan, spec, or verifier file is dirty.
+- `spec3 verify` should fail by default if any locked spec or verifier file is dirty.
 - V1 may allow dirty implementation files during `verify`, because implementation is what is being checked.
 - If an override is added later, it must be explicit and visible in output.
 
 Reason:
 
-- A lock should represent reviewed, auditable contract inputs.
+- A lock should represent auditable contract inputs.
 - Agents must not lock uncommitted spec or verifier changes and then claim the implementation matched a stable contract.
 
 ## `status`
@@ -675,9 +680,9 @@ Reports whether the spec can currently be trusted.
 Reports:
 
 - missing lock
-- plan drift
 - spec drift
 - verifier drift
+- checker map drift
 - last verification state when available
 
 # Requirement Shape
@@ -689,7 +694,6 @@ Draft:
 ```jsonc
 {
   "version": 1,
-  "plan": ".plans/my-plan.md",
   "requirements": {
     "tree": [],
     "text": [],
@@ -920,7 +924,7 @@ Example:
   "id": "LOCK_SCHEMA",
   "format": "json",
   "file": "schemas/spec3-lock.schema.json",
-  "requiredFields": ["version", "planHash", "specHash", "verifierHashes"]
+  "requiredFields": ["version", "specHash", "checkerMapHash", "verifierHashes"]
 }
 ```
 
@@ -1068,7 +1072,7 @@ External verifier fact format:
 
 Build only the universal checks first:
 
-- parse JSONC and JSON
+- parse the selected machine-readable source format
 - normalize to canonical JSON
 - lock hash checks
 - tree required/forbidden checks
@@ -1116,7 +1120,7 @@ Reason:
 `spec3`:
 
 - verifies planned implementation contracts
-- prevents plan/spec/verifier drift
+- prevents spec/verifier/checker-map drift
 - owns spec parsing, locking, and universal checks
 
 `fixture3`:
@@ -1131,7 +1135,7 @@ Reason:
 
 # Open Decisions
 
-- Whether to store raw JSONC `sourceHash` in the lock for comment-only drift reporting.
+- Whether to store raw source-file `sourceHash` in the lock for diagnostic drift reporting.
 - Exact canonical JSON algorithm and key ordering.
 - Standard JSON fact format for external verifiers.
 - Whether JSON Schema validation is needed for spec source, or whether typed Rust deserialization plus custom validation is enough.
@@ -1141,7 +1145,7 @@ Reason:
 
 1. Initialize Rust workspace and G3RS policy.
 2. Add typed spec model for metadata, requirements, and verifiers.
-3. Add JSON and JSONC source loading.
+3. Add selected source-format loading.
 4. Add canonical JSON emission.
 5. Add lock file writing and reading.
 6. Add `lint`.
@@ -1155,11 +1159,11 @@ Reason:
 
 # V1 Definition Of Done
 
-- `spec3 lint` rejects invalid JSONC/JSON and invalid typed specs.
-- `spec3 normalize` emits stable strict JSON.
-- `spec3 lock` writes a lock with plan/spec/verifier hashes.
+- `spec3 lint` rejects invalid source specs and invalid typed specs.
+- `spec3 normalize` emits the stable canonical internal contract.
+- `spec3 lock` writes a lock with spec/verifier/checker-map hashes.
 - `spec3 status` reports missing lock and drift states.
-- `spec3 verify` refuses to run when plan/spec/verifier files drift.
+- `spec3 verify` refuses to run when spec/verifier files or checker routing drift.
 - `spec3 verify` checks built-in `tree` and `text` requirements.
 - `commands` is not a requirement category in V1.
 - `cli` is not a requirement category in V1.

@@ -8,7 +8,9 @@ Explain which verification approaches matter for `spec3`, what each one is for, 
 
 It should start as a small contract checker with these rules:
 
-- The reviewed `.spec3.json` or `.spec3.jsonc` file is the source of truth.
+- The machine-readable spec file is the first input the library knows about.
+- The exact source format is still open: JSON, JSONC, CUE, Pkl, HCL, Dhall, or another stable machine-readable format.
+- Any chosen source format must compile into the same typed internal spec model.
 - Every active requirement has a stable ID.
 - Every active requirement is either checked by a known checker or rejected as unsupported.
 - Every checker result points back to the requirement ID it checked.
@@ -24,31 +26,59 @@ This borrows from requirements traceability and Design by Contract without makin
 
 It answers:
 
-- Did the implementation build what the reviewed spec says must exist?
-- Did the implementation avoid what the reviewed spec says must not exist?
-- Did we run those checks against the same plan, spec, and verifier files that were reviewed?
+- Did the implementation build what the machine-readable spec says must exist?
+- Did the implementation avoid what the machine-readable spec says must not exist?
+- Did we run those checks against the same spec and verifier files that were locked?
 - Can every failure be traced to the exact requirement that failed?
 
 It does not answer:
 
 - Is the software correct in all possible executions?
-- Is the prose plan wise?
+- Is the upstream human or agent workflow wise?
 - Did behavior output change?
 - Does every function satisfy a mathematical proof?
 - Did an LLM implement the best architecture?
+
+# Input Boundary
+
+Humans or agents may use any upstream workflow to create the spec.
+
+Examples:
+
+- Markdown plan.
+- Issue discussion.
+- Chat transcript.
+- LLM-generated draft.
+- Spreadsheet.
+- CUE module.
+- Pkl package.
+- JSON file.
+
+Those are not all `spec3` inputs.
+
+`spec3` starts only when it receives the selected machine-readable spec format.
+
+Consequence:
+
+- No prose-plan hash.
+- No Markdown source reference.
+- No ticket reference requirement.
+- No attempt to validate whether the machine-readable spec faithfully represents an upstream discussion.
+- The lock freezes the machine-readable contract and checker routing only.
 
 # Core Model
 
 Use these terms internally:
 
-- Contract: the reviewed spec.
+- Contract: the machine-readable spec.
 - Requirement: one checked statement in the contract.
 - Checker: code that evaluates requirements.
 - Fact: observed repository state.
 - Evidence: a pass or fail result for one requirement.
-- Precondition: something that must be true before verification can be trusted.
-- Postcondition: something that must be true after repository facts are checked.
-- Invariant: something that must always be true for the repo to be valid.
+- Input validity: the spec can be parsed and mapped safely.
+- Lock validity: the current spec and verifier inputs match the lock.
+- Requirement conformance: repository facts satisfy active requirements.
+- Output validity: checker evidence maps back to known requirements.
 
 Example:
 
@@ -72,7 +102,7 @@ Meaning:
 - Checker: built-in `text`
 - Fact input: file contents under the scoped paths
 - Evidence output: pass if forbidden strings are absent, fail with matching path and location if present
-- No prose-plan source reference required
+- No prose-plan source reference exists inside the library boundary
 
 # Answers To Current Comments
 
@@ -84,14 +114,14 @@ Decision:
 
 Reason:
 
-- Once reviewed, the machine-readable spec is the contract.
-- Requiring every requirement to point to a prose line creates maintenance work and weakens adoption.
-- The plan can still be locked and hashed as the parent document.
+- The library starts at the machine-readable spec.
+- It does not receive a prose plan, Markdown description, ticket, prompt, or discussion.
+- It cannot validate artifacts it does not receive.
 
 Consequence:
 
-- `spec3` detects spec/code drift, not prose/spec disagreement.
-- Prose/spec review remains a human step.
+- `spec3` detects spec/code drift.
+- Prose/spec agreement belongs to the upstream workflow and is outside the library.
 
 ## Verification method per requirement
 
@@ -231,13 +261,67 @@ Why this matters:
 - If a later edit changes which checker owns a requirement, the lock changes.
 - That prevents an agent from silently rerouting a requirement to a weaker checker.
 
+## Spec file versus lock file
+
+Decision:
+
+- The spec file is the source contract.
+- The lock file is a machine-generated receipt.
+- The lock file is not a second spec.
+
+Spec file contains:
+
+- version
+- requirements
+- optional verifier declarations
+- optional format-specific metadata
+
+Lock file contains:
+
+- spec path
+- canonical spec hash
+- checker map hash
+- optional expanded checker map for diagnostics
+- verifier file hashes
+- tool version and created time as metadata
+
+Why they differ:
+
+- The spec says what must be true.
+- The lock says exactly which contract bytes and checker routing were frozen.
+- The lock can contain derived data that would be redundant or dangerous in the editable spec.
+
+Example lock shape:
+
+```json
+{
+  "version": 1,
+  "specPath": ".spec3/spec",
+  "hashes": {
+    "canonicalSpec": "...",
+    "checkerMap": "..."
+  },
+  "checkers": [
+    {
+      "requirementId": "NO_RUST_TESTS",
+      "category": "text",
+      "checker": "builtin:text"
+    }
+  ],
+  "metadata": {
+    "spec3Version": "0.1.0",
+    "createdAt": "..."
+  }
+}
+```
+
 # Borrowed Approaches
 
 ## Requirements traceability
 
 What it is:
 
-- A way to connect requirements to implementation and verification evidence.
+- A way to connect requirements to verification evidence.
 
 What we should borrow:
 
@@ -270,18 +354,17 @@ What it is:
 
 What we should borrow:
 
-- Preconditions: checks that must pass before verification can be trusted.
-- Postconditions: checks over repository facts.
-- Invariants: checks that must always hold.
+- The idea that different failure phases mean different things.
+- Keep this as implementation structure, not user-facing spec syntax.
 
 How this maps:
 
-- Precondition: locked plan hash matches current plan.
-- Precondition: locked spec hash matches current spec.
-- Precondition: locked verifier file hashes match current verifier files.
-- Postcondition: required file exists.
-- Postcondition: forbidden text is absent.
-- Invariant: no Rust test scaffolding exists in this repo.
+- Input validity: requirement IDs are unique.
+- Lock validity: locked spec hash matches current spec.
+- Lock validity: locked verifier file hashes match current verifier files.
+- Requirement conformance: required file exists.
+- Requirement conformance: forbidden text is absent.
+- Output validity: every evidence item references a known requirement ID.
 
 What we should not borrow:
 
@@ -290,7 +373,7 @@ What we should not borrow:
 
 Consequence for `spec3`:
 
-- Use the model to keep the implementation clean.
+- Use the model only to keep the implementation clean.
 - Keep the user-facing spec simple.
 
 Sources:
@@ -421,7 +504,7 @@ Decision:
 
 Sources:
 
-- TLA+ is used for formal specification and model checking; AWS describes using formal specs after prose design to find design errors before implementation: https://cacm.acm.org/research/how-amazon-web-services-uses-formal-methods/
+- TLA+ is used for formal specification and model checking; AWS describes using formal specs after informal design to find design errors before implementation: https://cacm.acm.org/research/how-amazon-web-services-uses-formal-methods/
 
 ## Alloy
 
@@ -507,22 +590,22 @@ Output:
 Steps:
 
 1. Run `lint`.
-2. Check Git dirty state for plan, spec, and verifier files.
+2. Check Git dirty state for spec and verifier files.
 3. Build the requirement-to-checker map.
 4. Canonicalize the spec.
-5. Hash the plan, canonical spec, verifier files, and requirement-to-checker map.
+5. Hash the canonical spec, verifier files, and requirement-to-checker map.
 6. Write lock metadata.
 
 Output:
 
-- Lock file that freezes what was reviewed and how it will be checked.
+- Lock file that freezes what was locked and how it will be checked.
 
 ## `status`
 
 Steps:
 
 1. Read spec and lock.
-2. Recompute plan/spec/verifier hashes.
+2. Recompute spec/verifier hashes.
 3. Compare against lock.
 4. Report drift.
 5. Report unsupported populated categories.
@@ -536,8 +619,8 @@ Output:
 
 Steps:
 
-1. Run `status` preconditions.
-2. Stop if plan, spec, verifier, or checker mapping drifted.
+1. Run `status` checks.
+2. Stop if spec, verifier, or checker mapping drifted.
 3. Extract repository facts.
 4. Run checkers against facts.
 5. Require one result set for every active requirement.
@@ -576,14 +659,14 @@ Do not build first:
 - Arbitrary external verifier protocol.
 - Broad JSON Schema validation.
 - Generic command runner.
-- Full source-to-prose traceability.
+- Source-to-prose traceability inside `spec3`.
 
 # Concrete Changes To Main Plan
 
 The main plan should be revised so:
 
 - User-facing questions use plain terms.
-- `source reference back to prose plan` is answered no.
+- prose-plan references are outside the library boundary.
 - `verification method per requirement` is answered no for V1.
 - `every active requirement has a checker` is answered yes.
 - `every result maps to a requirement ID` is answered yes.
