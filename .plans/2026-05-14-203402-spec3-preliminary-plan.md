@@ -44,6 +44,23 @@ Package and binary name:
 spec3
 ```
 
+# Agent Starting Context
+
+This plan is the handoff source of truth for a new implementation agent.
+
+The agent should assume no prior conversation context except:
+
+- `spec3` is a spec-driven development tool.
+- `fixture3` is a separate behavior-fixture tool.
+- `g3rs` is the Rust guardrail validator used in these repositories.
+- Implementation must strengthen the contract boundary between plan, spec, verifier, and code.
+
+Do not rebuild `fixture3` behavior in `spec3`.
+
+Do not implement language-specific Rust or TypeScript export parsing in the first pass.
+
+Do not add command execution as a requirement category in V1.
+
 # Source Format
 
 Support two source formats:
@@ -176,6 +193,18 @@ Exit codes:
 - `1`: implementation does not conform
 - `2`: spec, lock, parser, drift, or runtime error
 
+Dirty worktree policy:
+
+- `spec3 lock` should fail by default if the Git worktree is dirty.
+- `spec3 verify` should fail by default if any locked plan, spec, or verifier file is dirty.
+- V1 may allow dirty implementation files during `verify`, because implementation is what is being checked.
+- If an override is added later, it must be explicit and visible in output.
+
+Reason:
+
+- A lock should represent reviewed, auditable contract inputs.
+- Agents must not lock uncommitted spec or verifier changes and then claim the implementation matched a stable contract.
+
 ## `status`
 
 Reports whether the spec can currently be trusted.
@@ -205,7 +234,6 @@ Draft:
     "exports": [],
     "enumerations": [],
     "schemas": [],
-    "cli": [],
     "fixtures": []
   },
   "verifiers": []
@@ -318,6 +346,7 @@ V1 approach:
 - spec3 owns the JSON shape
 - external verifiers extract language-specific facts
 - spec3 compares extracted facts when the external output format is stable
+- do not implement dependency verification before the external verifier fact format is designed
 
 Example:
 
@@ -352,6 +381,7 @@ V1 approach:
 - no built-in Rust or TypeScript parser yet
 - use external verifier commands to produce export facts
 - compare facts to spec when the fact format is stable
+- do not implement exports verification before the external verifier fact format is designed
 
 Example:
 
@@ -404,6 +434,7 @@ Verifier:
 - config/schema parser for data-owned sets
 - exact comparison for `mode = "closed"`
 - subset comparison for `mode = "required"`
+- do not implement enumeration verification before the external verifier fact format is designed
 
 ## `schemas`
 
@@ -434,8 +465,11 @@ V1 approach:
 
 - spec3 can validate JSON schemas against JSON files if the dependency choice is safe
 - SQL and language model extraction starts external
+- do not implement broad schema verification before the external verifier fact format is designed, except for spec3's own source and lock models
 
-## `cli`
+## `cli` (Deferred)
+
+Defer `cli` as a requirement category in V1.
 
 CLI surface contracts.
 
@@ -467,6 +501,13 @@ Verifier:
 
 - built-in command execution may eventually handle simple CLI help checks
 - broader behavior checks should use fixture tools, not spec3
+
+Reason for deferral:
+
+- CLI checks require executing a binary.
+- Command execution as a requirement is already deferred.
+- Keeping `cli` active in V1 would blur the boundary between spec conformance and behavior fixtures.
+- If needed, CLI surfaces can be represented later after command and external verifier semantics are stable.
 
 ## `fixtures`
 
@@ -518,6 +559,14 @@ Do not add this yet:
 }
 ```
 
+## `cli`
+
+Defer `cli` together with `commands`.
+
+Do not include `cli` in the V1 typed `requirements` object.
+
+The eventual `cli` category should be designed after command execution semantics are stable.
+
 # Verifier Model
 
 Specs declare verifiers separately from requirements.
@@ -546,6 +595,13 @@ Lock hashes all external verifier files.
 
 Built-in verifiers are tied to the `spec3` binary version recorded in the lock.
 
+External verifier fact format:
+
+- Deferred for V1.
+- Do not invent one while implementing `tree` and `text`.
+- When designed, it should be stable JSON with requirement IDs, extracted facts, and mismatch details.
+- Language-specific features must wait for this format.
+
 # Built-In Verifiers For First Implementation
 
 Build only the universal checks first:
@@ -558,6 +614,40 @@ Build only the universal checks first:
 - verifier drift checks
 
 Do not build language-specific dependency or export parsers first.
+
+# G3RS And Test Policy
+
+Initialize the Rust workspace with current G3RS adoption:
+
+```text
+guardrail3-rs.toml
+```
+
+Use G3RS for static validation.
+
+Test policy for this repository:
+
+- Do not add Rust unit tests.
+- Do not add Rust integration tests.
+- Do not add doc tests.
+- Do not add `#[test]`.
+- Do not add `#[cfg(test)]`.
+- Do not add a `tests/` directory.
+- Do not use `cargo test` as project verification.
+
+Verification model:
+
+- `cargo check`
+- `cargo clippy`
+- `cargo fmt --check`
+- `g3rs validate --path . --rules-only`
+- `fixture3` behavior fixtures for CLI behavior once there is behavior to check
+- `spec3` self-verification once the tool can lock and verify its own spec
+
+Reason:
+
+- This project is specifically about replacing agent-authored ad hoc tests/scripts with locked specs plus fixture behavior checks.
+- The test ban must be explicit so an implementation agent does not fall back to standard Rust test scaffolding.
 
 # Relationship To Other Tools
 
@@ -581,9 +671,9 @@ Do not build language-specific dependency or export parsers first.
 
 - Whether to store raw JSONC `sourceHash` in the lock for comment-only drift reporting.
 - Exact canonical JSON algorithm and key ordering.
-- Whether `cli` checks should be built in or external in V1.
 - Standard JSON fact format for external verifiers.
 - Whether JSON Schema validation is needed for spec source, or whether typed Rust deserialization plus custom validation is enough.
+- Whether `cli` returns after V1 as a requirement category or stays delegated to fixture behavior.
 
 # First Implementation Plan
 
@@ -610,5 +700,7 @@ Do not build language-specific dependency or export parsers first.
 - `spec3 verify` refuses to run when plan/spec/verifier files drift.
 - `spec3 verify` checks built-in `tree` and `text` requirements.
 - `commands` is not a requirement category in V1.
+- `cli` is not a requirement category in V1.
+- `dependencies`, `exports`, `enumerations`, and broad `schemas` are typed but not verified until the external verifier fact format is designed.
+- Rust tests are absent.
 - The implementation has fixture coverage through `fixture3`.
-
