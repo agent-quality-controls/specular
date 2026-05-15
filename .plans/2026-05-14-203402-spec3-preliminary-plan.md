@@ -73,8 +73,11 @@ Dependencies already checked as viable:
 - `schemars`: generate JSON Schema from Rust types
 - `jsonschema`: validate JSON source against generated schema
 - `serde` and `serde_json`: deserialize into Rust types
+- `garde`: validate deserialized Rust structs and keep parity with guardrail3 input-boundary validation
 
 Semantic validation remains Rust-owned because JSON Schema does not check repository state or all cross-field rules.
+
+Use `garde` for struct-level validation. Do not add `validator` unless a concrete blocker appears in `garde`.
 
 # JSON Shape Rules
 
@@ -261,7 +264,6 @@ Initial command surface:
 
 ```bash
 spec3 lint <spec>
-spec3 normalize <spec>
 spec3 lock <spec>
 spec3 status <spec-or-lock>
 spec3 verify <spec-or-lock>
@@ -285,16 +287,6 @@ Checks:
 - globs compile
 - every active requirement has a checker
 
-## `normalize`
-
-Prints the canonical internal contract for a source spec.
-
-Uses:
-
-- inspect what the source spec becomes after parsing and validation
-- debug lock diffs
-- feed generated tooling
-
 ## `lock`
 
 Creates or updates a lock for the current JSON spec.
@@ -304,7 +296,7 @@ Before writing:
 - run `lint`
 - fail if the Git worktree is dirty
 - build checker map
-- compute canonical spec hash
+- canonicalize internally and compute canonical spec hash
 - compute checker map hash
 - hash declared verifier files
 
@@ -336,7 +328,7 @@ Before repository checks:
 
 Then:
 
-- extract repository facts
+- extract or load repository facts through shared AQC fact crates
 - run built-in checkers
 - validate evidence coverage
 - emit evidence
@@ -348,6 +340,32 @@ Exit codes:
 - `2`: spec, lock, parser, drift, or runtime error
 
 # V1 Requirement Categories
+
+Do not implement V1 checkers until the shared fact boundary with guardrail3 is settled.
+
+Known reusable guardrail3 code:
+
+- `g3-workspace-crawl`: repository crawl, `.gitignore` handling, ignored-file recovery, path model, readability, sorted entries.
+- `g3rs-code-ingestion`: Rust source-file selection, owned config selection, typed config parsing, code-family source input assembly.
+- `g3rs-test-ingestion`: test-family root discovery, Cargo manifest parsing, sidecar/harness classification, Rust test-source analysis.
+- guardrail3 parser crates: typed parsers for Cargo, clippy, deny, rustfmt, rust-toolchain, nextest, mutants, package JSON, tsconfig, and related config files.
+- guardrail3 source-check packages: existing `syn` visitors and AST-derived facts for lint attributes, `cfg_attr`, `garde(skip)`, direct filesystem use, test functions, ignore reasons, proof-bearing assertions, public surface, and related source facts.
+
+Ownership boundary:
+
+- `spec3` owns JSON spec shape, JSON Schema generation, semantic spec validation, lock files, checker routing, evidence coverage, and verification lifecycle.
+- shared AQC fact crates own repository walking, path semantics, ignore semantics, file readability, config parsing, and language-specific source facts.
+- guardrail3 owns guardrail policy checks over those facts.
+- `spec3` built-in V1 checkers must be thin checks over shared facts. They must not grow their own crawler, parser, AST visitor stack, or config parser stack.
+
+Open extraction decision:
+
+- depend directly on existing guardrail3 shared crates when their names and APIs are neutral enough
+- or extract them into AQC-neutral crates before spec3 checker implementation
+
+Implementation blocker:
+
+- no `tree` or `text` checker implementation until this decision is recorded and the chosen shared crate boundary is wired into the plan
 
 ## `tree`
 
@@ -363,13 +381,13 @@ Use cases:
 
 Verifier behavior:
 
-- built in
-- filesystem crawl
+- built in after shared-fact boundary is settled
+- repository facts come from `g3-workspace-crawl` or its extracted neutral successor
 - normalized paths
 - required path checks
 - forbidden glob checks
 
-Exact path, glob, walk, and symlink semantics are still open and must be decided before implementing this checker.
+Exact path, glob, walk, and symlink semantics must follow the chosen shared crawl crate. Do not define a second semantics layer in `spec3`.
 
 ## `text`
 
@@ -384,12 +402,12 @@ Use cases:
 
 Verifier behavior:
 
-- built in
+- built in after shared-fact boundary is settled
 - fixed string only in V1
-- explicit scoped path globs
+- explicit scoped path globs over shared crawl entries
 - no regex in V1
 
-Exact binary-file, encoding, line-ending, and symlink behavior is still open and must be decided before implementing this checker.
+Exact binary-file, encoding, line-ending, and symlink behavior must follow the chosen shared crawl/read layer. Do not define a second file-reading semantics layer in `spec3`.
 
 # Deferred Categories
 
@@ -485,8 +503,17 @@ Dependencies already checked as viable:
 
 Potential semantic-validation dependencies:
 
-- `garde`: 850 stars, active 2025-11-30, MIT/Apache-2.0
 - `validator`: 2470 stars, active 2026-04-22, MIT
+
+Chosen semantic-validation dependency:
+
+- `garde`: 850 stars, active 2025-11-30, MIT/Apache-2.0
+
+Reason:
+
+- guardrail3 already standardizes on `garde`
+- `garde` supports nested validation and validation context
+- using both `garde` and `validator` would split validation conventions across AQC Rust tools without a current benefit
 
 Do not use without explicit exception:
 
@@ -519,7 +546,7 @@ Verification model:
 - `cargo check`
 - `cargo clippy`
 - `cargo fmt --check`
-- `g3rs validate --path . --rules-only`
+- `g3rs validate workspace --path <path>`
 - `fixture3` behavior fixtures for CLI behavior once there is behavior to check
 - `spec3` self-verification once the tool can lock and verify its own spec
 
@@ -548,26 +575,27 @@ Verification model:
 3. Add strict JSON source loading.
 4. Add generated JSON Schema validation with `jsonschema`.
 5. Add Rust semantic validation for IDs, unsupported categories, paths, globs, and checker coverage.
-6. Add canonical internal contract emission.
+6. Add internal canonical contract generation for hashing.
 7. Add lock file writing and reading.
 8. Add `lint`.
-9. Add `normalize`.
-10. Add `lock`.
-11. Add `status`.
-12. Add `verify` preflight drift checks.
-13. Add shared evidence model.
-14. Add built-in `tree` checker.
-15. Add built-in `text` checker.
-16. Add fixture coverage for `spec3` itself through `fixture3`.
+9. Add `lock`.
+10. Add `status`.
+11. Add `verify` preflight drift checks.
+12. Add shared evidence model.
+13. Resolve guardrail3/shared AQC fact-crate boundary.
+14. Wire shared repository crawl facts.
+15. Add built-in `tree` checker as a thin checker over shared crawl facts.
+16. Add built-in `text` checker as a thin checker over shared crawl/read facts.
+17. Add fixture coverage for `spec3` itself through `fixture3`.
 
 # V1 Definition Of Done
 
 - `spec3 lint` rejects invalid JSON, JSON Schema violations, invalid typed specs, and semantic validation failures.
-- `spec3 normalize` emits the stable canonical internal contract.
 - `spec3 lock` writes a lock with spec/verifier/checker-map hashes.
 - `spec3 status` reports missing lock and drift states.
 - `spec3 verify` refuses to run when spec/verifier files or checker routing drift.
 - `spec3 verify` checks built-in `tree` and `text` requirements.
+- `tree` and `text` checkers reuse shared AQC repository facts and do not implement their own crawler or parser stack.
 - Non-empty unsupported categories fail.
 - `commands` is not a requirement category in V1.
 - `cli` is not a requirement category in V1.
