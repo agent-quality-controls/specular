@@ -89,6 +89,10 @@ Corrections from review:
 - `schemas` must not run broad JSON Schema validation in V1
 - `dependencies`, `exports`, `enumerations`, `schemas`, `commands`, and `cli` must not become active implementation checks before their verifier model is designed
 
+Research memo:
+
+- See `.plans/2026-05-15-132431-spec3-validation-model-research.md` before implementing V1.
+
 # Blocking Open Questions
 
 Do not start implementation beyond repository scaffolding until these questions are answered or explicitly narrowed.
@@ -97,15 +101,23 @@ Do not start implementation beyond repository scaffolding until these questions 
 
 The current plan defines file checks, but not a complete spec validation model.
 
-Open questions:
+Decisions:
 
-- Should each requirement carry a source reference back to the prose plan?
-- Should each requirement declare a verification method such as inspection, analysis, fixture, external verifier, or built-in verifier?
-- Should `spec3` enforce that every requirement has at least one verification route?
-- Should `spec3` enforce that every verification finding maps back to exactly one requirement ID?
-- Should `spec3 status` report orphan requirements and orphan verifier outputs?
-- Should the lock store requirement-to-verifier links as first-class data?
-- Should requirement IDs be stable across edits, with explicit replacement/deprecation metadata?
+- Requirements do not need source references back to prose-plan lines.
+- Requirements do not need a separate `verificationMethod` field in V1.
+- Every non-empty supported requirement category must have a checker.
+- Non-empty unsupported requirement categories fail. They are not silently ignored.
+- Every checker result must include the requirement ID it checked.
+- Requirements that produce no checker result are fatal.
+- Checker results for unknown requirement IDs are fatal.
+- The lock records which checker owns each requirement ID.
+- Requirement IDs must be stable across edits. Replacement or deletion policy is still open.
+
+Plain examples:
+
+- Orphan requirement: the spec contains `ROOT_README`, but `verify` returns no pass/fail result for `ROOT_README`.
+- Orphan checker output: a checker returns a result for `UNKNOWN_REQUIREMENT`, but the locked spec has no such requirement.
+- Requirement-to-checker map: the lock records that `NO_RUST_TESTS` is checked by `text` and `ROOT_README` is checked by `tree`.
 
 References to evaluate:
 
