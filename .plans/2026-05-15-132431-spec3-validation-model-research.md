@@ -4,13 +4,13 @@ Explain which verification approaches matter for `spec3`, what each one is for, 
 
 # Short Decision
 
-`spec3` should not start as a generic formal-methods tool, a CUE wrapper, an OPA wrapper, or a JSON Schema wrapper.
+`spec3` should not start as a generic formal-methods tool, a CUE wrapper, an OPA wrapper, or a hand-written JSON Schema project.
 
 It should start as a small contract checker with these rules:
 
-- The machine-readable spec file is the first input the library knows about.
-- The exact source format is still open: JSON, JSONC, CUE, Pkl, HCL, Dhall, or another stable machine-readable format.
-- Any chosen source format must compile into the same typed internal spec model.
+- The machine-readable JSON spec file is the first input the library knows about.
+- Rust types are the source of truth for the spec shape.
+- JSON Schema is generated from Rust types and used for user/editor validation.
 - Every active requirement has a stable ID.
 - Every active requirement is either checked by a known checker or rejected as unsupported.
 - Every checker result points back to the requirement ID it checked.
@@ -50,13 +50,11 @@ Examples:
 - Chat transcript.
 - LLM-generated draft.
 - Spreadsheet.
-- CUE module.
-- Pkl package.
 - JSON file.
 
 Those are not all `spec3` inputs.
 
-`spec3` starts only when it receives the selected machine-readable spec format.
+`spec3` starts only when it receives strict JSON.
 
 Consequence:
 
@@ -64,7 +62,7 @@ Consequence:
 - No Markdown source reference.
 - No ticket reference requirement.
 - No attempt to validate whether the machine-readable spec faithfully represents an upstream discussion.
-- The lock freezes the machine-readable contract and checker routing only.
+- The lock freezes the JSON contract and checker routing only.
 
 # Core Model
 
@@ -428,19 +426,19 @@ What it is good for:
 What it would give us:
 
 - A mature constraint language for the spec shape.
-- A possible replacement for JSONC plus custom validation.
+- A possible future authoring layer that exports JSON.
 
 Problems:
 
 - Requires users or generated files to interact with CUE.
-- Adds a second language before we know our model.
+- Adds a second schema that must stay aligned with Rust types.
 - Rust integration likely means shelling out or carrying bindings.
-- Overkill before V1 requirement categories stabilize.
+- Duplicates the generated JSON Schema path in V1.
 
 Decision:
 
 - Do not use CUE in V1.
-- Reconsider CUE if the spec shape becomes hard to validate with Rust types and JSON Schema.
+- Reconsider CUE only as a future authoring layer that exports JSON if strict JSON authoring becomes painful.
 
 Sources:
 
@@ -466,7 +464,9 @@ What it is not good for:
 
 Decision:
 
-- Use JSON Schema later for spec file shape if a maintained Rust validator passes dependency review.
+- Use generated JSON Schema in V1 for spec file shape.
+- Generate it from Rust types with `schemars`.
+- Validate JSON source with `jsonschema`.
 - Do not use JSON Schema as the main verification engine.
 
 Sources:
@@ -657,7 +657,6 @@ Do not build first:
 - Export parsing.
 - Dependency parsing.
 - Arbitrary external verifier protocol.
-- Broad JSON Schema validation.
 - Generic command runner.
 - Source-to-prose traceability inside `spec3`.
 

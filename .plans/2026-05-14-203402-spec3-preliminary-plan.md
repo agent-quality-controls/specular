@@ -86,7 +86,7 @@ Corrections from review:
 
 - repository path is now the moved `agent-quality-controls/spec3` path
 - the library boundary starts at the machine-readable spec, not at a prose plan or Markdown description
-- `schemas` must not run broad JSON Schema validation in V1
+- V1 source format is strict JSON, validated by generated JSON Schema and Rust semantic validation
 - `dependencies`, `exports`, `enumerations`, `schemas`, `commands`, and `cli` must not become active implementation checks before their verifier model is designed
 
 Research memo:
@@ -180,13 +180,15 @@ Reason:
 
 The current plan assumes `spec3` owns built-in category logic.
 
-Open questions:
+Decision:
 
-- Should `spec3` remain a small fixed verifier with typed categories?
-- Should it embed or call a policy engine for category logic?
-- Should OPA/Rego be considered for arbitrary invariants over extracted repository facts?
-- Should CUE be considered for spec shape and constraint validation?
-- Should the first implementation avoid both and stay fixed until the data model stabilizes?
+- V1 remains a small fixed verifier with typed categories.
+- V1 does not embed or call OPA/Rego.
+- V1 does not use CUE, Pkl, HCL, Dhall, Jsonnet, or Starlark as the source format.
+- V1 uses JSON as the source format.
+- V1 generates JSON Schema from Rust types with `schemars`.
+- V1 validates source JSON with `jsonschema`.
+- V1 performs semantic validation in Rust after Serde decoding.
 
 References to evaluate:
 
@@ -197,6 +199,7 @@ References to evaluate:
 Reason:
 
 - A hand-rolled rule system will degrade if `spec3` grows into arbitrary policy checks without a policy model.
+- V1 avoids that risk by keeping active checks fixed to `tree` and `text`.
 
 ## Canonicalization And Locking
 
@@ -429,7 +432,7 @@ Inputs:
 
 - RFC 8785.
 - Rust JCS crate candidates.
-- Source-format parser behavior around duplicate keys and invalid input.
+- Strict JSON parser behavior around duplicate keys and invalid input.
 
 Output:
 
@@ -530,35 +533,29 @@ Done when:
 
 It does not read or validate prose plans, Markdown briefs, issue descriptions, chat transcripts, or prompts.
 
-Open source format decision:
+V1 source format decision:
 
-- strict JSON
-- JSONC
-- CUE
-- Pkl
-- HCL
-- Dhall
-- another machine-readable configuration language that passes the dependency and tooling gates
+- Use strict JSON.
+- Do not support JSONC in V1.
+- Do not support comments in V1.
+- Use explicit fields such as `reason` for human explanations.
+- Generate JSON Schema from Rust types with `schemars`.
+- Validate source JSON against that schema with `jsonschema`.
+- Deserialize source JSON into Rust types with Serde.
+- Run Rust semantic validation after deserialization.
 
-V1 must choose one source format or a small set of source formats before implementation starts.
+Reason:
 
-Whatever input syntax is chosen, it must compile into the same typed internal spec model.
+- Rust types are the source of truth for the spec shape.
+- Generated JSON Schema prevents a second hand-maintained schema from drifting.
+- JSON is the simplest format for agents to emit and for Rust to parse.
+- CUE/Pkl/HCL/Dhall can remain future authoring layers that compile to this JSON contract if strict JSON authoring becomes painful.
 
-JSONC remains only a candidate. It is not committed as the V1 source format.
+JSON shape rule:
 
-If JSONC is chosen:
-
-- Use a real JSONC parser.
-- Do not strip comments with regex.
-- Comments must not affect the canonical contract hash.
-- Requirement explanations that matter must be in explicit fields such as `reason`, not only comments.
-
-JSONC dependency state:
-
-- Do not use `jsonc-parser` without an explicit exception or replacement decision.
-- Local verification on 2026-05-15 found crates.io version `0.32.4`, MIT license, repository `https://github.com/dprint/jsonc-parser`, optional `serde` / `serde_json` features, 58 GitHub stars, and latest commit 2026-05-10.
-- It fails the current dependency health gate because it has fewer than 100 GitHub stars.
-- R-005 must decide whether to grant an exception, find a healthier JSONC parser, use CUE or another existing tool, or narrow V1 to strict JSON first.
+- Avoid dynamic object maps where duplicate keys would silently overwrite data.
+- Prefer arrays with explicit identifiers or paths where uniqueness matters.
+- Validate uniqueness in Rust semantic validation.
 
 # Canonical Contract
 
@@ -587,7 +584,7 @@ Open decision:
 Recommended naming:
 
 ```text
-.spec3/spec
+.spec3/spec.json
 .spec3/spec.lock.json
 ```
 
@@ -609,7 +606,8 @@ Validates the source spec without writing a lock or checking implementation.
 
 Checks:
 
-- source parses as the selected machine-readable format
+- source parses as strict JSON
+- source validates against generated JSON Schema
 - typed model deserializes
 - schema version is supported
 - requirement IDs are unique
@@ -1072,7 +1070,7 @@ External verifier fact format:
 
 Build only the universal checks first:
 
-- parse the selected machine-readable source format
+- parse strict JSON source format
 - normalize to canonical JSON
 - lock hash checks
 - tree required/forbidden checks
@@ -1138,14 +1136,14 @@ Reason:
 - Whether to store raw source-file `sourceHash` in the lock for diagnostic drift reporting.
 - Exact canonical JSON algorithm and key ordering.
 - Standard JSON fact format for external verifiers.
-- Whether JSON Schema validation is needed for spec source, or whether typed Rust deserialization plus custom validation is enough.
+- Exact Rust semantic validation strategy for cross-field and domain rules.
 - Whether `cli` returns after V1 as a requirement category or stays delegated to fixture behavior.
 
 # First Implementation Plan
 
 1. Initialize Rust workspace and G3RS policy.
 2. Add typed spec model for metadata, requirements, and verifiers.
-3. Add selected source-format loading.
+3. Add strict JSON source loading.
 4. Add canonical JSON emission.
 5. Add lock file writing and reading.
 6. Add `lint`.
@@ -1159,7 +1157,7 @@ Reason:
 
 # V1 Definition Of Done
 
-- `spec3 lint` rejects invalid source specs and invalid typed specs.
+- `spec3 lint` rejects invalid JSON, JSON Schema violations, and invalid typed specs.
 - `spec3 normalize` emits the stable canonical internal contract.
 - `spec3 lock` writes a lock with spec/verifier/checker-map hashes.
 - `spec3 status` reports missing lock and drift states.
