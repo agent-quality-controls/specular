@@ -89,6 +89,427 @@ Corrections from review:
 - `schemas` must not run broad JSON Schema validation in V1
 - `dependencies`, `exports`, `enumerations`, `schemas`, `commands`, and `cli` must not become active implementation checks before their verifier model is designed
 
+# Blocking Open Questions
+
+Do not start implementation beyond repository scaffolding until these questions are answered or explicitly narrowed.
+
+## Spec-Driven Development Model
+
+The current plan defines file checks, but not a complete spec validation model.
+
+Open questions:
+
+- Should each requirement carry a source reference back to the prose plan?
+- Should each requirement declare a verification method such as inspection, analysis, fixture, external verifier, or built-in verifier?
+- Should `spec3` enforce that every requirement has at least one verification route?
+- Should `spec3` enforce that every verification finding maps back to exactly one requirement ID?
+- Should `spec3 status` report orphan requirements and orphan verifier outputs?
+- Should the lock store requirement-to-verifier links as first-class data?
+- Should requirement IDs be stable across edits, with explicit replacement/deprecation metadata?
+
+References to evaluate:
+
+- ISO/IEC/IEEE 29148 requirements engineering and traceability model.
+- Requirements traceability matrix practice: source -> requirement -> design or implementation artifact -> verification evidence.
+- NASA SWE-059 bidirectional traceability practice.
+
+Reason:
+
+- `spec3` is meant to prevent plan/code drift. Without traceability, it only becomes a file linter with hashes.
+
+## Contract Semantics
+
+The current plan does not define whether a spec entry is a declarative requirement, a policy, a postcondition, or a fixture reference.
+
+Open questions:
+
+- Should each requirement have explicit preconditions, postconditions, and invariants?
+- Should `tree` and `text` entries be treated as postconditions over repository state?
+- Should lock drift checks be treated as preconditions for running implementation verification?
+- Should global properties such as "no Rust tests exist" be modeled as invariants?
+- Should `spec3` expose these terms in the JSON model, or keep them internal?
+
+References to evaluate:
+
+- Design by Contract: preconditions, postconditions, invariants.
+- Policy-as-code systems such as Open Policy Agent.
+- CUE's constraint model for data validation.
+
+Reason:
+
+- If the contract model is informal, each category will invent its own semantics and the tool will become inconsistent.
+
+## Formal Model Boundary
+
+The current plan does not say which parts need formal modeling before code.
+
+Open questions:
+
+- Does the lock/status/verify state machine need a small Alloy or TLA+ model before implementation?
+- What are the allowed states for source spec, lock, plan, verifier files, worktree cleanliness, and implementation conformance?
+- Which transitions are allowed: lint, normalize, lock, status, verify?
+- What must be impossible: verifying against drifted inputs, accepting orphan verifier output, treating unlocked specs as trusted?
+- Can this be represented as a compact finite-state model instead of prose?
+
+References to evaluate:
+
+- TLA+ for checking high-level system state transitions.
+- Alloy for lightweight relational modeling and invariant checking.
+- AWS formal methods practice: prose design first, then precise model for critical design pieces.
+
+Reason:
+
+- The highest-risk behavior is not parsing JSON. The highest-risk behavior is trusting the wrong contract at the wrong time.
+
+## Policy Engine Versus Built-In Verifiers
+
+The current plan assumes `spec3` owns built-in category logic.
+
+Open questions:
+
+- Should `spec3` remain a small fixed verifier with typed categories?
+- Should it embed or call a policy engine for category logic?
+- Should OPA/Rego be considered for arbitrary invariants over extracted repository facts?
+- Should CUE be considered for spec shape and constraint validation?
+- Should the first implementation avoid both and stay fixed until the data model stabilizes?
+
+References to evaluate:
+
+- Open Policy Agent: policy decision separated from policy enforcement.
+- CUE: data validation and constraints as a first-class language.
+- JSON Schema: standard validation vocabulary for JSON shape.
+
+Reason:
+
+- A hand-rolled rule system will degrade if `spec3` grows into arbitrary policy checks without a policy model.
+
+## Canonicalization And Locking
+
+The current plan says "canonical JSON" but does not define the algorithm.
+
+Open questions:
+
+- Should canonicalization follow RFC 8785 JSON Canonicalization Scheme?
+- Should the spec format forbid JSON numbers entirely except integer-like values where needed?
+- Should duplicate object keys be rejected before canonicalization?
+- Should strings be accepted only when they satisfy I-JSON constraints?
+- Should `sourceHash` be recorded only for diagnostics, separate from the canonical contract hash?
+
+References to evaluate:
+
+- RFC 8785 JSON Canonicalization Scheme.
+- I-JSON constraints referenced by RFC 8785.
+- Existing Rust JCS crates, only if they pass dependency health review.
+
+Reason:
+
+- Lock hashes are security-critical for this tool's purpose. A loose serializer is not good enough.
+
+## Repository Fact Model
+
+The current plan names `tree` and `text`, but not the fact model they consume.
+
+Open questions:
+
+- Should `spec3` first extract a repository fact graph, then run requirements against that graph?
+- What are the first V1 facts: file exists, directory exists, file type, path, file content, text match, Git tracked state?
+- Should every verifier consume facts and produce evidence, rather than directly printing failures?
+- Should evidence include requirement ID, path, byte range or line range, observed value, expected value, and verifier ID?
+- Should external verifiers return the same fact/evidence model later?
+
+References to evaluate:
+
+- Policy engines that evaluate structured input data.
+- Requirements traceability evidence models.
+
+Reason:
+
+- Without a common fact/evidence model, built-in and external verifiers cannot converge cleanly.
+
+## Path, Glob, And Walk Semantics
+
+The current plan says path normalization and forbidden globs, but does not define semantics.
+
+Open questions:
+
+- Are all spec paths required to be repo-root-relative UTF-8 paths using `/`?
+- Are absolute paths, `..`, empty components, and non-UTF-8 paths rejected?
+- Are symlinks followed, rejected, or treated as their own file type?
+- Does walking respect `.gitignore`, or does it scan all files except explicit tool exclusions?
+- Are hidden files included?
+- Are generated directories such as `target` excluded by default or only by spec?
+- Which glob grammar is normative?
+
+References to evaluate:
+
+- `camino` for UTF-8 paths.
+- `globset` for ripgrep-style glob matching.
+- `ignore` for `.gitignore`-aware walking.
+
+Reason:
+
+- Most verifier bugs in `tree` and `text` will be path edge cases.
+
+## Git Drift Semantics
+
+The current plan says dirty worktree checks, but not the exact Git model.
+
+Open questions:
+
+- Should dirty checks use `git status --porcelain=v1 -z` or `--porcelain=v2 -z`?
+- Do staged changes to locked inputs fail `verify`?
+- Do unstaged changes to locked inputs fail `verify`?
+- Do untracked locked inputs fail `verify`?
+- How are renamed locked files handled?
+- Should non-Git directories be unsupported in V1?
+
+References to evaluate:
+
+- Git `status --porcelain` documentation. Porcelain v1 is documented as stable and repository-root-relative.
+- `gix-status`, only if avoiding Git subprocesses is worth the dependency surface.
+
+Reason:
+
+- The tool's core promise fails if it misreads repository drift.
+
+## Fixture Strategy For A No-Test Rust Repo
+
+The current plan forbids Rust tests but does not define first fixture coverage.
+
+Open questions:
+
+- What is the minimal fixture3 suite before coding starts?
+- Should fixtures cover every CLI command from the first implementation slice?
+- Should there be fixtures for invalid JSONC, duplicate keys, canonicalization stability, plan drift, spec drift, verifier drift, tree pass/fail, and text pass/fail?
+- Should fixtures be written before or alongside the first CLI behavior?
+- How does `fixture3` handle expected failure exit codes and stderr/stdout separation?
+
+References to evaluate:
+
+- Current `fixture3` capabilities and manifest format.
+
+Reason:
+
+- Without tests and without fixture coverage, implementation changes have no mechanical regression signal.
+
+# Dependency Health Gate
+
+Any dependency proposed for implementation must pass this gate before use:
+
+- GitHub repository has at least 100 stars.
+- Latest repository commit is no older than one year.
+- License is acceptable for this repository.
+- The crate or subdirectory being used has recent activity when the repository is a monorepo.
+- Transitive dependency tree is reviewed after `Cargo.toml` exists.
+
+Current checks on 2026-05-15:
+
+- `jsonc-parser`: `dprint/jsonc-parser`, 58 stars, latest commit 2026-05-10. Fails star threshold.
+- `serde_json_canonicalizer`: `evik42/serde-json-canonicalizer`, 19 stars, latest commit 2026-02-20. Fails star threshold.
+- `canon-json`: `bootc-dev/canon-json-rs`, 2 stars, latest commit 2026-05-11. Fails star threshold.
+- `camino`: `camino-rs/camino`, 557 stars, latest commit 2026-03-31. Passes initial gate.
+- `globset`: `BurntSushi/ripgrep`, 63787 stars, latest repository commit 2026-02-27, latest `crates/globset` path commit 2025-10-22. Passes initial gate.
+- `ignore`: `BurntSushi/ripgrep`, 63787 stars, latest repository commit 2026-02-27, latest `crates/ignore` path commit 2026-02-13. Passes initial gate.
+- `gix-status`: `GitoxideLabs/gitoxide`, 11421 stars, latest repository commit 2026-05-12, latest `gix-status` path commit 2026-05-12. Passes initial gate, but should not be used in V1 unless Git subprocesses are insufficient.
+
+Candidate systems for approach research:
+
+- `cue-lang/cue`: 6091 stars, latest commit 2026-05-15.
+- `open-policy-agent/opa`: 11725 stars, latest commit 2026-05-13.
+- `AlloyTools/org.alloytools.alloy`: 836 stars, latest commit 2026-03-18.
+- `tlaplus/tlaplus`: 2907 stars, latest commit 2026-05-12.
+
+# Research Task List
+
+These tasks must be completed before V1 implementation starts.
+
+## R-001 Requirements Traceability
+
+Goal:
+
+- Decide the minimum requirement metadata that `spec3` must enforce.
+
+Inputs:
+
+- ISO/IEC/IEEE 29148 summary material.
+- NASA SWE-059 bidirectional traceability guidance.
+- Existing plan in this file.
+
+Output:
+
+- A proposed spec shape for requirement source, verification method, and evidence links.
+- A decision on whether orphan requirements and orphan verifier outputs are fatal.
+
+Done when:
+
+- The plan states exact required metadata for every requirement.
+
+## R-002 Contract Model
+
+Goal:
+
+- Decide whether `spec3` uses precondition, postcondition, and invariant terms.
+
+Inputs:
+
+- Design by Contract references.
+- Current command lifecycle: lint, normalize, lock, status, verify.
+
+Output:
+
+- A precise model for lock drift checks, implementation checks, and global invariants.
+
+Done when:
+
+- The plan says which checks run before verification and which checks are implementation conformance checks.
+
+## R-003 Lock State Machine
+
+Goal:
+
+- Model the lock/status/verify lifecycle.
+
+Inputs:
+
+- Current command list.
+- Drift scenarios for plan, spec, verifier files, and implementation files.
+- Alloy or TLA+ documentation.
+
+Output:
+
+- A small model or explicit state table for trusted and untrusted states.
+
+Done when:
+
+- The plan says which states are allowed, which transitions are allowed, and which states must fail.
+
+## R-004 Policy Engine Decision
+
+Goal:
+
+- Decide whether V1 stays fixed-category or borrows a policy engine model.
+
+Inputs:
+
+- OPA/Rego.
+- CUE.
+- JSON Schema.
+- Current V1 scope.
+
+Output:
+
+- A decision to use, integrate, or reject these systems for V1.
+- If rejected for V1, define what would cause reconsideration.
+
+Done when:
+
+- The plan names the policy model for V1 and explains why it will not become ad hoc rules.
+
+## R-005 Canonicalization Decision
+
+Goal:
+
+- Decide the canonical JSON algorithm.
+
+Inputs:
+
+- RFC 8785.
+- Rust JCS crate candidates.
+- JSONC parser behavior around duplicate keys and invalid input.
+
+Output:
+
+- A normative canonicalization algorithm.
+- A dependency decision or a decision to constrain the JSON subset enough to avoid unsafe hand-rolled behavior.
+
+Done when:
+
+- The plan gives exact behavior for duplicate keys, numbers, strings, object key ordering, and source comments.
+
+## R-006 Repository Fact And Evidence Model
+
+Goal:
+
+- Define the common data model consumed and produced by verifiers.
+
+Inputs:
+
+- `tree` and `text` requirements.
+- Future external verifier boundary.
+
+Output:
+
+- A V1 fact model.
+- A V1 evidence model.
+
+Done when:
+
+- Built-in and future external verifiers can be described using the same requirement ID and evidence structure.
+
+## R-007 Path, Glob, And Walk Semantics
+
+Goal:
+
+- Define file discovery and matching behavior.
+
+Inputs:
+
+- `camino`.
+- `globset`.
+- `ignore`.
+- Git tracked/untracked behavior.
+
+Output:
+
+- Exact path normalization rules.
+- Exact glob grammar.
+- Exact walk inclusion and exclusion rules.
+- Symlink behavior.
+
+Done when:
+
+- `tree` and `text` can be implemented without inventing path semantics.
+
+## R-008 Git Drift Semantics
+
+Goal:
+
+- Define how `spec3` detects drift in plan, spec, and verifier files.
+
+Inputs:
+
+- Git porcelain documentation.
+- `gix-status` only as a possible alternative.
+
+Output:
+
+- A decision between Git subprocess porcelain and Gitoxide.
+- Exact handling for staged, unstaged, untracked, renamed, deleted, and conflicted files.
+
+Done when:
+
+- `lock`, `status`, and `verify` have exact dirty-state behavior.
+
+## R-009 Fixture3 Bootstrap
+
+Goal:
+
+- Define the first behavior fixture suite for `spec3`.
+
+Inputs:
+
+- `fixture3` repository and behavior format.
+- The no-Rust-tests policy.
+
+Output:
+
+- Required fixture scenarios.
+- Expected stdout, stderr, and exit code handling.
+
+Done when:
+
+- The plan says what fixtures must exist before V1 is considered mechanically verified.
+
 # Source Format
 
 Support two source formats:
@@ -107,9 +528,10 @@ JSONC handling:
 
 Implementation dependency decision:
 
-- Use `jsonc-parser` unless dependency verification later finds a blocking issue.
-- Local verification on 2026-05-15 found crates.io version `0.32.4`, MIT license, repository `https://github.com/dprint/jsonc-parser`, and optional `serde` / `serde_json` features.
-- Before committing the dependency, verify the resolved transitive dependency tree after the Rust workspace exists.
+- Do not use `jsonc-parser` without an explicit exception or replacement decision.
+- Local verification on 2026-05-15 found crates.io version `0.32.4`, MIT license, repository `https://github.com/dprint/jsonc-parser`, optional `serde` / `serde_json` features, 58 GitHub stars, and latest commit 2026-05-10.
+- It fails the current dependency health gate because it has fewer than 100 GitHub stars.
+- R-005 must decide whether to grant an exception, find a healthier JSONC parser, use CUE or another existing tool, or narrow V1 to strict JSON first.
 
 # Canonical Contract
 
