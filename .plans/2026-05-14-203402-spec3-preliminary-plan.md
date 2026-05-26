@@ -10,6 +10,36 @@ Core flow:
 spec.json -> spec.lock.json -> repository facts -> evidence
 ```
 
+## Problem statement (unchanged)
+
+`spec3` must verify repository shape and file content against a locked JSON contract without:
+
+- duplicating walk, ignore, symlink, encoding, or Git drift semantics in the product
+- growing its own crawler, config parser, or AST visitor stack for V1 `tree` / `text` checks
+- coupling to Guardrail3 **policy** or the legacy `g3rs validate` family/checker pipeline
+
+V1 built-in checkers (`tree`, `text`) must be **thin**: spec routing + evidence over facts produced by shared platform crates.
+
+## Solution approach (Guardrail3 v2 platform)
+
+Guardrail3 v2 and [`aqc-shared`](https://github.com/agent-quality-controls/aqc-shared) resolve the shared-fact boundary this plan originally left open. The same platform crates serve Spec3 checkers and Guardrail3’s I/O broker; products stay separate at policy, lock, and evidence layers.
+
+| Concern in this plan | Solved by | Plan / doc |
+|----------------------|-----------|------------|
+| Repository walk, paths, globs, ignore/recovery | `aqc-filetree` | [`packages/aqc-filetree/plan.md`](https://github.com/agent-quality-controls/aqc-shared/blob/main/packages/aqc-filetree/plan.md) |
+| Read text/bytes for `text` requirements | `aqc-fs-utils` | [`packages/aqc-fs-utils/plan.md`](https://github.com/agent-quality-controls/aqc-shared/blob/main/packages/aqc-fs-utils/plan.md) |
+| Lock/verify Git drift (dirty locked paths) | `aqc-git-helpers` | [`packages/aqc-git-helpers/plan.md`](https://github.com/agent-quality-controls/aqc-shared/blob/main/packages/aqc-git-helpers/plan.md) |
+| Typed config reconcile (future spec categories) | `aqc-{domain}-parser` / `aqc-{domain}-engine` in `aqc-shared` | [Guardrail3 v2 architecture](https://github.com/agent-quality-controls/guardrail3/blob/development/.plans/g3v2-architecture/2026-05-21-195830-repo-workspace-plugin-generation-model.md) |
+
+**Decided boundaries (from v2):**
+
+- **No** dependency on Guardrail3 policy crates or connectors.
+- **No** shared finding/evidence crate across products — Spec3 keeps its own evidence model (below).
+- Legacy `g3-workspace-crawl` and `guardrail3/packages/parsers/` are **rehomed** into `aqc-shared`, not wrapped indefinitely; Spec3 depends on `aqc-*` crates, not on guardrail3 package paths.
+- Guardrail3 v2 is a **metalinter** (policies → connectors → broker → linters). That is unrelated to Spec3’s verify lifecycle except where both use the same `aqc-*` platform code.
+
+**Implementation order for this plan:** implement Spec3 spec/lock/lint/status/verify shell first; wire `aqc-filetree`, `aqc-fs-utils`, and `aqc-git-helpers` as those crates land in `aqc-shared`; then add thin `tree` / `text` checkers. Do not block on Guardrail3 v2 product code — only on the neutral `aqc-*` crates.
+
 # Repository
 
 Local path:
@@ -328,8 +358,8 @@ Before repository checks:
 
 Then:
 
-- extract or load repository facts through shared AQC fact crates
-- run built-in checkers
+- walk repository via `aqc-filetree`; read scoped files via `aqc-fs-utils` where needed
+- run built-in checkers (thin layer over those facts)
 - validate evidence coverage
 - emit evidence
 
@@ -341,31 +371,29 @@ Exit codes:
 
 # V1 Requirement Categories
 
-Do not implement V1 checkers until the shared fact boundary with guardrail3 is settled.
+V1 `tree` and `text` checkers are implemented as **thin Spec3 logic over `aqc-shared` platform crates** (see [Solution approach](#solution-approach-guardrail3-v2-platform)). They do not call Guardrail3 policies, connectors, or legacy family checkers.
 
-Known reusable guardrail3 code:
+### Ownership boundary
 
-- `g3-workspace-crawl`: repository crawl, `.gitignore` handling, ignored-file recovery, path model, readability, sorted entries.
-- `g3rs-code-ingestion`: Rust source-file selection, owned config selection, typed config parsing, code-family source input assembly.
-- `g3rs-test-ingestion`: test-family root discovery, Cargo manifest parsing, sidecar/harness classification, Rust test-source analysis.
-- guardrail3 parser crates: typed parsers for Cargo, clippy, deny, rustfmt, rust-toolchain, nextest, mutants, package JSON, tsconfig, and related config files.
-- guardrail3 source-check packages: existing `syn` visitors and AST-derived facts for lint attributes, `cfg_attr`, `garde(skip)`, direct filesystem use, test functions, ignore reasons, proof-bearing assertions, public surface, and related source facts.
+| Layer | Owner |
+|-------|--------|
+| JSON spec, schema, semantic validation, lock, checker map, evidence coverage, CLI | `spec3` |
+| Walk → `FileTree`, path/glob/ignore/symlink semantics | `aqc-filetree` |
+| File read semantics for text checks | `aqc-fs-utils` |
+| Porcelain worktree state for lock/verify drift | `aqc-git-helpers` |
+| Config bytes reconcile (not needed for V1 `tree`/`text`) | `aqc-{domain}-engine` (future categories) |
+| Linter/policy enforcement | Guardrail3 v2 (separate product; same `aqc-*` where applicable) |
 
-Ownership boundary:
+Spec3 must not reimplement walk, read, or Git rules that already live in those plans.
 
-- `spec3` owns JSON spec shape, JSON Schema generation, semantic spec validation, lock files, checker routing, evidence coverage, and verification lifecycle.
-- shared AQC fact crates own repository walking, path semantics, ignore semantics, file readability, config parsing, and language-specific source facts.
-- guardrail3 owns guardrail policy checks over those facts.
-- `spec3` built-in V1 checkers must be thin checks over shared facts. They must not grow their own crawler, parser, AST visitor stack, or config parser stack.
+### Not used for V1 `tree` / `text`
 
-Open extraction decision:
+The following remain **Guardrail3-only** (legacy or v2 metalinter). Spec3 does not depend on them for V1:
 
-- depend directly on existing guardrail3 shared crates when their names and APIs are neutral enough
-- or extract them into AQC-neutral crates before spec3 checker implementation
+- `g3rs-*-ingestion`, per-rule family checkers, `G3CheckResult` families
+- `g3rs-code-ingestion`, `g3rs-test-ingestion`, `syn` source-check packages
 
-Implementation blocker:
-
-- no `tree` or `text` checker implementation until this decision is recorded and the chosen shared crate boundary is wired into the plan
+If a later spec category needs Cargo/AST facts, prefer **`aqc-{domain}-parser` / engine** crates in `aqc-shared` (same stack Guardrail3’s broker uses), not guardrail3-internal package paths.
 
 ## `tree`
 
@@ -379,15 +407,13 @@ Use cases:
 - forbidden directories
 - partial tree contracts where unspecified paths are allowed
 
-Verifier behavior:
+Verifier behavior (planned):
 
-- built in after shared-fact boundary is settled
-- repository facts come from `g3-workspace-crawl` or its extracted neutral successor
-- normalized paths
-- required path checks
-- forbidden glob checks
+- load `FileTree` from `aqc-filetree` with options aligned to this spec’s path/glob section (below)
+- repo-root-relative paths and `globset` matching on `rel_path` entries
+- required path / forbidden glob checks in Spec3 only — no second walk semantics layer
 
-Exact path, glob, walk, and symlink semantics must follow the chosen shared crawl crate. Do not define a second semantics layer in `spec3`.
+Path, glob, walk, ignore recovery, and symlink semantics: **`aqc-filetree` plan is authoritative.** Spec3 documents chosen option values; it does not redefine behavior.
 
 ## `text`
 
@@ -400,14 +426,13 @@ Use cases:
 - require generated marker text
 - forbid an old package name
 
-Verifier behavior:
+Verifier behavior (planned):
 
-- built in after shared-fact boundary is settled
-- fixed string only in V1
-- explicit scoped path globs over shared crawl entries
-- no regex in V1
+- scope files via `aqc-filetree` entries + spec globs
+- read each candidate with `aqc-fs-utils::read_text` and fixed `ReadTextOptions` (documented in spec3; defaults from `aqc-fs-utils` plan unless spec overrides)
+- fixed substring only in V1; no regex
 
-Exact binary-file, encoding, line-ending, and symlink behavior must follow the chosen shared crawl/read layer. Do not define a second file-reading semantics layer in `spec3`.
+Encoding, NUL, size cap, CRLF normalization, and symlink read behavior: **`aqc-fs-utils` plan is authoritative.**
 
 # Deferred Categories
 
@@ -431,7 +456,7 @@ Reason:
 
 # Repository Fact And Evidence Model
 
-V1 must define a shared evidence model before implementing checkers.
+V1 must define a **Spec3-owned** evidence model before implementing checkers (not an `aqc-shared` crate; see v2 non-goals).
 
 Every evidence item includes at least:
 
@@ -452,36 +477,31 @@ Open decisions:
 
 # Path, Glob, And Walk Semantics
 
-Open decisions before checker implementation:
+**Spec3 spec rules** (enforced at lint time on the JSON contract):
 
-- all spec paths must be repo-root-relative UTF-8 paths using `/`
-- absolute paths should be rejected
-- `..` should be rejected
-- empty path components should be rejected
-- decide symlink behavior
-- decide whether walking respects `.gitignore`
-- decide whether hidden files are included
-- decide whether generated directories such as `target` are excluded by default or only by spec
-- choose glob grammar
+- all spec paths are repo-root-relative UTF-8 paths using `/`
+- reject absolute paths, `..`, and empty path components
+- glob patterns must compile (`globset`)
+
+**Runtime walk behavior** is not redefined here. Spec3 passes explicit options into `aqc-filetree` (see its plan: `SymlinkPolicy`, `skip_dir_names`, `.gitignore` / recovery, sorted entries). Record the chosen defaults in Spec3 config or constants when implementing checkers.
 
 Likely dependencies:
 
-- `camino` for UTF-8 paths
-- `globset` for glob matching
-- `ignore` for `.gitignore`-aware walking if that behavior is chosen
+- `camino` for UTF-8 paths in the spec layer
+- `globset` for spec globs and for matching `FileTree` entries
+- `aqc-filetree` (uses `ignore` internally per its plan)
 
 # Git Drift Semantics
 
-Open decisions before `lock`, `status`, and `verify` implementation:
+**Spec3 policy** (what verify must enforce):
 
-- use `git status --porcelain=v1 -z` or `--porcelain=v2 -z`
-- staged changes to locked inputs should fail `verify`
-- unstaged changes to locked inputs should fail `verify`
-- untracked locked inputs should fail `verify`
-- decide renamed/deleted/conflicted locked-file behavior
-- decide whether non-Git directories are unsupported in V1
+- staged, unstaged, and untracked changes to **locked** paths fail `verify`
+- `lock` fails when the worktree is dirty (per command section)
+- non-Git directories: unsupported in V1 (`aqc-git-helpers` → `NotARepository`)
 
-Prefer Git porcelain over Gitoxide in V1 unless subprocess use proves insufficient.
+**Git invocation and porcelain parsing** are owned by **`aqc-git-helpers`** (`--porcelain=v1 -z`, NUL-separated records). Spec3 compares helper output against locked path sets; it does not fork its own `git status` parser.
+
+Renamed/deleted/conflicted locked-file behavior: follow `ChangeStatus` mapping in the `aqc-git-helpers` plan; Spec3 tests assert the combined contract.
 
 # Dependency Health Gate
 
@@ -523,13 +543,7 @@ Do not use without explicit exception:
 
 # G3RS And Test Policy
 
-Initialize the Rust workspace with current G3RS adoption:
-
-```text
-guardrail3-rs.toml
-```
-
-Use G3RS for static validation.
+Initialize the Rust workspace with G3RS policy files as today (`guardrail3-rs.toml`). Static validation uses Guardrail3; **v2** is the metalinter model in [g3v2 architecture](https://github.com/agent-quality-controls/guardrail3/blob/development/.plans/g3v2-architecture/2026-05-21-195830-repo-workspace-plugin-generation-model.md) (not the legacy `g3rs validate` family stack). Until v2 ships in this repo, keep whatever Guardrail3 entrypoint the workspace already uses.
 
 Test policy for this repository:
 
@@ -546,7 +560,7 @@ Verification model:
 - `cargo check`
 - `cargo clippy`
 - `cargo fmt --check`
-- `g3rs validate workspace --path <path>`
+- Guardrail3 validate for this workspace (v2 metalinter entrypoint when available; legacy `g3rs validate` until then)
 - `fixture3` behavior fixtures for CLI behavior once there is behavior to check
 - `spec3` self-verification once the tool can lock and verify its own spec
 
@@ -556,17 +570,19 @@ Verification model:
 
 - verifies structural implementation contracts from JSON specs
 - prevents spec/verifier/checker-map drift
-- owns spec parsing, locking, and universal checks
+- owns spec parsing, locking, evidence, and built-in `tree`/`text` checkers
+- uses `aqc-filetree`, `aqc-fs-utils`, `aqc-git-helpers` from [`aqc-shared`](https://github.com/agent-quality-controls/aqc-shared)
 
 `fixture3`:
 
 - verifies command output against approved fixtures
 - catches behavior drift
 
-`g3rs` and `g3ts`:
+`g3rs` / `g3ts` (Guardrail3 v2):
 
-- enforce architecture and style guardrails
-- can be called separately by users or future external verifier scripts
+- metalinter/scaffolder: policies, connectors, broker, third-party and first-party **linters**
+- separate CLI and config from Spec3; may share `aqc-*` parsers/engines and filetree/fs-utils
+- does not replace Spec3 lock/verify; users may run both
 
 # First Implementation Plan
 
@@ -580,13 +596,12 @@ Verification model:
 8. Add `lint`.
 9. Add `lock`.
 10. Add `status`.
-11. Add `verify` preflight drift checks.
-12. Add shared evidence model.
-13. Resolve guardrail3/shared AQC fact-crate boundary.
-14. Wire shared repository crawl facts.
-15. Add built-in `tree` checker as a thin checker over shared crawl facts.
-16. Add built-in `text` checker as a thin checker over shared crawl/read facts.
-17. Add fixture coverage for `spec3` itself through `fixture3`.
+11. Add `verify` preflight drift checks (`aqc-git-helpers` for dirty locked paths).
+12. Add Spec3 evidence model (product-specific; not in `aqc-shared`).
+13. Depend on `aqc-filetree`, `aqc-fs-utils`, `aqc-git-helpers` from `aqc-shared` (implement or stub per crate `plan.md`).
+14. Add built-in `tree` checker: `FileTree` + path/glob rules only.
+15. Add built-in `text` checker: scoped `read_text` + fixed substring rules only.
+16. Add fixture coverage for `spec3` itself through `fixture3`.
 
 # V1 Definition Of Done
 
@@ -595,7 +610,8 @@ Verification model:
 - `spec3 status` reports missing lock and drift states.
 - `spec3 verify` refuses to run when spec/verifier files or checker routing drift.
 - `spec3 verify` checks built-in `tree` and `text` requirements.
-- `tree` and `text` checkers reuse shared AQC repository facts and do not implement their own crawler or parser stack.
+- `tree` and `text` checkers use `aqc-filetree` and `aqc-fs-utils` and do not implement their own walk or read stack.
+- Git drift for lock/verify uses `aqc-git-helpers`.
 - Non-empty unsupported categories fail.
 - `commands` is not a requirement category in V1.
 - `cli` is not a requirement category in V1.
