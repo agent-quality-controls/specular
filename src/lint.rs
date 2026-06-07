@@ -300,7 +300,7 @@ fn check_ownership(spec: &Spec, out: &mut Vec<SpecViolation>) {
 
     let mut claimed: HashMap<&str, Vec<&str>> = HashMap::new();
     for verifier in &spec.verifiers {
-        for claim in &verifier.claims {
+        for claim in &verifier.requirement_ids {
             if !known_ids.contains(claim.as_str()) {
                 out.push(SpecViolation {
                     code: "UNKNOWN_CLAIM".to_owned(),

@@ -6,5 +6,5 @@
     "dependencies": [{"id": "DEPS_CLEAN", "manifestGlobs": ["go.mod"], "requiredCrates": [], "forbiddenCrates": ["old_pkg"]}],
     "exports": [], "enumerations": [], "schemas": []
   },
-  "verifiers": [{"id": "deps", "command": ["scripts/v.sh"], "claims": ["DEPS_CLEAN"], "reason": "no builtin dependencies verifier in V1"}]
+  "verifiers": [{"id": "deps", "command": ["scripts/v.sh"], "requirementIds": ["DEPS_CLEAN"], "reason": "no builtin dependencies verifier in V1"}]
 }

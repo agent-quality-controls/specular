@@ -1,10 +1,10 @@
 {
   "suite": "verify",
   "kind": "approved",
-  "run_id": "2026-06-07T19-03-45.846412Z-f49ef2e2",
-  "run_commit": "f113d52",
+  "run_id": "2026-06-07T19-12-27.250691Z-f49ef2e2",
+  "run_commit": "327d0b3",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-07T19:03:45.846412Z",
+  "recorded_at": "2026-06-07T19:12:27.250691Z",
   "fixture_hash": "sha256:5898994129dfc1df8a8af81a8c6c957dc423b164ebbf4714b093ecefa7fd40da",
   "manifest_hash": "sha256:f49ef2e2f56e2e71003b1819b88f8347e53eaac34ea6bf21db2a81bc4a3b7a25",
   "tool_version": "0.1.8",
@@ -35,5 +35,5 @@
       "sha256": "sha256:c2ccbaf4dfb853452a6405a1af3154c063e312212fcf0e7985e34c4167f7f639"
     }
   ],
-  "comment": "Initial goldens: R00 clean (builtin+custom pass, stamps, exit 0); R10 all requirement failure modes (exit 1); R20-R22 verifier runtime/protocol/coverage errors, R23 lint preflight (exit 2)"
+  "comment": "Field rename claims -> requirementIds in VerifierDecl; drift is spec sha256 stamps of fixture spec.json files only"
 }

@@ -147,7 +147,7 @@ Preferred shape:
 }
 ```
 
-Rust semantic validation must enforce uniqueness for IDs, paths, verifier claims, and any other fields where duplicates would change meaning.
+Rust semantic validation must enforce uniqueness for IDs, paths, verifier requirement IDs, and any other fields where duplicates would change meaning.
 
 # Spec Model
 
@@ -204,7 +204,7 @@ A custom verifier is declared in the spec:
     {
       "id": "deps-go",
       "command": ["scripts/spec-verify-deps-go.sh"],
-      "claims": ["BILLING_NO_DIRECT_DB"],
+      "requirementIds": ["BILLING_NO_DIRECT_DB"],
       "reason": "no builtin dependencies verifier for Go yet"
     }
   ]
@@ -214,7 +214,7 @@ A custom verifier is declared in the spec:
 Rules:
 
 - `reason` is required on every custom verifier (optional elsewhere in the spec).
-- `claims` lists the requirement IDs the verifier owns. Claims must reference existing requirement IDs; overlapping claims between verifiers (or with builtins) fail `lint`.
+- `requirementIds` lists the requirement IDs the verifier owns. They must reference existing requirements; two verifiers owning the same ID (or owning a builtin-covered one) fail `lint`.
 - `lint` fails a custom verifier whose claimed requirement is expressible by a supported builtin category. The escape hatch must not erode the trustworthy core.
 
 Execution protocol (`verify`):

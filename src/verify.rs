@@ -252,7 +252,7 @@ fn run_custom(
             id: verifier.id.clone(),
             message: format!("protocol violation in line '{line}': {e}"),
         })?;
-        if !verifier.claims.contains(&wire.id) {
+        if !verifier.requirement_ids.contains(&wire.id) {
             return Err(VerifyError::Verifier {
                 id: verifier.id.clone(),
                 message: format!("reported unclaimed requirement '{}'", wire.id),

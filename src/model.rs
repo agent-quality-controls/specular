@@ -225,7 +225,7 @@ pub struct VerifierDecl {
     pub command: Vec<String>,
     /// Requirement IDs this verifier owns.
     #[garde(length(min = 1))]
-    pub claims: Vec<String>,
+    pub requirement_ids: Vec<String>,
     /// Why a custom verifier is needed. Required.
     #[garde(skip)]
     pub reason: Reason,

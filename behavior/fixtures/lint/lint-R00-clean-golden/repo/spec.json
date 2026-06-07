@@ -9,6 +9,6 @@
     "schemas": [{"id": "WIRE_SCHEMA", "file": "schema.json"}]
   },
   "verifiers": [
-    {"id": "rest", "command": ["scripts/v.sh"], "claims": ["DEPS_CLEAN", "API_PRESENT", "ENUM_CLOSED", "WIRE_SCHEMA"], "reason": "categories without builtin verifiers in V1"}
+    {"id": "rest", "command": ["scripts/v.sh"], "requirementIds": ["DEPS_CLEAN", "API_PRESENT", "ENUM_CLOSED", "WIRE_SCHEMA"], "reason": "categories without builtin verifiers in V1"}
   ]
 }

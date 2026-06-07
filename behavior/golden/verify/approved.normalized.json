@@ -43,7 +43,7 @@
       ],
       "spec": {
         "path": "spec.json",
-        "sha256": "b545d91926fd8fbb0ddee650915b28161ec95857fb25600dbb40cacace34d23f"
+        "sha256": "5777e98bf5a0294ca0466dc63cf3189ca7c2ed454317724e815d93953ab22128"
       },
       "spec3_version": "0.1.0",
       "verifier_files": [
@@ -104,7 +104,7 @@
       ],
       "spec": {
         "path": "spec.json",
-        "sha256": "b545d91926fd8fbb0ddee650915b28161ec95857fb25600dbb40cacace34d23f"
+        "sha256": "5777e98bf5a0294ca0466dc63cf3189ca7c2ed454317724e815d93953ab22128"
       },
       "spec3_version": "0.1.0",
       "verifier_files": [
