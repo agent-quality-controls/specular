@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "requirements": {
+    "tree": [
+      {
+        "id": "WORKSPACE_CORE_FILES_PRESENT",
+        "reason": [
+          "Goal + Public Library Surface: a Rust CLI (src/main.rs, thin caller) and library (src/lib.rs).",
+          "Implementation Order step 1: root Cargo.toml.",
+          "G3RS And Test Policy: guardrail3-rs.toml."
+        ],
+        "requiredPaths": ["Cargo.toml", "guardrail3-rs.toml", "src/lib.rs", "src/main.rs"],
+        "forbiddenGlobs": []
+      },
+      {
+        "id": "NO_RUST_TEST_TREE",
+        "reason": "G3RS And Test Policy: do not add a tests/ directory (any depth; adjudicated 2026-06-07). V1 Definition Of Done: Rust tests are absent.",
+        "requiredPaths": [],
+        "forbiddenGlobs": ["tests/**", "**/tests/**"]
+      }
+    ],
+    "content": [
+      {
+        "id": "RUST_FORBIDDEN_SUBSTRINGS",
+        "reason": [
+          "G3RS And Test Policy: do not add #[test] or #[cfg(test)].",
+          "Design principles (Mechanism, not policy) + V1 Definition Of Done: no bypass flags (--force, --skip). Substring tripwire; false positives surface for adjudication."
+        ],
+        "files": ["**/*.rs"],
+        "forbiddenSubstrings": ["#[test]", "#[cfg(test)]", "--force", "--skip"],
+        "requiredSubstrings": []
+      }
+    ],
+    "dependencies": [
+      {
+        "id": "REQUIRED_CRATES_PRESENT",
+        "reason": [
+          "V1 Source Format validation stack: serde, serde_json, schemars, jsonschema, garde.",
+          "Path, Glob, And Walk Semantics: camino, globset.",
+          "Backend attachment (revised 2026-06-07): aqc-filetree, aqc-fs-utils, aqc-git-helpers attach in V1."
+        ],
+        "manifestGlobs": ["Cargo.toml"],
+        "requiredCrates": [
+          "serde",
+          "serde_json",
+          "schemars",
+          "jsonschema",
+          "garde",
+          "camino",
+          "globset",
+          "aqc-filetree",
+          "aqc-fs-utils",
+          "aqc-git-helpers"
+        ],
+        "forbiddenCrates": []
+      },
+      {
+        "id": "FORBIDDEN_CRATES_ABSENT",
+        "reason": [
+          "V1 Source Format: do not add validator unless a concrete blocker appears in garde.",
+          "Dependency Health Gate: jsonc-parser, serde_json_canonicalizer, canon-json fail the star gate; canonical hashing removed from V1.",
+          "Boundary With Guardrail3 v2 (adjudicated 2026-06-07): no crate starting with g3 or guardrail; no guardrails engine machinery from aqc-shared."
+        ],
+        "manifestGlobs": ["Cargo.toml"],
+        "requiredCrates": [],
+        "forbiddenCrates": [
+          "validator",
+          "jsonc-parser",
+          "serde_json_canonicalizer",
+          "canon-json",
+          "aqc-file-engine-core",
+          "aqc-cargo-toml-engine",
+          "aqc-clippy-toml-engine"
+        ],
+        "forbiddenCratePrefixes": ["g3", "guardrail"]
+      }
+    ],
+    "exports": [
+      {
+        "id": "PUBLIC_LIBRARY_SURFACE",
+        "reason": "Public Library Surface (decided 2026-06-07): everything below is exposed from src/lib.rs.",
+        "package": "spec3",
+        "types": [
+          "Spec",
+          "TreeRequirement",
+          "ContentRequirement",
+          "DependencyRequirement",
+          "ExportRequirement",
+          "EnumerationRequirement",
+          "SchemaRequirement",
+          "Category",
+          "Report",
+          "Evidence",
+          "Status",
+          "VerifierSource",
+          "LintError",
+          "SpecViolation",
+          "VerifyError"
+        ],
+        "functions": ["lint", "verify"]
+      }
+    ],
+    "enumerations": [
+      {
+        "id": "ENUM_CATEGORY",
+        "reason": "Public Library Surface: Category is the closed set of six.",
+        "type": "Category",
+        "variants": ["Tree", "Content", "Dependencies", "Exports", "Enumerations", "Schemas"]
+      },
+      {
+        "id": "ENUM_STATUS",
+        "reason": "Public Library Surface: Status { Pass, Fail }; no soft states.",
+        "type": "Status",
+        "variants": ["Pass", "Fail"]
+      },
+      {
+        "id": "ENUM_VERIFIER_SOURCE",
+        "reason": "Public Library Surface: VerifierSource { Builtin(Category), Custom(VerifierId) }; variant names only, payloads are type info.",
+        "type": "VerifierSource",
+        "variants": ["Builtin", "Custom"]
+      }
+    ],
+    "schemas": []
+  }
+}
