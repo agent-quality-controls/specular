@@ -1,0 +1,34 @@
+version: 1
+
+suites:
+  lint:
+    tags:
+      - "spec3"
+    fixtures:
+      - "behavior/fixtures/lint/*/fixture.json"
+    command:
+      argv:
+        - "scripts/behavior/replay.sh"
+        - "{fixtures}"
+      ok_exit_codes:
+        - 0
+    storage:
+      approved_dir: "behavior/golden/lint"
+      received_dir: ".fixture3/lint"
+      diff_dir: ".fixture3/lint"
+
+  verify:
+    tags:
+      - "spec3"
+    fixtures:
+      - "behavior/fixtures/verify/*/fixture.json"
+    command:
+      argv:
+        - "scripts/behavior/replay.sh"
+        - "{fixtures}"
+      ok_exit_codes:
+        - 0
+    storage:
+      approved_dir: "behavior/golden/verify"
+      received_dir: ".fixture3/verify"
+      diff_dir: ".fixture3/verify"

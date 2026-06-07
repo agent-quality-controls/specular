@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "bogus": true,
+  "requirements": {
+    "tree": [{"id": "A_OK", "requiredPaths": "not-an-array", "forbiddenGlobs": []}],
+    "content": [], "dependencies": [], "exports": [], "enumerations": []
+  }
+}

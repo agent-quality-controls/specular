@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "requirements": {
+    "tree": [
+      {"id": "X_DUP", "requiredPaths": ["a.txt"], "forbiddenGlobs": []},
+      {"id": "X_DUP", "requiredPaths": ["b.txt"], "forbiddenGlobs": []},
+      {"id": "bad_lower", "requiredPaths": ["/abs/path"], "forbiddenGlobs": ["["]}
+    ],
+    "content": [],
+    "dependencies": [
+      {"id": "D_CLAIMED_TWICE", "manifestGlobs": ["go.mod"], "requiredCrates": ["x"], "forbiddenCrates": []},
+      {"id": "D_UNCLAIMED", "manifestGlobs": ["package.json"], "requiredCrates": ["y"], "forbiddenCrates": []}
+    ],
+    "exports": [], "enumerations": [], "schemas": []
+  },
+  "verifiers": [
+    {"id": "v1", "command": ["scripts/v.sh"], "claims": ["D_CLAIMED_TWICE", "MISSING_ID", "X_DUP"], "reason": "semantic breakage layer"},
+    {"id": "v2", "command": ["scripts/absent.sh"], "claims": ["D_CLAIMED_TWICE"], "reason": "semantic breakage layer"}
+  ]
+}

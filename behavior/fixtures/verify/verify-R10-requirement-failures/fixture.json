@@ -1,0 +1,1 @@
+{"id": "verify-R10-requirement-failures", "commands": [["verify", "spec.json", "--json"]], "notes": "breaks every failure mode at once, none hide: missing required path, forbidden path present, forbidden substring present, required substring absent, custom fail with full wire fields; exit 1"}

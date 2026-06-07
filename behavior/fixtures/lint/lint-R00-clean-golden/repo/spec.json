@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "requirements": {
+    "tree": [{"id": "DOCS_PRESENT", "requiredPaths": ["docs/readme.txt"], "forbiddenGlobs": ["junk/**"]}],
+    "content": [{"id": "MARKER_RULES", "files": ["docs/*.txt"], "forbiddenSubstrings": ["LEGACY"], "requiredSubstrings": ["INVOICE"]}],
+    "dependencies": [{"id": "DEPS_CLEAN", "manifestGlobs": ["go.mod"], "requiredCrates": [], "forbiddenCrates": ["old_pkg"]}],
+    "exports": [{"id": "API_PRESENT", "package": "billing", "types": ["Invoice"], "functions": ["create"]}],
+    "enumerations": [{"id": "ENUM_CLOSED", "type": "State", "variants": ["On", "Off"]}],
+    "schemas": [{"id": "WIRE_SCHEMA", "file": "schema.json"}]
+  },
+  "verifiers": [
+    {"id": "rest", "command": ["scripts/v.sh"], "claims": ["DEPS_CLEAN", "API_PRESENT", "ENUM_CLOSED", "WIRE_SCHEMA"], "reason": "categories without builtin verifiers in V1"}
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "suite": "verify",
+  "kind": "approved",
+  "run_id": "2026-06-07T19-03-45.846412Z-f49ef2e2",
+  "run_commit": "f113d52",
+  "working_tree": "dirty",
+  "recorded_at": "2026-06-07T19:03:45.846412Z",
+  "fixture_hash": "sha256:5898994129dfc1df8a8af81a8c6c957dc423b164ebbf4714b093ecefa7fd40da",
+  "manifest_hash": "sha256:f49ef2e2f56e2e71003b1819b88f8347e53eaac34ea6bf21db2a81bc4a3b7a25",
+  "tool_version": "0.1.8",
+  "output_schema_version": "1",
+  "fixtures": [
+    {
+      "path": "behavior/fixtures/verify/verify-R00-clean-golden/fixture.json",
+      "sha256": "sha256:48abb7eb9f49c43151b2a65a8f5d221ab9b704029be5d4663e1b50d2121ffda3"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R10-requirement-failures/fixture.json",
+      "sha256": "sha256:1836e22f2d1f479ea9596c7020c137ea967dfce75d0358812958792c6af844fc"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R20-verifier-nonzero/fixture.json",
+      "sha256": "sha256:bbb2ffb032074c5472196871ce5af7adc3347763d0fac96b77235259213081ca"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R21-protocol-violation/fixture.json",
+      "sha256": "sha256:54613974b10aa99c43cfcda9d2a34221c07da771efab549532c36dbb7b4afca5"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R22-coverage-miss/fixture.json",
+      "sha256": "sha256:5a8863ec77442cd7068ad73483106cc7c374300739942554f8d906f1b5dc153e"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R23-invalid-spec/fixture.json",
+      "sha256": "sha256:c2ccbaf4dfb853452a6405a1af3154c063e312212fcf0e7985e34c4167f7f639"
+    }
+  ],
+  "comment": "Initial goldens: R00 clean (builtin+custom pass, stamps, exit 0); R10 all requirement failure modes (exit 1); R20-R22 verifier runtime/protocol/coverage errors, R23 lint preflight (exit 2)"
+}

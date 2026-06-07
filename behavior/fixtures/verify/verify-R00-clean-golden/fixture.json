@@ -1,0 +1,1 @@
+{"id": "verify-R00-clean-golden", "commands": [["verify", "spec.json", "--json"]], "notes": "builtin tree+content pass, custom verifier pass; full report inventory; exit 0"}

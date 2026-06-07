@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "requirements": {
+    "tree": [{"id": "DOCS_PRESENT", "requiredPaths": ["docs/readme.txt"], "forbiddenGlobs": ["junk/**"]}],
+    "content": [{"id": "MARKER_RULES", "files": ["docs/*.txt"], "forbiddenSubstrings": ["LEGACY"], "requiredSubstrings": ["INVOICE"]}],
+    "dependencies": [{"id": "DEPS_CLEAN", "manifestGlobs": ["go.mod"], "requiredCrates": [], "forbiddenCrates": ["old_pkg"]}],
+    "exports": [], "enumerations": [], "schemas": []
+  },
+  "verifiers": [{"id": "deps", "command": ["scripts/v.sh"], "claims": ["DEPS_CLEAN"], "reason": "no builtin dependencies verifier in V1"}]
+}

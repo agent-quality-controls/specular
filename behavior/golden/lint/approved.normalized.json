@@ -1,0 +1,126 @@
+[
+  {
+    "command": [
+      "lint",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 0,
+    "fixture": "lint-R00-clean-golden",
+    "output": {
+      "result": "pass",
+      "spec": "spec.json"
+    }
+  },
+  {
+    "command": [
+      "lint",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "lint-R10-not-json",
+    "output": {
+      "message": "parse: expected ident at line 1 column 2",
+      "result": "error"
+    }
+  },
+  {
+    "command": [
+      "lint",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "lint-R11-schema-broken",
+    "output": {
+      "result": "fail",
+      "violations": [
+        {
+          "code": "JSON_SCHEMA",
+          "message": "\"schemas\" is a required property (at /requirements)"
+        },
+        {
+          "code": "JSON_SCHEMA",
+          "message": "\"not-an-array\" is not of type \"array\" (at /requirements/tree/0/requiredPaths)"
+        },
+        {
+          "code": "JSON_SCHEMA",
+          "message": "Additional properties are not allowed ('bogus' was unexpected) (at )"
+        }
+      ]
+    }
+  },
+  {
+    "command": [
+      "lint",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "lint-R20-semantic",
+    "output": {
+      "result": "fail",
+      "violations": [
+        {
+          "code": "DUPLICATE_ID",
+          "message": "requirement id 'X_DUP' appears more than once"
+        },
+        {
+          "code": "ID_FORMAT",
+          "message": "requirement id 'bad_lower' is not SCREAMING_SNAKE_CASE"
+        },
+        {
+          "code": "PATH_RULE",
+          "message": "bad_lower: '/abs/path' must be repo-root-relative with '/', no '..', no empty components"
+        },
+        {
+          "code": "GLOB",
+          "message": "bad_lower: glob '[' does not compile: error parsing glob '[': unclosed character class; missing ']'"
+        },
+        {
+          "code": "MERGEABLE_REQUIREMENTS",
+          "message": "same scope and polarity; merge into one row: X_DUP+X_DUP+bad_lower"
+        },
+        {
+          "code": "UNKNOWN_CLAIM",
+          "message": "verifier 'v1' claims unknown requirement 'MISSING_ID'"
+        },
+        {
+          "code": "BUILTIN_COVERED_CLAIM",
+          "message": "verifier 'v1' claims 'X_DUP', which a builtin verifier covers"
+        },
+        {
+          "code": "VERIFIER_COMMAND_MISSING",
+          "message": "verifier 'v2' command file 'scripts/absent.sh' does not exist"
+        },
+        {
+          "code": "OVERLAPPING_CLAIM",
+          "message": "requirement 'D_CLAIMED_TWICE' claimed by: v1, v2"
+        },
+        {
+          "code": "UNCLAIMED_REQUIREMENT",
+          "message": "'D_UNCLAIMED' (dependencies) has no builtin verifier in this version and no custom claim"
+        }
+      ]
+    }
+  },
+  {
+    "command": [
+      "lint",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "lint-R21-vacuous",
+    "output": {
+      "result": "fail",
+      "violations": [
+        {
+          "code": "VACUOUS_SPEC",
+          "message": "no positive assertion; this spec passes on an empty repository"
+        }
+      ]
+    }
+  }
+]

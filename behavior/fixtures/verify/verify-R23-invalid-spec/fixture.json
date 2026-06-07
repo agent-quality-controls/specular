@@ -1,0 +1,1 @@
+{"id": "verify-R23-invalid-spec", "commands": [["verify", "spec.json", "--json"]], "notes": "verify runs lint as preflight; invalid spec never reaches checking; exit 2"}

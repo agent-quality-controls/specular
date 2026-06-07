@@ -1,0 +1,179 @@
+[
+  {
+    "command": [
+      "verify",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 0,
+    "fixture": "verify-R00-clean-golden",
+    "output": {
+      "evidence": [
+        {
+          "id": "DOCS_PRESENT",
+          "source": {
+            "builtin": "tree"
+          },
+          "status": "pass"
+        },
+        {
+          "id": "MARKER_RULES",
+          "source": {
+            "builtin": "content"
+          },
+          "status": "pass"
+        },
+        {
+          "id": "DEPS_CLEAN",
+          "source": {
+            "custom": "deps"
+          },
+          "status": "pass"
+        }
+      ],
+      "git": [
+        {
+          "path": "spec.json",
+          "state": "not-a-repository"
+        },
+        {
+          "path": "scripts/v.sh",
+          "state": "not-a-repository"
+        }
+      ],
+      "spec": {
+        "path": "spec.json",
+        "sha256": "b545d91926fd8fbb0ddee650915b28161ec95857fb25600dbb40cacace34d23f"
+      },
+      "spec3_version": "0.1.0",
+      "verifier_files": [
+        {
+          "path": "scripts/v.sh",
+          "sha256": "73d8808c2ca8873d27eb8869c7ca45beed3a4439b059022e00bc46935e9659e2"
+        }
+      ]
+    }
+  },
+  {
+    "command": [
+      "verify",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 1,
+    "fixture": "verify-R10-requirement-failures",
+    "output": {
+      "evidence": [
+        {
+          "id": "DOCS_PRESENT",
+          "message": "missing required path: docs/readme.txt; forbidden paths present: junk/leftover.txt",
+          "source": {
+            "builtin": "tree"
+          },
+          "status": "fail"
+        },
+        {
+          "id": "MARKER_RULES",
+          "message": "forbidden 'LEGACY' found in docs/readme2.txt; required 'INVOICE' found in no scoped file",
+          "source": {
+            "builtin": "content"
+          },
+          "status": "fail"
+        },
+        {
+          "expected": "absent",
+          "id": "DEPS_CLEAN",
+          "message": "old_pkg declared",
+          "observed": "old_pkg v1",
+          "path": "go.mod",
+          "source": {
+            "custom": "deps"
+          },
+          "status": "fail"
+        }
+      ],
+      "git": [
+        {
+          "path": "spec.json",
+          "state": "not-a-repository"
+        },
+        {
+          "path": "scripts/v.sh",
+          "state": "not-a-repository"
+        }
+      ],
+      "spec": {
+        "path": "spec.json",
+        "sha256": "b545d91926fd8fbb0ddee650915b28161ec95857fb25600dbb40cacace34d23f"
+      },
+      "spec3_version": "0.1.0",
+      "verifier_files": [
+        {
+          "path": "scripts/v.sh",
+          "sha256": "fc5f4a11a0752ab070d8bf2fbe6c9348dd21c61e30f913ffbe0fbd42f588ccc1"
+        }
+      ]
+    }
+  },
+  {
+    "command": [
+      "verify",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "verify-R20-verifier-nonzero",
+    "output": {
+      "message": "verifier deps: exit Some(3); stderr: ",
+      "result": "error"
+    }
+  },
+  {
+    "command": [
+      "verify",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "verify-R21-protocol-violation",
+    "output": {
+      "message": "verifier deps: reported unclaimed requirement 'NOT_MINE'",
+      "result": "error"
+    }
+  },
+  {
+    "command": [
+      "verify",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "verify-R22-coverage-miss",
+    "output": {
+      "message": "coverage: 'DEPS_CLEAN' produced no evidence",
+      "result": "error"
+    }
+  },
+  {
+    "command": [
+      "verify",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "verify-R23-invalid-spec",
+    "output": {
+      "result": "fail",
+      "violations": [
+        {
+          "code": "DUPLICATE_ID",
+          "message": "requirement id 'SAME_ID' appears more than once"
+        },
+        {
+          "code": "MERGEABLE_REQUIREMENTS",
+          "message": "same scope and polarity; merge into one row: SAME_ID+SAME_ID"
+        }
+      ]
+    }
+  }
+]

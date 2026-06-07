@@ -1,0 +1,1 @@
+{"id": "verify-R20-verifier-nonzero", "commands": [["verify", "spec.json", "--json"]], "notes": "runtime error preempts evidence, so its own layer; exit 2"}
