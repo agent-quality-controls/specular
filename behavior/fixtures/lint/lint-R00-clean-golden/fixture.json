@@ -1,1 +1,1 @@
-{"id": "lint-R00-clean-golden", "commands": [["lint", "spec.json", "--json"]], "notes": "all six categories used; custom claims cover non-builtin rows; exit 0"}
+{"id":"lint-R00-clean-golden","commands":[["lint","spec.json","--json"]],"notes":"valid: builtin tree+content, dependencies overridden; empty categories omitted; exit 0"}

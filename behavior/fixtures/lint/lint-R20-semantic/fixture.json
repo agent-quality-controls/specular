@@ -1,1 +1,1 @@
-{"id": "lint-R20-semantic", "commands": [["lint", "spec.json", "--json"]], "notes": "targets: DUPLICATE_ID, ID_FORMAT, PATH_RULE, GLOB, MERGEABLE_REQUIREMENTS, UNKNOWN_CLAIM, BUILTIN_COVERED_CLAIM, OVERLAPPING_CLAIM, VERIFIER_COMMAND_MISSING, UNCLAIMED_REQUIREMENT; exit 2"}
+{"id":"lint-R20-semantic","commands":[["lint","spec.json","--json"]],"notes":"DUPLICATE_ID, ID_FORMAT, PATH_RULE, GLOB, MERGEABLE_REQUIREMENTS (dep split), CATEGORY_HAS_NO_VERIFIER (exports), UNKNOWN_CATEGORY (notacategory); exit 2"}

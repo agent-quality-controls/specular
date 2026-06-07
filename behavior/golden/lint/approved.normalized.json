@@ -38,11 +38,7 @@
       "violations": [
         {
           "code": "JSON_SCHEMA",
-          "message": "\"schemas\" is a required property (at /requirements)"
-        },
-        {
-          "code": "JSON_SCHEMA",
-          "message": "\"not-an-array\" is not of type \"array\" (at /requirements/tree/0/requiredPaths)"
+          "message": "\"not-array\" is not of type \"array\" (at /requirements/tree/0/requiredPaths)"
         },
         {
           "code": "JSON_SCHEMA",
@@ -64,43 +60,35 @@
       "violations": [
         {
           "code": "DUPLICATE_ID",
-          "message": "requirement id 'X_DUP' appears more than once"
+          "message": "requirement id 'DUP' appears more than once"
         },
         {
           "code": "ID_FORMAT",
-          "message": "requirement id 'bad_lower' is not SCREAMING_SNAKE_CASE"
+          "message": "requirement id 'lower_id' is not SCREAMING_SNAKE_CASE"
         },
         {
           "code": "PATH_RULE",
-          "message": "bad_lower: '/abs/path' must be repo-root-relative with '/', no '..', no empty components"
+          "message": "lower_id: '/abs' must be repo-root-relative with '/', no '..', no empty components"
         },
         {
           "code": "GLOB",
-          "message": "bad_lower: glob '[' does not compile: error parsing glob '[': unclosed character class; missing ']'"
+          "message": "lower_id: glob '[' does not compile: error parsing glob '[': unclosed character class; missing ']'"
         },
         {
           "code": "MERGEABLE_REQUIREMENTS",
-          "message": "same scope and polarity; merge into one row: X_DUP+X_DUP+bad_lower"
+          "message": "same scope and polarity; merge into one row: DUP+DUP+lower_id"
         },
         {
-          "code": "UNKNOWN_CLAIM",
-          "message": "verifier 'v1' claims unknown requirement 'MISSING_ID'"
+          "code": "MERGEABLE_REQUIREMENTS",
+          "message": "same scope and polarity; merge into one row: D_ONE+D_TWO"
         },
         {
-          "code": "BUILTIN_COVERED_CLAIM",
-          "message": "verifier 'v1' claims 'X_DUP', which a builtin verifier covers"
+          "code": "UNKNOWN_CATEGORY",
+          "message": "verifiers map names 'notacategory', which is not a category"
         },
         {
-          "code": "VERIFIER_COMMAND_MISSING",
-          "message": "verifier 'v2' command file 'scripts/absent.sh' does not exist"
-        },
-        {
-          "code": "OVERLAPPING_CLAIM",
-          "message": "requirement 'D_CLAIMED_TWICE' claimed by: v1, v2"
-        },
-        {
-          "code": "UNCLAIMED_REQUIREMENT",
-          "message": "'D_UNCLAIMED' (dependencies) has no builtin verifier in this version and no custom claim"
+          "code": "CATEGORY_HAS_NO_VERIFIER",
+          "message": "category 'exports' has requirements but no builtin verifier and no override"
         }
       ]
     }

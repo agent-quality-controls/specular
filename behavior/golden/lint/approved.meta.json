@@ -1,35 +1,35 @@
 {
   "suite": "lint",
   "kind": "approved",
-  "run_id": "2026-06-07T19-03-45.185157Z-f49ef2e2",
-  "run_commit": "f113d52",
+  "run_id": "2026-06-07T21-24-04.70627Z-f49ef2e2",
+  "run_commit": "8013721",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-07T19:03:45.185157Z",
-  "fixture_hash": "sha256:c7b2d4f9bf39d3d5efdc13587005aba18615f9c5d3c0d20b43fed33fcaa7d88e",
+  "recorded_at": "2026-06-07T21:24:04.70627Z",
+  "fixture_hash": "sha256:36ca2718cee90e6c78e6279280b383087c65d9d65d1411cfd7112461b6ed3502",
   "manifest_hash": "sha256:f49ef2e2f56e2e71003b1819b88f8347e53eaac34ea6bf21db2a81bc4a3b7a25",
   "tool_version": "0.1.8",
   "output_schema_version": "1",
   "fixtures": [
     {
       "path": "behavior/fixtures/lint/lint-R00-clean-golden/fixture.json",
-      "sha256": "sha256:a70b18f2d910408f5144a0f7d882faa46fa07023c037df2d00751ec8fb906ab8"
+      "sha256": "sha256:7fe2fb6abe2e3f3bedb04a562fe812d1199bce46b645cc4b7a8ff4040f2fe7d1"
     },
     {
       "path": "behavior/fixtures/lint/lint-R10-not-json/fixture.json",
-      "sha256": "sha256:9412c0b94280b7fdeaa34a18989587b8532d89dd873f5d74abbd0ccab62613f3"
+      "sha256": "sha256:33684120b9626f71aa5a857a55b14f3ec9f9b818729167b3f8d7f5db411000fd"
     },
     {
       "path": "behavior/fixtures/lint/lint-R11-schema-broken/fixture.json",
-      "sha256": "sha256:838a4a650a083a71bf87e56247af5190035e57cf2e2123e040930a56278a11b9"
+      "sha256": "sha256:86f8333f78536180e18085ab11ce8156b6aa29cad43f2e6f591627977e7b598f"
     },
     {
       "path": "behavior/fixtures/lint/lint-R20-semantic/fixture.json",
-      "sha256": "sha256:a90e469a20a99fa8f59fa8b5bc16d241177ed53893a17785dc8adde18142614b"
+      "sha256": "sha256:1dd78fc0779e2e64d49523f2876784c4869a91a47d81f4a02edc955bf0766dd3"
     },
     {
       "path": "behavior/fixtures/lint/lint-R21-vacuous/fixture.json",
-      "sha256": "sha256:02e56034968396a836f68ba60762b8940d835047c5ff5a56ee0c06dc3226d286"
+      "sha256": "sha256:db97fe83d66f45f8c502675973b9e9270767469d8406664833d0cbc694b6e5ef"
     }
   ],
-  "comment": "Initial goldens: R00 clean (all six categories, exit 0); R10 parse, R11 schema, R20 ten semantic codes, R21 vacuous (exit 2)"
+  "comment": "Per-category verifier model: R00 clean (omitted empties, dependencies overridden); R10 parse; R11 schema; R20 seven semantic codes incl CATEGORY_HAS_NO_VERIFIER + UNKNOWN_CATEGORY; R21 vacuous"
 }

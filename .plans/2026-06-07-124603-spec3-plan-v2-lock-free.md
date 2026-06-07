@@ -44,7 +44,7 @@ The library cannot know its caller: human, CI, orchestrator, or agent. It theref
 - `builtin` evidence: produced by builtin verifiers shipped and fixture-tested with `spec3`, independent of whoever authored the implementation under verification.
 - `custom` evidence: produced by verifier commands declared in the spec — authored by the same parties writing the implementation.
 
-Every evidence item carries its verifier source. The verify summary states the counts (for example `9 builtin, 3 custom`). The library records source as a fact and attaches no judgment to it — what builtin vs custom implies about trustworthiness is the consumer's inference. There is no trust type, grade, or score anywhere in the model; a report must simply never present the two sources indistinguishably.
+Every evidence item carries its verifier source (`builtin:<category>` or `custom:<category>`). The library records source as a fact and attaches no judgment to it — what builtin vs custom implies about trustworthiness is the consumer's inference. There is no trust type, grade, score, or rolled-up builtin/custom tally anywhere in the model; the per-item source is the whole contract, and a report must never present the two sources indistinguishably.
 
 ## Closed-world core, open-world escape hatch
 
@@ -178,7 +178,7 @@ Every requirement entry has:
 
 Requirement IDs must be unique across all categories.
 
-Granularity is derived, never chosen. Each category defines scope fields (`content`: `files`; `dependencies`: `manifestGlobs`; `tree`: none) and a polarity (required vs forbidden). Two requirements with identical scope and polarity are one rule by definition; members (paths, crates, substrings) are array elements inside that one row, and per-member detail appears in evidence messages, not in extra rows. This mirrors the merge-phase collapse rule in the guardrails engines: identical contributions are one contribution.
+Granularity is derived, never chosen: one row per category and scope. Each category defines a scope (`tree`: the repository; `content`: `files`; `dependencies`: `manifestGlobs`; `exports`: `package`; `enumerations`: `type`; `schemas`: `file`). Two requirements sharing a category and scope are one rule by definition — required and forbidden members live together in that one row, and per-member detail appears in evidence messages, not in extra rows. `MERGEABLE_REQUIREMENTS` enforces this (grouping ignores polarity). This mirrors the merge-phase collapse rule in the guardrails engines: identical contributions are one contribution.
 
 Builtin-supported categories in V1:
 
@@ -192,51 +192,42 @@ Categories with no builtin in V1:
 - `enumerations`
 - `schemas`
 
-A requirement in a category with no builtin must be claimed by a custom verifier. A requirement claimed by nothing fails `lint`. Nothing is silently ignored.
+Categories may be omitted from `requirements` when unused; an absent category is empty. A non-empty category with no builtin and no verifier override fails `lint` (`CATEGORY_HAS_NO_VERIFIER`).
 
-# Custom Verifiers
+# Verifiers (per category)
 
-A custom verifier is declared in the spec:
+A verifier is per category, not per requirement. The builtin runs for `tree` and `content`; any category can be overridden by a command in the top-level `verifiers` map:
 
 ```json
 {
-  "verifiers": [
-    {
-      "id": "deps-go",
-      "command": ["scripts/spec-verify-deps-go.sh"],
-      "requirementIds": ["BILLING_NO_DIRECT_DB"],
-      "reason": "no builtin dependencies verifier for Go yet"
-    }
-  ]
+  "verifiers": { "dependencies": ["scripts/verify-deps.sh"] }
 }
 ```
 
 Rules:
 
-- `reason` is required on every custom verifier (optional elsewhere in the spec).
-- `requirementIds` lists the requirement IDs the verifier owns. They must reference existing requirements; two verifiers owning the same ID (or owning a builtin-covered one) fail `lint`.
-- `lint` fails a custom verifier whose claimed requirement is expressible by a supported builtin category. The escape hatch must not erode the trustworthy core.
+- A category absent from the map uses its builtin (tree, content) or, for the others, fails `lint` (`CATEGORY_HAS_NO_VERIFIER`).
+- A map key that is not one of the six categories fails `lint` (`UNKNOWN_CATEGORY`).
+- Listing a builtin category overrides it; the command then owns that category. Override is allowed — the script takes responsibility for the whole category.
+- There is no per-requirement ownership, no `requirementIds`, no overlap to resolve. Granularity is one row per category and scope (see Spec Model); `MERGEABLE_REQUIREMENTS` enforces it.
 
 Execution protocol (`verify`):
 
-- `spec3` executes the command from the repository root.
-- The verifier emits evidence as JSON lines on stdout: `{"id": "...", "status": "pass" | "fail", "message": "...", "observed": ..., "expected": ..., "path": ...}` (fields beyond `id` and `status` optional).
-- Nonzero exit is a runtime error (exit class 2), not a requirement failure.
-- Coverage is enforced by `spec3`: every claimed ID must report exactly once; a result citing an unknown or unclaimed ID is fatal.
+- `spec3` runs the override as `<command...> <spec.json> <category>` from the repository root. The script reads `requirements.<category>` and emits one JSON line per requirement in that category: `{"id": "...", "status": "pass" | "fail", "message": "...", "observed": ..., "expected": ..., "path": ...}` (fields beyond `id` and `status` optional).
+- A nonzero exit, a missing line for a requirement, or a line for an id outside the category is a runtime error (exit class 2), not a requirement failure.
+- A missing command file is not a lint concern (the spec is identical whether or not the file exists); it fails at `verify` when the command cannot be stamped or spawned.
 
-All custom evidence is labeled `custom`. The verifier script files are part of the input closure: their raw-byte hashes are stamped into the report (see Evidence Model).
+All override evidence is labeled `custom:<category>`; builtin evidence `builtin:<category>`. Override command files are part of the input closure: their raw-byte hashes are stamped into the report (see Evidence Model).
 
 # Requirement Coverage
 
-Every active requirement must have exactly one owner: a builtin verifier (by category routing) or a custom verifier (by claim).
+Each category routes to exactly one verifier (its builtin or its override), which judges every requirement in that category.
 
 Fatal verification errors:
 
-- requirement has no owner
-- owner returns no result for a requirement
-- a result cites an unknown or unclaimed requirement ID
-
-The routing is a deterministic function of the spec and the `spec3` version. It is computed at `lint`/`verify` time, not stored.
+- a requirement produces no evidence
+- a requirement's evidence appears more than once
+- an override reports an id outside its category
 
 # Commands
 
@@ -260,12 +251,11 @@ Checks:
 - unknown fields are rejected
 - requirement IDs are unique
 - paths are normalized, globs compile
-- MERGEABLE_REQUIREMENTS: no two requirements in a category share scope fields and polarity (granularity is derived, not chosen)
+- MERGEABLE_REQUIREMENTS: no two requirements share a category and scope (granularity is derived, not chosen; required and forbidden merge into one row)
 - VACUOUS_SPEC: the spec contains at least one positive assertion; a spec of pure prohibitions passes on an empty repository
-- every requirement has exactly one owner (builtin category or custom claim)
-- custom verifiers: `reason` present, claimed IDs exist, no overlap, command files exist
-- custom verifier rejected where a supported builtin covers the claim
-- a requirement in an unsupported category x ecosystem combination with no custom claim fails with an explicit message naming the gap and the `spec3` version
+- CATEGORY_HAS_NO_VERIFIER: a non-empty category has no builtin and no override in the `verifiers` map
+- UNKNOWN_CATEGORY: a `verifiers` map key is not one of the six categories
+- a missing override command file is NOT a lint error (the spec is identical with or without the file on disk); it fails at `verify`
 
 ## `verify`
 
@@ -316,7 +306,7 @@ Types:
 - `Category` — the closed set of six
 - `Report`, `Evidence`
 - `Status { Pass, Fail }` — same name as its wire field `status`
-- `VerifierSource { Builtin(Category), Custom(VerifierId) }` — serializes to `source`
+- `VerifierSource { Builtin(Category), Custom(Category) }` — serializes to `source`
 - `LintError` (+ `SpecViolation`), `VerifyError`
 
 Naming decisions and their reasons:
@@ -577,10 +567,10 @@ Do not block on Guardrail3 v2 product code — only on the neutral `aqc-*` crate
 
 # V1 Definition Of Done
 
-- `spec3 lint` rejects invalid JSON, JSON Schema violations, invalid typed specs, semantic validation failures, unclaimed requirements, claim overlaps, missing `reason` on custom verifiers, and custom claims a builtin covers.
+- `spec3 lint` rejects invalid JSON, JSON Schema violations, invalid typed specs, semantic validation failures, mergeable rows, vacuous specs, categories with no verifier, and unknown verifier-map keys.
 - `spec3 verify` checks builtin `tree` and `content` requirements over `aqc-filetree`/`aqc-fs-utils` with no own walk or read stack.
-- `spec3 verify` executes declared custom verifiers, enforces the evidence protocol and claimed-ID coverage, and fails loudly on protocol violations.
-- Every report labels evidence `builtin`/`custom`, states the counts, and stamps the input closure (spec hash, verifier file hashes, `spec3` version, Git diagnostics).
+- `spec3 verify` runs each category's verifier (builtin or override), enforces the evidence protocol and per-category coverage, and fails loudly on protocol violations.
+- Every report labels evidence `builtin:<category>`/`custom:<category>` and stamps the input closure (spec hash, verifier file hashes, `spec3` version, Git diagnostics).
 - Exit codes: 0 conform, 1 nonconform, 2 input/protocol/runtime error. No bypass flags exist.
 - The library contains no roles, identity, approval, or caller-awareness; all commands are repository-read-only.
 - Rust tests are absent.

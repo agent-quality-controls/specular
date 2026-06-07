@@ -1,1 +1,1 @@
-{"id": "lint-R21-vacuous", "commands": [["lint", "spec.json", "--json"]], "notes": "pure prohibitions cannot coexist with positive rows; split layer; targets VACUOUS_SPEC; exit 2"}
+{"id":"lint-R21-vacuous","commands":[["lint","spec.json","--json"]],"notes":"pure prohibitions; VACUOUS_SPEC; exit 2"}

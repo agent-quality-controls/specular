@@ -1,20 +1,16 @@
 {
   "version": 1,
+  "verifiers": { "dependencies": ["scripts/v.sh"], "notacategory": ["scripts/v.sh"] },
   "requirements": {
     "tree": [
-      {"id": "X_DUP", "requiredPaths": ["a.txt"], "forbiddenGlobs": []},
-      {"id": "X_DUP", "requiredPaths": ["b.txt"], "forbiddenGlobs": []},
-      {"id": "bad_lower", "requiredPaths": ["/abs/path"], "forbiddenGlobs": ["["]}
+      { "id": "DUP", "requiredPaths": ["a"], "forbiddenGlobs": [] },
+      { "id": "DUP", "requiredPaths": ["b"], "forbiddenGlobs": [] },
+      { "id": "lower_id", "requiredPaths": ["/abs"], "forbiddenGlobs": ["["] }
     ],
-    "content": [],
     "dependencies": [
-      {"id": "D_CLAIMED_TWICE", "manifestGlobs": ["go.mod"], "requiredCrates": ["x"], "forbiddenCrates": []},
-      {"id": "D_UNCLAIMED", "manifestGlobs": ["package.json"], "requiredCrates": ["y"], "forbiddenCrates": []}
+      { "id": "D_ONE", "manifestGlobs": ["Cargo.toml"], "requiredCrates": ["x"] },
+      { "id": "D_TWO", "manifestGlobs": ["Cargo.toml"], "forbiddenCrates": ["y"] }
     ],
-    "exports": [], "enumerations": [], "schemas": []
-  },
-  "verifiers": [
-    {"id": "v1", "command": ["scripts/v.sh"], "requirementIds": ["D_CLAIMED_TWICE", "MISSING_ID", "X_DUP"], "reason": "semantic breakage layer"},
-    {"id": "v2", "command": ["scripts/absent.sh"], "requirementIds": ["D_CLAIMED_TWICE"], "reason": "semantic breakage layer"}
-  ]
+    "exports": [{ "id": "E_ONE", "package": "p", "types": ["T"] }]
+  }
 }

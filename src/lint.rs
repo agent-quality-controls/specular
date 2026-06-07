@@ -8,7 +8,7 @@ use garde::Validate as _;
 use globset::GlobBuilder;
 
 use crate::error::{LintError, SpecViolation};
-use crate::model::Spec;
+use crate::model::{Category, Spec};
 
 /// Validate the spec file and produce the typed contract.
 ///
@@ -83,7 +83,7 @@ fn semantic_violations(spec: &Spec, out: &mut Vec<SpecViolation>) {
     check_paths_and_globs(spec, out);
     check_mergeable(spec, out);
     check_vacuous(spec, out);
-    check_ownership(spec, out);
+    check_verifiers(spec, out);
 }
 
 /// Every `(id, category)` pair in the spec, in document order.
@@ -183,53 +183,28 @@ fn check_paths_and_globs(spec: &Spec, out: &mut Vec<SpecViolation>) {
     }
 }
 
-/// Granularity is derived: identical scope and polarity means one rule.
+/// Granularity is derived: one row per category and scope. Required and
+/// forbidden of the same scope must live in one row, so grouping ignores
+/// polarity.
 fn check_mergeable(spec: &Spec, out: &mut Vec<SpecViolation>) {
     let r = &spec.requirements;
     let mut groups: HashMap<String, Vec<&str>> = HashMap::new();
     for x in &r.tree {
-        if !x.required_paths.is_empty() {
-            groups
-                .entry("tree/required".to_owned())
-                .or_default()
-                .push(&x.id);
-        }
-        if !x.forbidden_globs.is_empty() {
-            groups
-                .entry("tree/forbidden".to_owned())
-                .or_default()
-                .push(&x.id);
-        }
+        groups.entry("tree".to_owned()).or_default().push(&x.id);
     }
     for x in &r.content {
         let scope = sorted_key(&x.files);
-        if !x.forbidden_substrings.is_empty() {
-            groups
-                .entry(format!("content/forbidden/{scope}"))
-                .or_default()
-                .push(&x.id);
-        }
-        if !x.required_substrings.is_empty() {
-            groups
-                .entry(format!("content/required/{scope}"))
-                .or_default()
-                .push(&x.id);
-        }
+        groups
+            .entry(format!("content/{scope}"))
+            .or_default()
+            .push(&x.id);
     }
     for x in &r.dependencies {
         let scope = sorted_key(&x.manifest_globs);
-        if !x.required_crates.is_empty() {
-            groups
-                .entry(format!("dependencies/required/{scope}"))
-                .or_default()
-                .push(&x.id);
-        }
-        if !(x.forbidden_crates.is_empty() && x.forbidden_crate_prefixes.is_empty()) {
-            groups
-                .entry(format!("dependencies/forbidden/{scope}"))
-                .or_default()
-                .push(&x.id);
-        }
+        groups
+            .entry(format!("dependencies/{scope}"))
+            .or_default()
+            .push(&x.id);
     }
     for x in &r.exports {
         groups
@@ -286,73 +261,42 @@ fn check_vacuous(spec: &Spec, out: &mut Vec<SpecViolation>) {
     }
 }
 
-/// Every requirement has exactly one owner; the escape hatch must not erode
-/// the builtin core.
-fn check_ownership(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    let r = &spec.requirements;
-    let builtin_ids: HashSet<&str> = r
-        .tree
-        .iter()
-        .map(|x| x.id.as_str())
-        .chain(r.content.iter().map(|x| x.id.as_str()))
-        .collect();
-    let known_ids: HashSet<&str> = all_ids(spec).into_iter().map(|(id, _)| id).collect();
+/// Every non-empty category resolves to a verifier: its builtin, or an override
+/// in the `verifiers` map. Map keys must name a real category.
+fn check_verifiers(spec: &Spec, out: &mut Vec<SpecViolation>) {
+    for key in spec.verifiers.keys() {
+        if Category::parse(key).is_none() {
+            out.push(SpecViolation {
+                code: "UNKNOWN_CATEGORY".to_owned(),
+                message: format!("verifiers map names '{key}', which is not a category"),
+            });
+        }
+    }
+    for category in Category::ALL {
+        if category_is_empty(spec, category) {
+            continue;
+        }
+        let overridden = spec.verifiers.contains_key(category.as_str());
+        if !category.has_builtin() && !overridden {
+            out.push(SpecViolation {
+                code: "CATEGORY_HAS_NO_VERIFIER".to_owned(),
+                message: format!(
+                    "category '{}' has requirements but no builtin verifier and no override",
+                    category.as_str()
+                ),
+            });
+        }
+    }
+}
 
-    let mut claimed: HashMap<&str, Vec<&str>> = HashMap::new();
-    for verifier in &spec.verifiers {
-        for claim in &verifier.requirement_ids {
-            if !known_ids.contains(claim.as_str()) {
-                out.push(SpecViolation {
-                    code: "UNKNOWN_CLAIM".to_owned(),
-                    message: format!(
-                        "verifier '{}' claims unknown requirement '{claim}'",
-                        verifier.id
-                    ),
-                });
-                continue;
-            }
-            if builtin_ids.contains(claim.as_str()) {
-                out.push(SpecViolation {
-                    code: "BUILTIN_COVERED_CLAIM".to_owned(),
-                    message: format!(
-                        "verifier '{}' claims '{claim}', which a builtin verifier covers",
-                        verifier.id
-                    ),
-                });
-                continue;
-            }
-            claimed
-                .entry(claim.as_str())
-                .or_default()
-                .push(&verifier.id);
-        }
-        if !Path::new(&verifier.command[0]).exists() {
-            out.push(SpecViolation {
-                code: "VERIFIER_COMMAND_MISSING".to_owned(),
-                message: format!(
-                    "verifier '{}' command file '{}' does not exist",
-                    verifier.id, verifier.command[0]
-                ),
-            });
-        }
-    }
-    for (claim, owners) in &claimed {
-        if owners.len() > 1 {
-            out.push(SpecViolation {
-                code: "OVERLAPPING_CLAIM".to_owned(),
-                message: format!("requirement '{claim}' claimed by: {}", owners.join(", ")),
-            });
-        }
-    }
-    for (id, category) in all_ids(spec) {
-        let is_builtin = category == "tree" || category == "content";
-        if !is_builtin && !claimed.contains_key(id) {
-            out.push(SpecViolation {
-                code: "UNCLAIMED_REQUIREMENT".to_owned(),
-                message: format!(
-                    "'{id}' ({category}) has no builtin verifier in this version and no custom claim"
-                ),
-            });
-        }
+fn category_is_empty(spec: &Spec, category: Category) -> bool {
+    let r = &spec.requirements;
+    match category {
+        Category::Tree => r.tree.is_empty(),
+        Category::Content => r.content.is_empty(),
+        Category::Dependencies => r.dependencies.is_empty(),
+        Category::Exports => r.exports.is_empty(),
+        Category::Enumerations => r.enumerations.is_empty(),
+        Category::Schemas => r.schemas.is_empty(),
     }
 }

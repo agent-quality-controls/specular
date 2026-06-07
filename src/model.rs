@@ -1,5 +1,7 @@
 //! The typed spec model: the contract `lint` produces and `verify` consumes.
 
+use std::collections::BTreeMap;
+
 use garde::Validate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -33,6 +35,16 @@ pub enum Category {
 }
 
 impl Category {
+    /// Every category, in document order.
+    pub const ALL: [Self; 6] = [
+        Self::Tree,
+        Self::Content,
+        Self::Dependencies,
+        Self::Exports,
+        Self::Enumerations,
+        Self::Schemas,
+    ];
+
     /// The wire name (same as the JSON key).
     #[must_use]
     pub const fn as_str(self) -> &'static str {
@@ -45,6 +57,18 @@ impl Category {
             Self::Schemas => "schemas",
         }
     }
+
+    /// Parse a category from its wire name.
+    #[must_use]
+    pub fn parse(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|c| c.as_str() == name)
+    }
+
+    /// Whether spec3 ships a builtin verifier for this category.
+    #[must_use]
+    pub const fn has_builtin(self) -> bool {
+        matches!(self, Self::Tree | Self::Content)
+    }
 }
 
 /// The spec file: the source contract.
@@ -54,14 +78,16 @@ pub struct Spec {
     /// Spec format version; only 1 is supported.
     #[garde(range(min = 1, max = 1))]
     pub version: u32,
-    /// Requirements by category. All six categories are present; unused ones
-    /// stay empty arrays.
+    /// Requirements by category. Unused categories may be omitted.
     #[garde(dive)]
     pub requirements: Requirements,
-    /// Declared custom verifiers.
+    /// Verifier overrides: category name -> command argv. A category absent here
+    /// uses its builtin verifier (tree, content) or fails lint. Keys are
+    /// validated against the category set in lint, so an unknown key is a clean
+    /// `UNKNOWN_CATEGORY` violation rather than a parse error.
     #[serde(default)]
-    #[garde(dive)]
-    pub verifiers: Vec<VerifierDecl>,
+    #[garde(skip)]
+    pub verifiers: BTreeMap<String, Vec<String>>,
 }
 
 /// Requirements by category.
@@ -69,21 +95,27 @@ pub struct Spec {
 #[serde(deny_unknown_fields)]
 pub struct Requirements {
     /// Required and forbidden repository paths.
+    #[serde(default)]
     #[garde(dive)]
     pub tree: Vec<TreeRequirement>,
     /// Required or forbidden fixed substrings in scoped files.
+    #[serde(default)]
     #[garde(dive)]
     pub content: Vec<ContentRequirement>,
     /// Required and forbidden crates in manifests.
+    #[serde(default)]
     #[garde(dive)]
     pub dependencies: Vec<DependencyRequirement>,
     /// Public types and functions.
+    #[serde(default)]
     #[garde(dive)]
     pub exports: Vec<ExportRequirement>,
     /// Closed variant sets.
+    #[serde(default)]
     #[garde(dive)]
     pub enumerations: Vec<EnumerationRequirement>,
     /// Durable format artifacts.
+    #[serde(default)]
     #[garde(dive)]
     pub schemas: Vec<SchemaRequirement>,
 }
@@ -100,9 +132,11 @@ pub struct TreeRequirement {
     #[garde(skip)]
     pub reason: Option<Reason>,
     /// Paths that must exist.
+    #[serde(default)]
     #[garde(skip)]
     pub required_paths: Vec<String>,
     /// Globs no repository path may match.
+    #[serde(default)]
     #[garde(skip)]
     pub forbidden_globs: Vec<String>,
 }
@@ -122,9 +156,11 @@ pub struct ContentRequirement {
     #[garde(length(min = 1))]
     pub files: Vec<String>,
     /// Substrings no scoped file may contain.
+    #[serde(default)]
     #[garde(skip)]
     pub forbidden_substrings: Vec<String>,
     /// Substrings at least one scoped file must contain.
+    #[serde(default)]
     #[garde(skip)]
     pub required_substrings: Vec<String>,
 }
@@ -144,9 +180,11 @@ pub struct DependencyRequirement {
     #[garde(length(min = 1))]
     pub manifest_globs: Vec<String>,
     /// Crates that must be declared.
+    #[serde(default)]
     #[garde(skip)]
     pub required_crates: Vec<String>,
     /// Crates that must not be declared.
+    #[serde(default)]
     #[garde(skip)]
     pub forbidden_crates: Vec<String>,
     /// Name prefixes no declared crate may start with.
@@ -170,9 +208,11 @@ pub struct ExportRequirement {
     #[garde(length(min = 1))]
     pub package: String,
     /// Public type names that must exist.
+    #[serde(default)]
     #[garde(skip)]
     pub types: Vec<String>,
     /// Public function names that must exist.
+    #[serde(default)]
     #[garde(skip)]
     pub functions: Vec<String>,
 }
@@ -211,22 +251,4 @@ pub struct SchemaRequirement {
     /// The committed artifact path.
     #[garde(length(min = 1))]
     pub file: String,
-}
-
-/// A declared custom verifier.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct VerifierDecl {
-    /// Unique verifier ID.
-    #[garde(length(min = 1))]
-    pub id: String,
-    /// The command argv; the first element is the executable file.
-    #[garde(length(min = 1))]
-    pub command: Vec<String>,
-    /// Requirement IDs this verifier owns.
-    #[garde(length(min = 1))]
-    pub requirement_ids: Vec<String>,
-    /// Why a custom verifier is needed. Required.
-    #[garde(skip)]
-    pub reason: Reason,
 }

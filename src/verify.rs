@@ -12,9 +12,9 @@ use sha2::{Digest as _, Sha256};
 
 use crate::error::VerifyError;
 use crate::evidence::{
-    Evidence, FileStamp, GitDiagnostic, Report, Status, VerifierId, VerifierSource, WireEvidence,
+    Evidence, FileStamp, GitDiagnostic, Report, Status, VerifierSource, WireEvidence,
 };
-use crate::model::{Category, ContentRequirement, Spec, TreeRequirement, VerifierDecl};
+use crate::model::{Category, ContentRequirement, Spec, TreeRequirement};
 
 /// Check the repository at `root` against the spec loaded from `spec_path`.
 ///
@@ -26,8 +26,8 @@ use crate::model::{Category, ContentRequirement, Spec, TreeRequirement, Verifier
 pub fn verify(spec: &Spec, root: &Path, spec_path: &Path) -> Result<Report, VerifyError> {
     let spec_stamp = stamp(spec_path)?;
     let mut verifier_files = Vec::new();
-    for verifier in &spec.verifiers {
-        verifier_files.push(stamp(Path::new(&verifier.command[0]))?);
+    for command in spec.verifiers.values() {
+        verifier_files.push(stamp(Path::new(&command[0]))?);
     }
     let git = git_diagnostics(root, &spec_stamp, &verifier_files);
 
@@ -35,14 +35,33 @@ pub fn verify(spec: &Spec, root: &Path, spec_path: &Path) -> Result<Report, Veri
         .map_err(|e| VerifyError::Walk(e.to_string()))?;
 
     let mut evidence = Vec::new();
-    for requirement in &spec.requirements.tree {
-        evidence.push(check_tree(requirement, &tree)?);
-    }
-    for requirement in &spec.requirements.content {
-        evidence.push(check_content(requirement, &tree)?);
-    }
-    for verifier in &spec.verifiers {
-        run_custom(verifier, root, &mut evidence)?;
+    for category in Category::ALL {
+        let ids = category_ids(spec, category);
+        if ids.is_empty() {
+            continue;
+        }
+        if let Some(command) = spec.verifiers.get(category.as_str()) {
+            run_override(command, spec_path, category, &ids, root, &mut evidence)?;
+        } else {
+            match category {
+                Category::Tree => {
+                    for requirement in &spec.requirements.tree {
+                        evidence.push(check_tree(requirement, &tree)?);
+                    }
+                }
+                Category::Content => {
+                    for requirement in &spec.requirements.content {
+                        evidence.push(check_content(requirement, &tree)?);
+                    }
+                }
+                _ => {
+                    return Err(VerifyError::Coverage(format!(
+                        "category '{}' has no verifier (lint should have caught this)",
+                        category.as_str()
+                    )));
+                }
+            }
+        }
     }
     check_coverage(spec, &evidence)?;
 
@@ -223,22 +242,44 @@ fn to_evidence(id: &str, category: Category, problems: Vec<String>) -> Evidence 
     }
 }
 
-fn run_custom(
-    verifier: &VerifierDecl,
+/// Requirement IDs in one category, in document order.
+fn category_ids(spec: &Spec, category: Category) -> Vec<String> {
+    let r = &spec.requirements;
+    match category {
+        Category::Tree => r.tree.iter().map(|x| x.id.clone()).collect(),
+        Category::Content => r.content.iter().map(|x| x.id.clone()).collect(),
+        Category::Dependencies => r.dependencies.iter().map(|x| x.id.clone()).collect(),
+        Category::Exports => r.exports.iter().map(|x| x.id.clone()).collect(),
+        Category::Enumerations => r.enumerations.iter().map(|x| x.id.clone()).collect(),
+        Category::Schemas => r.schemas.iter().map(|x| x.id.clone()).collect(),
+    }
+}
+
+/// Run a category's override command: `<command...> <spec> <category>`. Each
+/// emitted line must judge a requirement of that category; missing or duplicate
+/// ids are caught by the global coverage check.
+fn run_override(
+    command: &[String],
+    spec_path: &Path,
+    category: Category,
+    ids: &[String],
     root: &Path,
     evidence: &mut Vec<Evidence>,
 ) -> Result<(), VerifyError> {
-    let output = Command::new(&verifier.command[0])
-        .args(&verifier.command[1..])
+    let label = category.as_str().to_owned();
+    let output = Command::new(&command[0])
+        .args(&command[1..])
+        .arg(spec_path)
+        .arg(category.as_str())
         .current_dir(root)
         .output()
         .map_err(|e| VerifyError::Verifier {
-            id: verifier.id.clone(),
+            id: label.clone(),
             message: e.to_string(),
         })?;
     if !output.status.success() {
         return Err(VerifyError::Verifier {
-            id: verifier.id.clone(),
+            id: label,
             message: format!(
                 "exit {:?}; stderr: {}",
                 output.status.code(),
@@ -249,18 +290,21 @@ fn run_custom(
     let stdout = String::from_utf8_lossy(&output.stdout);
     for line in stdout.lines().filter(|l| !l.trim().is_empty()) {
         let wire: WireEvidence = serde_json::from_str(line).map_err(|e| VerifyError::Verifier {
-            id: verifier.id.clone(),
+            id: label.clone(),
             message: format!("protocol violation in line '{line}': {e}"),
         })?;
-        if !verifier.requirement_ids.contains(&wire.id) {
+        if !ids.contains(&wire.id) {
             return Err(VerifyError::Verifier {
-                id: verifier.id.clone(),
-                message: format!("reported unclaimed requirement '{}'", wire.id),
+                id: label.clone(),
+                message: format!(
+                    "reported '{}', which is not a requirement in category '{label}'",
+                    wire.id
+                ),
             });
         }
         evidence.push(Evidence {
             id: wire.id,
-            source: VerifierSource::Custom(VerifierId(verifier.id.clone())),
+            source: VerifierSource::Custom(category),
             status: wire.status,
             message: wire.message,
             observed: wire.observed,

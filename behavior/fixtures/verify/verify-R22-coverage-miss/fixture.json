@@ -1,1 +1,1 @@
-{"id": "verify-R22-coverage-miss", "commands": [["verify", "spec.json", "--json"]], "notes": "silent verifier; claimed id produces no evidence; exit 2"}
+{"id":"verify-R22-coverage-miss","commands":[["verify","spec.json","--json"]],"notes":"override silent; claimed row has no evidence; exit 2"}

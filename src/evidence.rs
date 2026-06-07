@@ -15,26 +15,21 @@ pub enum Status {
     Fail,
 }
 
-/// A declared custom verifier's ID.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct VerifierId(pub String);
-
 /// Which verifier produced a piece of evidence. Recorded, never judged.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum VerifierSource {
-    /// A verifier shipped with spec3, routed by category.
+    /// The builtin verifier for this category.
     Builtin(Category),
-    /// A verifier command declared in the spec.
-    Custom(VerifierId),
+    /// A custom verifier overriding this category.
+    Custom(Category),
 }
 
 impl core::fmt::Display for VerifierSource {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Builtin(category) => write!(f, "builtin:{}", category.as_str()),
-            Self::Custom(id) => write!(f, "custom:{}", id.0),
+            Self::Custom(category) => write!(f, "custom:{}", category.as_str()),
         }
     }
 }
@@ -122,16 +117,5 @@ impl Report {
     #[must_use]
     pub fn conforms(&self) -> bool {
         self.evidence.iter().all(|e| e.status == Status::Pass)
-    }
-
-    /// `(builtin, custom)` evidence counts.
-    #[must_use]
-    pub fn source_counts(&self) -> (usize, usize) {
-        let builtin = self
-            .evidence
-            .iter()
-            .filter(|e| matches!(e.source, VerifierSource::Builtin(_)))
-            .count();
-        (builtin, self.evidence.len() - builtin)
     }
 }

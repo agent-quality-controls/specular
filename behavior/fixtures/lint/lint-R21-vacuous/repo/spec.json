@@ -1,7 +1,1 @@
-{
-  "version": 1,
-  "requirements": {
-    "tree": [{"id": "NO_JUNK", "requiredPaths": [], "forbiddenGlobs": ["junk/**"]}],
-    "content": [], "dependencies": [], "exports": [], "enumerations": [], "schemas": []
-  }
-}
+{ "version": 1, "requirements": { "tree": [{ "id": "NO_TMP", "requiredPaths": [], "forbiddenGlobs": ["tmp/**"] }] } }

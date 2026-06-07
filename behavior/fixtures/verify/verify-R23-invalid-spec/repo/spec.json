@@ -1,10 +1,1 @@
-{
-  "version": 1,
-  "requirements": {
-    "tree": [
-      {"id": "SAME_ID", "requiredPaths": ["a.txt"], "forbiddenGlobs": []},
-      {"id": "SAME_ID", "requiredPaths": ["b.txt"], "forbiddenGlobs": []}
-    ],
-    "content": [], "dependencies": [], "exports": [], "enumerations": [], "schemas": []
-  }
-}
+{ "version": 1, "requirements": { "tree": [ { "id": "SAME", "requiredPaths": ["a"], "forbiddenGlobs": [] }, { "id": "SAME", "requiredPaths": ["b"], "forbiddenGlobs": [] } ] } }

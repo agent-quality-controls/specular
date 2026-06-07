@@ -10,23 +10,23 @@
     "output": {
       "evidence": [
         {
-          "id": "DOCS_PRESENT",
+          "id": "DOCS",
           "source": {
             "builtin": "tree"
           },
           "status": "pass"
         },
         {
-          "id": "MARKER_RULES",
+          "id": "MARKER",
           "source": {
             "builtin": "content"
           },
           "status": "pass"
         },
         {
-          "id": "DEPS_CLEAN",
+          "id": "NO_PG",
           "source": {
-            "custom": "deps"
+            "custom": "dependencies"
           },
           "status": "pass"
         }
@@ -37,19 +37,19 @@
           "state": "not-a-repository"
         },
         {
-          "path": "scripts/v.sh",
+          "path": "scripts/deps.sh",
           "state": "not-a-repository"
         }
       ],
       "spec": {
         "path": "spec.json",
-        "sha256": "5777e98bf5a0294ca0466dc63cf3189ca7c2ed454317724e815d93953ab22128"
+        "sha256": "81f916a9f587cbae452b90e4eecdbea49a7fefae40dc018070aebb31f31239b8"
       },
       "spec3_version": "0.1.0",
       "verifier_files": [
         {
-          "path": "scripts/v.sh",
-          "sha256": "73d8808c2ca8873d27eb8869c7ca45beed3a4439b059022e00bc46935e9659e2"
+          "path": "scripts/deps.sh",
+          "sha256": "96e847b2d26415b985ae4568c1b2bb59b4019e4daf78731f292aad39e0d478bd"
         }
       ]
     }
@@ -65,7 +65,7 @@
     "output": {
       "evidence": [
         {
-          "id": "DOCS_PRESENT",
+          "id": "DOCS",
           "message": "missing required path: docs/readme.txt; forbidden paths present: junk/leftover.txt",
           "source": {
             "builtin": "tree"
@@ -73,8 +73,8 @@
           "status": "fail"
         },
         {
-          "id": "MARKER_RULES",
-          "message": "forbidden 'LEGACY' found in docs/readme2.txt; required 'INVOICE' found in no scoped file",
+          "id": "MARKER",
+          "message": "forbidden 'LEGACY' found in docs/other.txt; required 'INVOICE' found in no scoped file",
           "source": {
             "builtin": "content"
           },
@@ -82,12 +82,12 @@
         },
         {
           "expected": "absent",
-          "id": "DEPS_CLEAN",
-          "message": "old_pkg declared",
-          "observed": "old_pkg v1",
+          "id": "NO_PG",
+          "message": "pg declared",
+          "observed": "pg 1.0",
           "path": "go.mod",
           "source": {
-            "custom": "deps"
+            "custom": "dependencies"
           },
           "status": "fail"
         }
@@ -98,19 +98,19 @@
           "state": "not-a-repository"
         },
         {
-          "path": "scripts/v.sh",
+          "path": "scripts/deps.sh",
           "state": "not-a-repository"
         }
       ],
       "spec": {
         "path": "spec.json",
-        "sha256": "5777e98bf5a0294ca0466dc63cf3189ca7c2ed454317724e815d93953ab22128"
+        "sha256": "81f916a9f587cbae452b90e4eecdbea49a7fefae40dc018070aebb31f31239b8"
       },
       "spec3_version": "0.1.0",
       "verifier_files": [
         {
-          "path": "scripts/v.sh",
-          "sha256": "fc5f4a11a0752ab070d8bf2fbe6c9348dd21c61e30f913ffbe0fbd42f588ccc1"
+          "path": "scripts/deps.sh",
+          "sha256": "950e2defdbceb6d0cd53e835c53666c558b8d68696d2e059b014586891cb3996"
         }
       ]
     }
@@ -124,7 +124,7 @@
     "exit_code": 2,
     "fixture": "verify-R20-verifier-nonzero",
     "output": {
-      "message": "verifier deps: exit Some(3); stderr: ",
+      "message": "verifier dependencies: exit Some(3); stderr: ",
       "result": "error"
     }
   },
@@ -137,7 +137,7 @@
     "exit_code": 2,
     "fixture": "verify-R21-protocol-violation",
     "output": {
-      "message": "verifier deps: reported unclaimed requirement 'NOT_MINE'",
+      "message": "verifier dependencies: reported 'NOT_IN_CATEGORY', which is not a requirement in category 'dependencies'",
       "result": "error"
     }
   },
@@ -150,7 +150,7 @@
     "exit_code": 2,
     "fixture": "verify-R22-coverage-miss",
     "output": {
-      "message": "coverage: 'DEPS_CLEAN' produced no evidence",
+      "message": "coverage: 'NO_PG' produced no evidence",
       "result": "error"
     }
   },
@@ -167,13 +167,26 @@
       "violations": [
         {
           "code": "DUPLICATE_ID",
-          "message": "requirement id 'SAME_ID' appears more than once"
+          "message": "requirement id 'SAME' appears more than once"
         },
         {
           "code": "MERGEABLE_REQUIREMENTS",
-          "message": "same scope and polarity; merge into one row: SAME_ID+SAME_ID"
+          "message": "same scope and polarity; merge into one row: SAME+SAME"
         }
       ]
+    }
+  },
+  {
+    "command": [
+      "verify",
+      "spec.json",
+      "--json"
+    ],
+    "exit_code": 2,
+    "fixture": "verify-R24-verifier-missing",
+    "output": {
+      "message": "cannot stamp scripts/deps.sh: No such file or directory (os error 2)",
+      "result": "error"
     }
   }
 ]

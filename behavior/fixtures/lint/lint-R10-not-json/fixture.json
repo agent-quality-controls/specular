@@ -1,1 +1,1 @@
-{"id": "lint-R10-not-json", "commands": [["lint", "spec.json", "--json"]], "notes": "parse failure hides everything; exit 2"}
+{"id":"lint-R10-not-json","commands":[["lint","spec.json","--json"]],"notes":"parse failure; exit 2"}

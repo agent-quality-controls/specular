@@ -1,1 +1,1 @@
-INVOICE ledger
+INVOICE

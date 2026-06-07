@@ -1,10 +1,9 @@
 {
   "version": 1,
+  "verifiers": { "dependencies": ["scripts/deps.sh"] },
   "requirements": {
-    "tree": [{"id": "DOCS_PRESENT", "requiredPaths": ["docs/readme.txt"], "forbiddenGlobs": ["junk/**"]}],
-    "content": [{"id": "MARKER_RULES", "files": ["docs/*.txt"], "forbiddenSubstrings": ["LEGACY"], "requiredSubstrings": ["INVOICE"]}],
-    "dependencies": [{"id": "DEPS_CLEAN", "manifestGlobs": ["go.mod"], "requiredCrates": [], "forbiddenCrates": ["old_pkg"]}],
-    "exports": [], "enumerations": [], "schemas": []
-  },
-  "verifiers": [{"id": "deps", "command": ["scripts/v.sh"], "requirementIds": ["DEPS_CLEAN"], "reason": "no builtin dependencies verifier in V1"}]
+    "tree": [{ "id": "DOCS", "requiredPaths": ["docs/readme.txt"], "forbiddenGlobs": ["junk/**"] }],
+    "content": [{ "id": "MARKER", "files": ["docs/*.txt"], "requiredSubstrings": ["INVOICE"], "forbiddenSubstrings": ["LEGACY"] }],
+    "dependencies": [{ "id": "NO_PG", "manifestGlobs": ["go.mod"], "forbiddenCrates": ["pg"] }]
+  }
 }

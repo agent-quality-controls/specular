@@ -1,1 +1,1 @@
-{"id": "lint-R11-schema-broken", "commands": [["lint", "spec.json", "--json"]], "notes": "unknown top-level key, missing schemas category, wrong type; schema layer hides semantic checks; exit 2"}
+{"id":"lint-R11-schema-broken","commands":[["lint","spec.json","--json"]],"notes":"unknown field + wrong type; schema layer; exit 2"}
