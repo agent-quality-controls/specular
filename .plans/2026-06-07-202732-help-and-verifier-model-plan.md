@@ -2,7 +2,7 @@
 
 Goal: verifiers become per-category (builtin or an overriding script); merge
 required+forbidden into one row per scope; omit empty categories; move all format
-docs into `spec3 help`; shrink the skill to a pointer.
+docs into `spec3 --help`; shrink the skill to a pointer.
 
 Companion: `2026-06-07-202732-help-output-draft.md` is the exact help text.
 
@@ -74,14 +74,14 @@ Companion: `2026-06-07-202732-help-output-draft.md` is the exact help text.
   `UNKNOWN_CATEGORY`; drop fixtures for deleted codes.
 - verify suite: add case D (verifier file missing -> exit 2) replacing the old
   command-missing-at-lint path; keep protocol/coverage error fixtures.
-- Add a `help` suite: golden of `spec3 help`.
+- Add a `help` suite: golden of `spec3 --help`.
 - Re-approve goldens (report loses the tally; sources now `custom:<category>`).
 
 ## Change 7 — skill + plan doc
 
 - SKILL.md (+ codex): cut format/field/category/verifier prose now in
-  `spec3 help`; keep the 3-pass extraction protocol, the coverage-map artifact,
-  adjudication, and "run `spec3 help`". The workflow line "run verify before
+  `spec3 --help`; keep the 3-pass extraction protocol, the coverage-map artifact,
+  adjudication, and "run `spec3 --help`". The workflow line "run verify before
   coding to confirm it fails in the right places" mirrors help step 4.
 - `.plans/2026-06-07-124603-...md`: Spec Model (one row per scope, omittable
   categories), Custom Verifiers (per-category map, override), Evidence Model (no

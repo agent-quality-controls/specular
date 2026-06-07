@@ -16,7 +16,7 @@ const HELP: &str = include_str!("../HELP.txt");
 fn run() -> i32 {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.is_empty() {
-        eprintln!("usage: spec3 <lint|verify> <spec.json> [--json]; run `spec3 help`");
+        eprintln!("usage: spec3 <lint|verify> <spec.json> [--json]; run `spec3 --help`");
         return 2;
     }
     if args
@@ -29,7 +29,7 @@ fn run() -> i32 {
     let json = args.iter().any(|a| a == "--json");
     let positional: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
     let (Some(command), Some(spec_path)) = (positional.first(), positional.get(1)) else {
-        eprintln!("usage: spec3 <lint|verify> <spec.json> [--json]; run `spec3 help`");
+        eprintln!("usage: spec3 <lint|verify> <spec.json> [--json]; run `spec3 --help`");
         return 2;
     };
     if args.iter().any(|a| a.starts_with("--") && a != "--json") {
@@ -40,7 +40,7 @@ fn run() -> i32 {
         "lint" => run_lint(Path::new(spec_path), json),
         "verify" => run_verify(Path::new(spec_path), json),
         other => {
-            eprintln!("unknown command '{other}'; run `spec3 help`");
+            eprintln!("unknown command '{other}'; run `spec3 --help`");
             2
         }
     }

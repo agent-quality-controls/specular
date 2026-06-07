@@ -8,7 +8,7 @@ the caller: no roles, no approval, no trust scores.
 USAGE
   spec3 lint   <spec.json> [--json]   validate the spec file alone
   spec3 verify <spec.json> [--json]   check the repository against the spec
-  spec3 help                          print this text
+  spec3 --help                        print this text (also: -h, help)
 
 EXIT CODES
   0  spec valid (lint) / repository conforms (verify)

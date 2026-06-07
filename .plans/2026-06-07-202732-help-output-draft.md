@@ -1,8 +1,8 @@
-# `spec3 help` — proposed output
+# `spec3 --help` — proposed output
 
-The literal text `spec3 help` (and `spec3 --help` / `spec3 -h`) should print. It
+The literal text `spec3 --help` (also `-h`, `help`) should print. It
 is the single source the building agent reads; the skill shrinks to "run
-`spec3 help`, then follow the workflow."
+`spec3 --help`, then follow the workflow."
 
 ---
 
@@ -17,7 +17,7 @@ the caller: no roles, no approval, no trust scores.
 USAGE
   spec3 lint   <spec.json> [--json]   validate the spec file alone
   spec3 verify <spec.json> [--json]   check the repository against the spec
-  spec3 help                          print this text
+  spec3 --help                        print this text (also: -h, help)
 
 EXIT CODES
   0  spec valid (lint) / repository conforms (verify)
