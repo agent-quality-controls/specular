@@ -19,7 +19,8 @@ jq -c '.requirements.enumerations[]' "$SPEC" | while IFS= read -r REQ; do
     PROBLEMS="pub enum $TYPE not found under src/;"
   else
     # Take the enum block: from the declaration to the first line that is just '}'.
-    BLOCK=$(awk "/pub enum $TYPE\b/{f=1} f{print} f && /^}/{exit}" "$FILE")
+    # No \b in awk (BSD awk reads it as backspace); a space or '{' bounds the name.
+    BLOCK=$(awk "/pub enum $TYPE[ {]/{f=1} f{print} f && /^}/{exit}" "$FILE")
     # Variant identifiers: lines starting with an uppercase identifier,
     # optionally followed by payload/discriminant. Attributes and comments excluded.
     ACTUAL=$(echo "$BLOCK" | sed -nE 's/^[[:space:]]+([A-Z][A-Za-z0-9_]*)[[:space:]]*([,({=].*)?$/\1/p' | sort)

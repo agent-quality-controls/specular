@@ -1,0 +1,18 @@
+profile = "library"
+
+allowed_deps = [
+  "aqc-filetree",
+  "aqc-fs-utils",
+  "aqc-git-helpers",
+  "camino",
+  "garde",
+  "globset",
+  "jsonschema",
+  "schemars",
+  "serde",
+  "serde_json",
+  "sha2",
+]
+
+[checks]
+test = false
