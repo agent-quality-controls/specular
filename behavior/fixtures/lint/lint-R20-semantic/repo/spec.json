@@ -1,16 +1,46 @@
 {
   "version": 1,
-  "verifiers": { "dependencies": ["scripts/v.sh"], "notacategory": ["scripts/v.sh"] },
+  "verifiers": {
+    "dependencies": ["scripts/v.sh"],
+    "enumerations": ["scripts/v.sh"],
+    "notacategory": ["scripts/v.sh"],
+    "custom": ["scripts/v.sh"]
+  },
   "requirements": {
-    "tree": [
-      { "id": "DUP", "requiredPaths": ["a"], "forbiddenGlobs": [] },
-      { "id": "DUP", "requiredPaths": ["b"], "forbiddenGlobs": [] },
-      { "id": "lower_id", "requiredPaths": ["/abs"], "forbiddenGlobs": ["["] }
+    "tree": {
+      "required": ["a", "a", " has-space ", "has*glob", "/abs"],
+      "exists": ["a"],
+      "forbidden": ["[", "a"]
+    },
+    "content": [
+      {
+        "files": ["docs/*.txt"],
+        "required": ["x", "x"],
+        "exists": ["x"],
+        "forbidden": ["x"]
+      },
+      {
+        "files": ["docs/*.txt"],
+        "required": ["y"]
+      }
     ],
     "dependencies": [
-      { "id": "D_ONE", "manifestGlobs": ["Cargo.toml"], "requiredCrates": ["x"] },
-      { "id": "D_TWO", "manifestGlobs": ["Cargo.toml"], "forbiddenCrates": ["y"] }
+      {
+        "manifests": ["Cargo.toml"],
+        "required": ["dep"]
+      },
+      {
+        "manifests": ["Cargo.toml"],
+        "forbidden": ["other"]
+      }
     ],
-    "exports": [{ "id": "E_ONE", "package": "p", "types": ["T"] }]
+    "exports": [
+      {
+        "package": "p",
+        "required": ["T"],
+        "exists": ["U"]
+      }
+    ],
+    "custom": ["not-object"]
   }
 }

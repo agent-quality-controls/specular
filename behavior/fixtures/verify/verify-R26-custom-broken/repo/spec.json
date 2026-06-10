@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "verifiers": { "custom": ["scripts/custom.sh"] },
+  "requirements": {
+    "tree": {
+      "required": ["docs/readme.txt"]
+    },
+    "custom": [
+      {
+        "check": "broken"
+      }
+    ]
+  }
+}

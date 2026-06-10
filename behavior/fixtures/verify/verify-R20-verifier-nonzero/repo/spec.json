@@ -2,8 +2,23 @@
   "version": 1,
   "verifiers": { "dependencies": ["scripts/deps.sh"] },
   "requirements": {
-    "tree": [{ "id": "DOCS", "requiredPaths": ["docs/readme.txt"], "forbiddenGlobs": ["junk/**"] }],
-    "content": [{ "id": "MARKER", "files": ["docs/*.txt"], "requiredSubstrings": ["INVOICE"], "forbiddenSubstrings": ["LEGACY"] }],
-    "dependencies": [{ "id": "NO_PG", "manifestGlobs": ["go.mod"], "forbiddenCrates": ["pg"] }]
+    "tree": {
+      "required": ["docs/readme.txt"],
+      "forbidden": ["junk/**"]
+    },
+    "content": [
+      {
+        "files": ["docs/*.txt"],
+        "required": ["INVOICE"],
+        "exists": ["ledger"],
+        "forbidden": ["LEGACY"]
+      }
+    ],
+    "dependencies": [
+      {
+        "manifests": ["go.mod"],
+        "forbidden": ["pg"]
+      }
+    ]
   }
 }

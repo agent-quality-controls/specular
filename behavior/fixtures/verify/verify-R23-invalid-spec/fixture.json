@@ -1,1 +1,1 @@
-{"id":"verify-R23-invalid-spec","commands":[["verify","spec.json","--json"]],"notes":"verify runs lint first; duplicate id; exit 2"}
+{"id":"verify-R23-invalid-spec","commands":[["verify","spec.json"]],"notes":"verify runs lint first; duplicate target; exit 2"}

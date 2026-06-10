@@ -1,150 +1,217 @@
-spec3 — deterministic spec-driven development
+spec3 - deterministic spec-driven development
 
 Verify a repository against a machine-readable JSON spec. spec3 reads the spec,
-checks repository state, and reports per-requirement evidence.
+checks repository state, and reports one evidence object per item.
 
 USAGE
-  spec3 lint   <spec.json> [--json]   validate the spec file alone
-  spec3 verify <spec.json> [--json]   check the repository against the spec
-  spec3 --help                        print this text (also: -h, help)
+  spec3 lint   <spec.json>   validate the spec file alone
+  spec3 verify <spec.json>   check the repository against the spec
+  spec3 --help               print this text (also: -h, help)
 
 EXIT CODES
   0  spec valid (lint) / repository conforms (verify)
   1  repository does not conform (verify only)
-  2  spec invalid, or a verifier/runtime error
-  No bypass flags exist.
+  2  spec invalid, verifier error, protocol error, timeout, or runtime error
+  No flags exist. Output is always JSON.
 
 SPEC FORMAT
-  Strict JSON, no comments. This example uses every field; copy and delete what
-  you do not need. Any category may be omitted; any list field defaults to [].
+  Strict JSON, no comments. This example uses every category; copy and delete
+  what you do not need. Any category may be omitted. List fields default to [].
 
   {
     "version": 1,
     "verifiers": {
       "dependencies": ["scripts/verify-deps.sh"],
-      "exports":      ["scripts/verify-exports.sh"],
+      "exports": ["scripts/verify-exports.sh"],
       "enumerations": ["scripts/verify-enums.sh"],
-      "schemas":      ["scripts/verify-schemas.sh"]
+      "custom": ["scripts/verify-custom.sh"]
     },
     "requirements": {
-      "tree": [
-        {
-          "id": "CORE_FILES",
-          "reason": "plan: Repository layout",
-          "requiredPaths": ["src/lib.rs", "README.md"],
-          "forbiddenGlobs": ["**/tests/**"]
-        }
-      ],
+      "tree": {
+        "reason": "plan: repository layout",
+        "required": ["src/lib.rs", "src/main.rs"],
+        "forbidden": ["tests/**"]
+      },
       "content": [
         {
-          "id": "NO_TEST_CODE",
-          "reason": ["plan: Test policy", "plan: No bypass"],
           "files": ["**/*.rs"],
-          "requiredSubstrings": [],
-          "forbiddenSubstrings": ["#[test]", "--force"]
+          "required": ["// SPDX"],
+          "forbidden": ["#[test]"],
+          "reason": "plan: licensing, test policy"
+        },
+        {
+          "files": ["docs/*.txt"],
+          "exists": ["INVOICE"]
         }
       ],
       "dependencies": [
         {
-          "id": "CRATES",
-          "reason": "plan: Dependency gate",
-          "manifestGlobs": ["Cargo.toml"],
-          "requiredCrates": ["serde"],
-          "forbiddenCrates": ["openssl"],
-          "forbiddenCratePrefixes": ["guardrail"]
+          "manifests": ["Cargo.toml"],
+          "required": ["serde"],
+          "forbidden": ["openssl", "guardrail*", "g3*"]
         }
       ],
       "exports": [
         {
-          "id": "PUBLIC_API",
-          "reason": "plan: Public surface",
           "package": "spec3",
-          "types": ["Spec", "Report"],
-          "functions": ["lint", "verify"]
+          "required": ["Spec", "lint", "verify"]
         }
       ],
       "enumerations": [
         {
-          "id": "STATUS_SET",
-          "reason": "plan: Public surface",
-          "type": "Status",
-          "variants": ["Pass", "Fail"]
+          "name": "Status",
+          "values": ["Pass", "Fail"]
         }
       ],
-      "schemas": [
+      "custom": [
         {
-          "id": "WIRE_SCHEMA",
-          "reason": "plan: Durable formats",
-          "file": "schemas/evidence.schema.json"
+          "check": "version-sync",
+          "files": ["README.md", "Cargo.toml"],
+          "reason": "plan: release process"
         }
       ]
     }
   }
 
-FIELDS  (* required; every other field defaults to [])
-  every row    id*, reason            reason is a string or array of strings
-  tree         requiredPaths, forbiddenGlobs
-  content      files*, requiredSubstrings, forbiddenSubstrings
-  dependencies manifestGlobs*, requiredCrates, forbiddenCrates, forbiddenCratePrefixes
-  exports      package*, types, functions
-  enumerations type*, variants*
-  schemas      file*
+FIELDS
+  tree          reason, required, exists, forbidden
+  content       files, reason, required, exists, forbidden
+  dependencies  manifests, reason, required, exists, forbidden
+  exports       package, reason, required, exists, forbidden
+  enumerations  name, reason, values
+  custom        array of objects; spec3 does not interpret their keys
 
-RULES
-  - id: SCREAMING_SNAKE_CASE, unique across ALL categories.
-  - One row per category+scope. Scope is: tree=the repo, content=files,
-    dependencies=manifestGlobs, exports=package, enumerations=type, schemas=file.
-    Two rows with the same category and scope are rejected — put required and
-    forbidden in the SAME row.
-  - At least one positive assertion must exist (requiredPaths / requiredSubstrings
-    / requiredCrates / exports / enumerations / schemas).
-  - Paths: repo-root-relative, "/" separators, no absolute, no "..".
-    Globs: "*" stays within one path segment, "**" crosses segments.
+SEMANTICS
+  required   each item is present in every matched place
+  exists     each item is present in at least one matched place
+  forbidden  each item is present in no matched place
+
+  required and exists items are exact strings.
+  forbidden items may be globs in tree and dependencies.
+  content items are fixed substrings for all quantifiers.
+  enumerations are exact sets: the named set's values equal values.
+  Zero matched places plus non-empty required or exists fails.
+  exists is rejected by lint on tree and exports because each has one place.
 
 VERIFIERS
-  Each category is judged by exactly one verifier.
+  Every category is judged by exactly one verifier.
 
-    builtin (run automatically, declare nothing):  tree, content
-    no builtin (you MUST declare one):             dependencies, exports,
-                                                   enumerations, schemas
+    builtin when no verifier is declared:  tree, content
+    no builtin:                            dependencies, exports,
+                                           enumerations, custom
 
-  To supply a missing verifier, or to replace a builtin, add the category to the
-  top-level "verifiers" map with a command:
+  A verifier is declared in the top-level verifiers map:
 
     "verifiers": { "dependencies": ["scripts/verify-deps.sh"] }
 
-  Writing a verifier — three steps:
-    1. Make an executable command. spec3 runs it as:
-         <command...> <spec.json> <category>
-       Read requirements.<category> from the spec file (argv 1).
-    2. Print one JSON object per line to stdout, one per requirement in that
-       category. Required keys id, status; the rest optional:
-         {"id":"CRATES","status":"pass"}
-         {"id":"CRATES","status":"fail","message":"openssl present",
-          "observed":"openssl 0.10","expected":"absent","path":"Cargo.toml"}
-    3. Add the category to "verifiers" and run `spec3 verify`.
-  Exit nonzero, a missing line for a requirement, or a line for an id outside the
-  category is a runtime error (exit 2).
+  Typed categories run once per block:
 
-LINT ERRORS (all reported at once)
-  JSON_SCHEMA              wrong shape, unknown field, or wrong type
-  DUPLICATE_ID             id used more than once
-  ID_FORMAT                id not SCREAMING_SNAKE_CASE
-  PATH_RULE / GLOB         bad path, or a glob that will not compile
-  MERGEABLE_REQUIREMENTS   two rows with the same category and scope
-  VACUOUS_SPEC             no positive assertion
-  CATEGORY_HAS_NO_VERIFIER a non-builtin category with no verifier declared
-  UNKNOWN_CATEGORY         a "verifiers" key that is not a category
+    <command...> <spec.json> <category> <blockIndex>
+
+  The script reads requirements.<category>[blockIndex] from the spec and prints
+  one JSON object per item in that block. Required keys: item, status.
+
+    {"item":"serde","status":"pass"}
+    {"item":"guardrail*","status":"fail","message":"guardrail3 declared","path":"Cargo.toml"}
+
+  Custom runs once:
+
+    <command...> <spec.json> custom
+
+  The script reads requirements.custom and prints any evidence objects it owns.
+  Required key: status. All other keys are copied into the report.
+
+    {"check":"version-sync","status":"pass"}
+    {"check":"version-sync","status":"fail","message":"README and Cargo.toml differ"}
+
+  Script exit code signals health only. Nonzero exit, invalid JSON, missing item,
+  duplicate item, unknown item, zero custom lines, or a 60 second timeout is a
+  runtime error with exit 2. Pass/fail verdicts travel only in evidence lines.
+
+COMPLETE TYPED SCRIPT
+  #!/usr/bin/env bash
+  set -uo pipefail
+  SPEC="${1:?spec}"
+  CATEGORY="${2:?category}"
+  INDEX="${3:?block index}"
+  BLOCK=$(jq -c ".requirements[$CATEGORY][($INDEX|tonumber)]" \
+    --arg CATEGORY "$CATEGORY" --arg INDEX "$INDEX" "$SPEC")
+  echo "$BLOCK" | jq -r '.required[]?, .exists[]?, .forbidden[]?' |
+  while IFS= read -r ITEM; do
+    jq -nc --arg item "$ITEM" '{item: $item, status: "pass"}'
+  done
+
+COMPLETE CUSTOM SCRIPT
+  #!/usr/bin/env bash
+  set -uo pipefail
+  SPEC="${1:?spec}"
+  jq -c '.requirements.custom[]' "$SPEC" |
+  while IFS= read -r CHECK; do
+    NAME=$(echo "$CHECK" | jq -r '.check // "custom"')
+    jq -nc --arg check "$NAME" '{check: $check, status: "pass"}'
+  done
+
+LINT ERRORS
+  JSON_SCHEMA               wrong shape, unknown field, wrong type, or bad version
+  VACUOUS_SPEC              no required, exists, or values item anywhere
+  CATEGORY_HAS_NO_VERIFIER  non-builtin category has requirements and no verifier
+  UNKNOWN_CATEGORY          verifiers key is not a category
+  PATH_RULE / GLOB          bad path, or a glob that will not compile
+  DUPLICATE_TARGET          two blocks in one category have the same target
+  DUPLICATE_ITEM            same item appears twice in one block
+  CONTRADICTION             same item is required and forbidden in one block
+  REDUNDANT                 same item is both required and exists in one block
+  ITEM_FORMAT               required/exists item is empty, untrimmed, or a glob
+  EXISTS_SINGLE_PLACE       exists used on tree or exports
+  DEAD_VERIFIER             verifier declared for an empty category
+  VERIFIER_COMMAND_EMPTY    verifier command array is empty
+  CUSTOM_SHAPE              custom entry is not an object
 
 WORKFLOW
-  1. Write the plan in prose (kept as the detailed source).
-  2. Write spec.json for everything spec3 can check.
-  3. Write verifier scripts for the non-builtin categories you use.
-  4. Run `spec3 verify` on the unbuilt repo; confirm it fails where expected.
-  5. Build until `spec3 verify` exits 0.
+  1. Write the plan in prose.
+  2. Extract a JSON spec for checkable items.
+  3. Write verifier scripts for categories without a builtin.
+  4. Run spec3 verify before coding and confirm it fails where expected.
+  5. Build until spec3 verify exits 0.
   6. Spot-check by hand; the spec is not exhaustive.
 
 REPORT
-  Per requirement: id, source (builtin:<category> or custom:<category>), status,
-  and a message on failure. Header stamps the spec hash, each verifier file hash,
-  the spec3 version, and the Git state of those files. --json emits it as data.
+  lint:
+
+    {"result":"pass"}
+
+    {"result":"fail","violations":[{"code":"VACUOUS_SPEC","message":"..."}]}
+
+  verify:
+
+    {
+      "spec3_version": "0.2.0",
+      "spec": {"path": "spec.json", "sha256": "..."},
+      "verifier_files": [{"path": "scripts/verify-deps.sh", "sha256": "..."}],
+      "git": [{"path": "spec.json", "state": "clean"}],
+      "evidence": [
+        {
+          "category": "tree",
+          "polarity": "required",
+          "item": "src/main.rs",
+          "source": "builtin",
+          "status": "fail",
+          "message": "missing required path: src/main.rs"
+        },
+        {
+          "category": "dependencies",
+          "target": ["Cargo.toml"],
+          "item": "guardrail*",
+          "source": "custom",
+          "status": "pass"
+        },
+        {
+          "category": "custom",
+          "check": "version-sync",
+          "source": "custom",
+          "status": "fail",
+          "message": "README and Cargo.toml differ"
+        }
+      ],
+      "conforms": false
+    }

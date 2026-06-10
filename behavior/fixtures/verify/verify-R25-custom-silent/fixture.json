@@ -1,0 +1,1 @@
+{"id":"verify-R25-custom-silent","commands":[["verify","spec.json"]],"notes":"custom verifier exits 0 with no evidence lines; runtime error; exit 2"}

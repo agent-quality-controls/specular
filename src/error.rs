@@ -5,7 +5,7 @@ use serde::Serialize;
 /// One spec defect found by `lint`.
 #[derive(Debug, Clone, Serialize)]
 pub struct SpecViolation {
-    /// Stable violation code, e.g. `MERGEABLE_REQUIREMENTS`.
+    /// Stable violation code, e.g. `DUPLICATE_TARGET`.
     pub code: String,
     /// What is wrong, concretely.
     pub message: String,

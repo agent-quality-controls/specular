@@ -13,11 +13,11 @@ mod verify;
 
 pub use error::{LintError, SpecViolation, VerifyError};
 pub use evidence::{
-    Evidence, FileStamp, GitDiagnostic, Report, Status, VerifierSource, WireEvidence,
+    Evidence, FileStamp, GitDiagnostic, Polarity, Report, Status, VerifierSource, WireEvidence,
 };
 pub use lint::lint;
 pub use model::{
     Category, ContentRequirement, DependencyRequirement, EnumerationRequirement, ExportRequirement,
-    Reason, Requirements, SchemaRequirement, Spec, TreeRequirement,
+    Reason, Requirements, Spec, TreeRequirement,
 };
 pub use verify::verify;

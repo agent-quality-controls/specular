@@ -1,1 +1,1 @@
-{"id":"lint-R00-clean-golden","commands":[["lint","spec.json","--json"]],"notes":"valid: builtin tree+content, dependencies overridden; empty categories omitted; exit 0"}
+{"id":"lint-R00-clean-golden","commands":[["lint","spec.json"]],"notes":"valid: tree object, content block, dependency verifier; exit 0"}

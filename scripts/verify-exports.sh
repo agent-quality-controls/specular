@@ -1,36 +1,44 @@
 #!/usr/bin/env bash
-# verify-exports.sh <spec.json>
-# Checks requirements.exports: each listed type and function is declared public
-# somewhere under src/. Approximation: textual scan for `pub struct|enum NAME`,
-# `pub use ...NAME`, `pub fn name` — does not prove reachability from the crate
-# root; upgrade to cargo public-api when the workspace builds.
-# Emits one JSON evidence line per requirement.
+# verify-exports.sh <spec.json> exports <blockIndex>
+# Emits one JSON evidence line per export item in the selected block.
 set -uo pipefail
 
-SPEC="${1:?usage: verify-exports.sh <spec.json>}"
+SPEC="${1:?usage: verify-exports.sh <spec.json> exports <blockIndex>}"
+CATEGORY="${2:?usage: verify-exports.sh <spec.json> exports <blockIndex>}"
+INDEX="${3:?usage: verify-exports.sh <spec.json> exports <blockIndex>}"
+[ "$CATEGORY" = "exports" ] || exit 2
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-jq -c '.requirements.exports[]' "$SPEC" | while IFS= read -r REQ; do
-  ID=$(echo "$REQ" | jq -r '.id')
-  PROBLEMS=""
-  if [ ! -d src ]; then
-    PROBLEMS="src/ does not exist;"
+BLOCK=$(jq -c --argjson index "$INDEX" '.requirements.exports[$index]' "$SPEC")
+
+has_export() {
+  local item="$1"
+  [ -d src ] || return 1
+  grep -rqE "pub (struct|enum|type|trait) $item\b|pub fn $item\b|pub use [^;]*\b$item\b" src/
+}
+
+echo "$BLOCK" | jq -r '.required[]?' | while IFS= read -r item; do
+  if has_export "$item"; then
+    jq -nc --arg item "$item" '{item: $item, status: "pass"}'
   else
-    while IFS= read -r T; do
-      [ -z "$T" ] && continue
-      grep -rqE "pub (struct|enum) $T\b|pub use [^;]*\b$T\b|pub type $T\b" src/ \
-        || PROBLEMS="$PROBLEMS public type '$T' not found;"
-    done < <(echo "$REQ" | jq -r '.types[]?')
-    while IFS= read -r F; do
-      [ -z "$F" ] && continue
-      grep -rqE "pub fn $F\b|pub use [^;]*\b$F\b" src/ \
-        || PROBLEMS="$PROBLEMS public function '$F' not found;"
-    done < <(echo "$REQ" | jq -r '.functions[]?')
+    jq -nc --arg item "$item" '{item: $item, status: "fail", message: "public item not found"}'
   fi
-  if [ -z "$PROBLEMS" ]; then
-    jq -nc --arg id "$ID" '{id: $id, status: "pass"}'
+done
+
+echo "$BLOCK" | jq -r '.exists[]?' | while IFS= read -r item; do
+  if has_export "$item"; then
+    jq -nc --arg item "$item" '{item: $item, status: "pass"}'
   else
-    jq -nc --arg id "$ID" --arg m "$PROBLEMS" '{id: $id, status: "fail", message: $m}'
+    jq -nc --arg item "$item" '{item: $item, status: "fail", message: "public item not found"}'
+  fi
+done
+
+echo "$BLOCK" | jq -r '.forbidden[]?' | while IFS= read -r item; do
+  if has_export "$item"; then
+    jq -nc --arg item "$item" '{item: $item, status: "fail", message: "forbidden public item found"}'
+  else
+    jq -nc --arg item "$item" '{item: $item, status: "pass"}'
   fi
 done

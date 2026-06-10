@@ -2,8 +2,22 @@
   "version": 1,
   "verifiers": { "dependencies": ["scripts/v.sh"] },
   "requirements": {
-    "tree": [{ "id": "DOCS", "requiredPaths": ["README.md"], "forbiddenGlobs": ["tmp/**"] }],
-    "content": [{ "id": "MARKER", "files": ["docs/*.txt"], "requiredSubstrings": ["INVOICE"], "forbiddenSubstrings": ["LEGACY"] }],
-    "dependencies": [{ "id": "NO_PG", "manifestGlobs": ["Cargo.toml"], "forbiddenCrates": ["pg"] }]
+    "tree": {
+      "required": ["README.md"],
+      "forbidden": ["tmp/**"]
+    },
+    "content": [
+      {
+        "files": ["docs/*.txt"],
+        "required": ["INVOICE"],
+        "forbidden": ["LEGACY"]
+      }
+    ],
+    "dependencies": [
+      {
+        "manifests": ["Cargo.toml"],
+        "forbidden": ["pg"]
+      }
+    ]
   }
 }

@@ -18,6 +18,8 @@ Supersedes `.plans/2026-05-14-203402-spec3-preliminary-plan.md`. Major changes f
 - Deferred categories are specified as per-ecosystem builtins over toolchain machine interfaces.
 - Explicit mechanism-not-policy boundary: the library has no roles, identity, approval, or agent concepts.
 
+Superseded in part by `.plans/2026-06-10-154943-per-item-spec-model.md`: the committed V2 format has no requirement IDs, no `schemas` category, no `--json` flag, and one evidence object per item. The sections below named Spec Model, Verifiers, Requirement Coverage, Commands, Public Library Surface, Evidence, Verification Phases, and Deferred Categories are synchronized to that redesign.
+
 # Problem statement
 
 `spec3` must verify repository shape and file content against a JSON contract without:
@@ -37,14 +39,14 @@ The library cannot know its caller: human, CI, orchestrator, or agent. It theref
 - Every command's semantics are visible in its syntax, so external permission systems can discriminate by command pattern.
 - All commands in V1 are read-only with respect to the repository. `spec3` writes nothing into the repository it verifies.
 - No bypass flags. There is no `--force`, `--skip`, or environment variable that softens a refusal. Integrity refusals are non-negotiable in-library.
-- Every decision point emits structured output (`--json` everywhere, stable exit codes), so outer layers consume facts as data, never parse prose.
+- Every decision point emits structured JSON output with stable exit codes, so outer layers consume facts as data, never parse prose.
 
 ## Source recorded, never judged
 
 - `builtin` evidence: produced by builtin verifiers shipped and fixture-tested with `spec3`, independent of whoever authored the implementation under verification.
 - `custom` evidence: produced by verifier commands declared in the spec — authored by the same parties writing the implementation.
 
-Every evidence item carries its verifier source (`builtin:<category>` or `custom:<category>`). The library records source as a fact and attaches no judgment to it — what builtin vs custom implies about trustworthiness is the consumer's inference. There is no trust type, grade, score, or rolled-up builtin/custom tally anywhere in the model; the per-item source is the whole contract, and a report must never present the two sources indistinguishably.
+Every evidence item carries its verifier source (`builtin` or `custom`). The library records source as a fact and attaches no judgment to it — what builtin vs custom implies about trustworthiness is the consumer's inference. There is no trust type, grade, score, or rolled-up builtin/custom tally anywhere in the model; the per-item source is the whole contract, and a report must never present the two sources indistinguishably.
 
 ## Closed-world core, open-world escape hatch
 
@@ -151,34 +153,51 @@ Rust semantic validation must enforce uniqueness for IDs, paths, verifier requir
 
 # Spec Model
 
-The spec file is the source contract.
+The spec file is the source contract. The atom is an item: a path, substring, package name, export name, enum value, or custom evidence object. There are no requirement IDs.
 
 Top-level shape:
 
 ```json
 {
   "version": 1,
+  "verifiers": {
+    "dependencies": ["scripts/verify-deps.sh"],
+    "exports": ["scripts/verify-exports.sh"],
+    "enumerations": ["scripts/verify-enums.sh"],
+    "custom": ["scripts/verify-custom.sh"]
+  },
   "requirements": {
-    "tree": [],
+    "tree": {
+      "required": ["src/lib.rs"],
+      "forbidden": ["tests/**"]
+    },
     "content": [],
     "dependencies": [],
     "exports": [],
     "enumerations": [],
-    "schemas": []
-  },
-  "verifiers": []
+    "custom": []
+  }
 }
 ```
 
-Every requirement entry has:
+Typed categories use uniform quantifier keys where they apply:
 
-- `id`
-- optional `reason` (string or array of strings — a merged rule keeps every plan citation)
-- category-specific fields
+- `required`: each item is present in every matched place
+- `exists`: each item is present in at least one matched place
+- `forbidden`: each item is present in no matched place
 
-Requirement IDs must be unique across all categories.
+Category shape:
 
-Granularity is derived, never chosen: one row per category and scope. Each category defines a scope (`tree`: the repository; `content`: `files`; `dependencies`: `manifestGlobs`; `exports`: `package`; `enumerations`: `type`; `schemas`: `file`). Two requirements sharing a category and scope are one rule by definition — required and forbidden members live together in that one row, and per-member detail appears in evidence messages, not in extra rows. `MERGEABLE_REQUIREMENTS` enforces this (grouping ignores polarity). This mirrors the merge-phase collapse rule in the guardrails engines: identical contributions are one contribution.
+- `tree`: one object for the repository; `required`, `exists`, `forbidden`; `exists` is rejected by lint.
+- `content`: array of blocks with `files`, `required`, `exists`, `forbidden`.
+- `dependencies`: array of blocks with `manifests`, `required`, `exists`, `forbidden`; forbidden items may be globs.
+- `exports`: array of blocks with `package`, `required`, `exists`, `forbidden`; `exists` is rejected by lint.
+- `enumerations`: array of blocks with `name` and exact `values`.
+- `custom`: array of opaque objects. spec3 validates only that each entry is an object.
+
+`reason` is optional on every typed block. It may be a string or an array of strings. The extraction workflow fills it, but the schema does not require it.
+
+Granularity is derived by target: `content.files`, `dependencies.manifests`, `exports.package`, and `enumerations.name`. Two blocks in one category with the same target fail `lint` as `DUPLICATE_TARGET`.
 
 Builtin-supported categories in V1:
 
@@ -190,7 +209,7 @@ Categories with no builtin in V1:
 - `dependencies`
 - `exports`
 - `enumerations`
-- `schemas`
+- `custom`
 
 Categories may be omitted from `requirements` when unused; an absent category is empty. A non-empty category with no builtin and no verifier override fails `lint` (`CATEGORY_HAS_NO_VERIFIER`).
 
@@ -209,25 +228,27 @@ Rules:
 - A category absent from the map uses its builtin (tree, content) or, for the others, fails `lint` (`CATEGORY_HAS_NO_VERIFIER`).
 - A map key that is not one of the six categories fails `lint` (`UNKNOWN_CATEGORY`).
 - Listing a builtin category overrides it; the command then owns that category. Override is allowed — the script takes responsibility for the whole category.
-- There is no per-requirement ownership, no `requirementIds`, no overlap to resolve. Granularity is one row per category and scope (see Spec Model); `MERGEABLE_REQUIREMENTS` enforces it.
+- There is no per-requirement ownership and no overlap to resolve. Granularity is target-based (see Spec Model); `DUPLICATE_TARGET` enforces it.
 
 Execution protocol (`verify`):
 
-- `spec3` runs the override as `<command...> <spec.json> <category>` from the repository root. The script reads `requirements.<category>` and emits one JSON line per requirement in that category: `{"id": "...", "status": "pass" | "fail", "message": "...", "observed": ..., "expected": ..., "path": ...}` (fields beyond `id` and `status` optional).
-- A nonzero exit, a missing line for a requirement, or a line for an id outside the category is a runtime error (exit class 2), not a requirement failure.
+- For typed categories, `spec3` runs the override once per block as `<command...> <spec.json> <category> <blockIndex>` from the repository root. The script reads that block and emits one JSON line per item in the block: `{"item": "...", "status": "pass" | "fail", "message": "...", "observed": ..., "expected": ..., "path": ...}`.
+- For `custom`, `spec3` runs the override once as `<command...> <spec.json> custom`. The script reads the whole `requirements.custom` array. Only `status` is mandatory; all other fields are script-owned and copied into the report.
+- A nonzero exit, timeout, missing item, duplicate item, unknown item, invalid JSON line, or custom verifier that emits zero lines is a runtime error (exit class 2), not a requirement failure.
 - A missing command file is not a lint concern (the spec is identical whether or not the file exists); it fails at `verify` when the command cannot be stamped or spawned.
 
-All override evidence is labeled `custom:<category>`; builtin evidence `builtin:<category>`. Override command files are part of the input closure: their raw-byte hashes are stamped into the report (see Evidence Model).
+All script evidence is labeled `"source": "custom"`; builtin evidence is labeled `"source": "builtin"`. Verifier command files are part of the input closure: their raw-byte hashes are stamped into the report (see Evidence Model).
 
 # Requirement Coverage
 
-Each category routes to exactly one verifier (its builtin or its override), which judges every requirement in that category.
+Each category routes to exactly one verifier (its builtin or its override), which judges every item in that category.
 
 Fatal verification errors:
 
-- a requirement produces no evidence
-- a requirement's evidence appears more than once
-- an override reports an id outside its category
+- a typed item produces no evidence
+- a typed item appears more than once
+- a typed verifier reports an item outside its block
+- a custom verifier exits 0 but emits no evidence lines
 
 # Commands
 
@@ -236,7 +257,7 @@ spec3 lint <spec>
 spec3 verify <spec>
 ```
 
-All commands support `--json`. All are read-only with respect to the repository.
+All command output is JSON. No `--json` flag exists. All commands are read-only with respect to the repository.
 
 ## `lint`
 
@@ -249,12 +270,18 @@ Checks:
 - Serde deserializes
 - schema version is supported
 - unknown fields are rejected
-- requirement IDs are unique
 - paths are normalized, globs compile
-- MERGEABLE_REQUIREMENTS: no two requirements share a category and scope (granularity is derived, not chosen; required and forbidden merge into one row)
+- DUPLICATE_TARGET: no two blocks in one category share the same target
+- DUPLICATE_ITEM: no item appears twice in one block
+- CONTRADICTION: an item is not both required and forbidden
+- REDUNDANT: an item is not both required and exists
+- ITEM_FORMAT: required and exists items are non-empty, trimmed, and non-glob
+- EXISTS_SINGLE_PLACE: `exists` is not used on tree or exports
 - VACUOUS_SPEC: the spec contains at least one positive assertion; a spec of pure prohibitions passes on an empty repository
 - CATEGORY_HAS_NO_VERIFIER: a non-empty category has no builtin and no override in the `verifiers` map
 - UNKNOWN_CATEGORY: a `verifiers` map key is not one of the six categories
+- DEAD_VERIFIER: a verifier is not declared for an empty category
+- CUSTOM_SHAPE: every custom entry is an object
 - a missing override command file is NOT a lint error (the spec is identical with or without the file on disk); it fails at `verify`
 
 ## `verify`
@@ -302,11 +329,12 @@ verify(&Spec, root) -> Result<Report, VerifyError>
 
 Types:
 
-- `Spec` + six requirement structs (`TreeRequirement`, `ContentRequirement`, `DependencyRequirement`, `ExportRequirement`, `EnumerationRequirement`, `SchemaRequirement`)
+- `Spec` + five typed requirement structs (`TreeRequirement`, `ContentRequirement`, `DependencyRequirement`, `ExportRequirement`, `EnumerationRequirement`) plus opaque `custom` JSON objects
 - `Category` — the closed set of six
 - `Report`, `Evidence`
 - `Status { Pass, Fail }` — same name as its wire field `status`
-- `VerifierSource { Builtin(Category), Custom(Category) }` — serializes to `source`
+- `VerifierSource { Builtin, Custom }` — serializes to `source`
+- `Polarity { Required, Exists, Forbidden }`
 - `LintError` (+ `SpecViolation`), `VerifyError`
 
 Naming decisions and their reasons:
@@ -320,9 +348,10 @@ Spec3-owned (not an `aqc-shared` crate).
 
 Every evidence item includes at least:
 
-- requirement ID
-- source (`{"builtin": "<category>"}` or `{"custom": "<verifier-id>"}`; typed as `VerifierSource`)
+- category
+- source (`"builtin"` or `"custom"`; typed as `VerifierSource`)
 - status (`pass` | `fail`; typed as `Status`)
+- item and polarity for typed categories
 - message
 - observed value when useful
 - expected value when useful
@@ -342,14 +371,12 @@ The stamps are what make outer integrity policy possible without a lock: any out
 Open decisions:
 
 - line/byte ranges for content evidence
-- exact JSON report shape
-- whether pass evidence is emitted by default or only in `--json` mode
 
 # Verification Phases
 
-- input validity (JSON parses, schema validates, Serde deserializes, IDs unique, paths valid, globs compile, ownership total)
-- requirement conformance (builtin checks and custom verifier results)
-- evidence validity (every result cites a known owned ID; every requirement reported exactly once; no orphans)
+- input validity (JSON parses, schema validates, Serde deserializes, paths valid, globs compile, targets unique, items non-contradictory)
+- requirement conformance (builtin checks and verifier script results)
+- evidence validity (every typed script result cites a known item; every typed item reported exactly once; no orphans)
 
 Do not expose precondition, postcondition, or invariant terminology in the user-facing spec.
 
@@ -409,14 +436,14 @@ Encoding, NUL, size cap, CRLF normalization, and symlink read behavior: `aqc-fs-
 
 # Deferred Categories: Per-Ecosystem Builtins
 
-`dependencies`, `exports`, `enumerations`, and `schemas` exist in the typed model from V1 (so extraction, `diff` classification, and adjudication work on typed rows) but have no builtin verifiers in V1. The custom lane carries them until builtins land.
+`dependencies`, `exports`, and `enumerations` exist in the typed model from V1 but have no builtin verifiers in V1. The custom lane carries them and opaque checks until builtins land.
 
-When built, each backend is a per-ecosystem builtin inside `spec3`, routed as `builtin:<category>-<ecosystem>` (for example `builtin:deps-cargo`, `builtin:deps-go`, `builtin:deps-npm`):
+When built, each backend is a per-ecosystem builtin inside `spec3` for its category and ecosystem, for example cargo dependencies, Go dependencies, or npm dependencies:
 
 - `dependencies`: consume the ecosystem's stable machine interface — `cargo metadata`, `go list -deps -json`, package-manager graphs. No linter layer in between; a linter between `spec3` and the toolchain interface adds a vocabulary translation and a managed binary while contributing nothing.
-- `exports`, `enumerations`, `schemas`: bespoke static-analysis work (source parsing, DDL parsing). Each pair is built when usage shows recurrence, not upfront.
+- `exports`, `enumerations`: bespoke static-analysis work (source parsing, DDL parsing). Each pair is built when usage shows recurrence, not upfront.
 
-Coverage rule: a requirement in a category x ecosystem pair with no builtin and no custom claim fails `lint` with an explicit "unsupported in this version" message.
+Coverage rule: a non-empty category with no builtin and no verifier entry fails `lint` with `CATEGORY_HAS_NO_VERIFIER`.
 
 Where Guardrail3 needs the identical fact (for example the cargo metadata graph), the parsing lives once in an `aqc-*` fact crate consumed by both products. No shared linter layer, no shared findings schema.
 
@@ -567,10 +594,10 @@ Do not block on Guardrail3 v2 product code — only on the neutral `aqc-*` crate
 
 # V1 Definition Of Done
 
-- `spec3 lint` rejects invalid JSON, JSON Schema violations, invalid typed specs, semantic validation failures, mergeable rows, vacuous specs, categories with no verifier, and unknown verifier-map keys.
+- `spec3 lint` rejects invalid JSON, JSON Schema violations, invalid typed specs, semantic validation failures, duplicate targets/items, contradictions, redundant items, vacuous specs, categories with no verifier, dead verifiers, bad custom shapes, and unknown verifier-map keys.
 - `spec3 verify` checks builtin `tree` and `content` requirements over `aqc-filetree`/`aqc-fs-utils` with no own walk or read stack.
-- `spec3 verify` runs each category's verifier (builtin or override), enforces the evidence protocol and per-category coverage, and fails loudly on protocol violations.
-- Every report labels evidence `builtin:<category>`/`custom:<category>` and stamps the input closure (spec hash, verifier file hashes, `spec3` version, Git diagnostics).
+- `spec3 verify` runs each category's verifier (builtin or script), enforces the evidence protocol and per-item coverage, and fails loudly on protocol violations.
+- Every report labels evidence `builtin`/`custom` and stamps the input closure (spec hash, verifier file hashes, `spec3` version, Git diagnostics).
 - Exit codes: 0 conform, 1 nonconform, 2 input/protocol/runtime error. No bypass flags exist.
 - The library contains no roles, identity, approval, or caller-awareness; all commands are repository-read-only.
 - Rust tests are absent.

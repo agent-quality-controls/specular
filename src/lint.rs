@@ -1,14 +1,13 @@
 //! `lint`: the only constructor of a valid [`Spec`].
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
 use camino::Utf8Path;
-use garde::Validate as _;
 use globset::GlobBuilder;
 
 use crate::error::{LintError, SpecViolation};
-use crate::model::{Category, Spec};
+use crate::model::{Category, ExportRequirement, Spec};
 
 /// Validate the spec file and produce the typed contract.
 ///
@@ -36,14 +35,6 @@ pub fn lint(path: &Path) -> Result<Spec, LintError> {
         message: e.to_string(),
     })?;
 
-    if let Err(report) = spec.validate() {
-        for (field, error) in report.iter() {
-            violations.push(SpecViolation {
-                code: "FIELD_RULE".to_owned(),
-                message: format!("{field}: {error}"),
-            });
-        }
-    }
     semantic_violations(&spec, &mut violations);
 
     if violations.is_empty() {
@@ -79,56 +70,25 @@ fn schema_violations(value: &serde_json::Value, out: &mut Vec<SpecViolation>) {
 }
 
 fn semantic_violations(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    check_ids(spec, out);
+    check_version(spec, out);
     check_paths_and_globs(spec, out);
-    check_mergeable(spec, out);
+    check_targets(spec, out);
+    check_items(spec, out);
     check_vacuous(spec, out);
     check_verifiers(spec, out);
+    check_custom_shape(spec, out);
 }
 
-/// Every `(id, category)` pair in the spec, in document order.
-fn all_ids(spec: &Spec) -> Vec<(&str, &'static str)> {
-    let r = &spec.requirements;
-    let mut ids: Vec<(&str, &'static str)> = Vec::new();
-    ids.extend(r.tree.iter().map(|x| (x.id.as_str(), "tree")));
-    ids.extend(r.content.iter().map(|x| (x.id.as_str(), "content")));
-    ids.extend(
-        r.dependencies
-            .iter()
-            .map(|x| (x.id.as_str(), "dependencies")),
-    );
-    ids.extend(r.exports.iter().map(|x| (x.id.as_str(), "exports")));
-    ids.extend(
-        r.enumerations
-            .iter()
-            .map(|x| (x.id.as_str(), "enumerations")),
-    );
-    ids.extend(r.schemas.iter().map(|x| (x.id.as_str(), "schemas")));
-    ids
-}
-
-fn check_ids(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    let mut seen: HashSet<&str> = HashSet::new();
-    for (id, _) in all_ids(spec) {
-        if !seen.insert(id) {
-            out.push(SpecViolation {
-                code: "DUPLICATE_ID".to_owned(),
-                message: format!("requirement id '{id}' appears more than once"),
-            });
-        }
-        let mut chars = id.chars();
-        let head_ok = chars.next().is_some_and(|c| c.is_ascii_uppercase());
-        let tail_ok = chars.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_');
-        if !(head_ok && tail_ok) {
-            out.push(SpecViolation {
-                code: "ID_FORMAT".to_owned(),
-                message: format!("requirement id '{id}' is not SCREAMING_SNAKE_CASE"),
-            });
-        }
+fn check_version(spec: &Spec, out: &mut Vec<SpecViolation>) {
+    if spec.version != 1 {
+        out.push(SpecViolation {
+            code: "JSON_SCHEMA".to_owned(),
+            message: format!("version must be 1, got {}", spec.version),
+        });
     }
 }
 
-fn check_path_text(id: &str, value: &str, out: &mut Vec<SpecViolation>) {
+fn check_path_text(label: &str, value: &str, out: &mut Vec<SpecViolation>) {
     let path = Utf8Path::new(value);
     let escapes = path.components().any(|c| {
         matches!(
@@ -142,99 +102,87 @@ fn check_path_text(id: &str, value: &str, out: &mut Vec<SpecViolation>) {
         out.push(SpecViolation {
             code: "PATH_RULE".to_owned(),
             message: format!(
-                "{id}: '{value}' must be repo-root-relative with '/', no '..', no empty components"
+                "{label}: '{value}' must be repo-root-relative with '/', no '..', no empty components"
             ),
         });
     }
 }
 
-fn check_glob(id: &str, pattern: &str, out: &mut Vec<SpecViolation>) {
-    check_path_text(id, pattern, out);
+fn check_glob(label: &str, pattern: &str, out: &mut Vec<SpecViolation>) {
+    check_path_text(label, pattern, out);
     if let Err(error) = GlobBuilder::new(pattern).literal_separator(true).build() {
         out.push(SpecViolation {
             code: "GLOB".to_owned(),
-            message: format!("{id}: glob '{pattern}' does not compile: {error}"),
+            message: format!("{label}: glob '{pattern}' does not compile: {error}"),
         });
     }
 }
 
 fn check_paths_and_globs(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    let r = &spec.requirements;
-    for x in &r.tree {
-        for p in &x.required_paths {
-            check_path_text(&x.id, p, out);
-        }
-        for g in &x.forbidden_globs {
-            check_glob(&x.id, g, out);
+    let tree = &spec.requirements.tree;
+    for p in tree.required.iter().chain(&tree.exists) {
+        check_path_text("tree", p, out);
+    }
+    for g in &tree.forbidden {
+        check_glob("tree", g, out);
+    }
+    for block in &spec.requirements.content {
+        for g in &block.files {
+            check_glob("content", g, out);
         }
     }
-    for x in &r.content {
-        for g in &x.files {
-            check_glob(&x.id, g, out);
+    for block in &spec.requirements.dependencies {
+        for g in &block.manifests {
+            check_glob("dependencies", g, out);
         }
-    }
-    for x in &r.dependencies {
-        for g in &x.manifest_globs {
-            check_glob(&x.id, g, out);
-        }
-    }
-    for x in &r.schemas {
-        check_path_text(&x.id, &x.file, out);
     }
 }
 
-/// Granularity is derived: one row per category and scope. Required and
-/// forbidden of the same scope must live in one row, so grouping ignores
-/// polarity.
-fn check_mergeable(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    let r = &spec.requirements;
-    let mut groups: HashMap<String, Vec<&str>> = HashMap::new();
-    for x in &r.tree {
-        groups.entry("tree".to_owned()).or_default().push(&x.id);
-    }
-    for x in &r.content {
-        let scope = sorted_key(&x.files);
-        groups
-            .entry(format!("content/{scope}"))
-            .or_default()
-            .push(&x.id);
-    }
-    for x in &r.dependencies {
-        let scope = sorted_key(&x.manifest_globs);
-        groups
-            .entry(format!("dependencies/{scope}"))
-            .or_default()
-            .push(&x.id);
-    }
-    for x in &r.exports {
-        groups
-            .entry(format!("exports/{}", x.package))
-            .or_default()
-            .push(&x.id);
-    }
-    for x in &r.enumerations {
-        groups
-            .entry(format!("enumerations/{}", x.type_name))
-            .or_default()
-            .push(&x.id);
-    }
-    for x in &r.schemas {
-        groups
-            .entry(format!("schemas/{}", x.file))
-            .or_default()
-            .push(&x.id);
-    }
-    let mut offending: Vec<String> = groups
-        .into_iter()
-        .filter(|(_, ids)| ids.len() > 1)
-        .map(|(_, ids)| ids.join("+"))
-        .collect();
-    offending.sort();
-    for ids in offending {
-        out.push(SpecViolation {
-            code: "MERGEABLE_REQUIREMENTS".to_owned(),
-            message: format!("same scope and polarity; merge into one row: {ids}"),
-        });
+fn check_targets(spec: &Spec, out: &mut Vec<SpecViolation>) {
+    duplicate_targets(
+        "content",
+        spec.requirements
+            .content
+            .iter()
+            .map(|x| sorted_key(&x.files)),
+        out,
+    );
+    duplicate_targets(
+        "dependencies",
+        spec.requirements
+            .dependencies
+            .iter()
+            .map(|x| sorted_key(&x.manifests)),
+        out,
+    );
+    duplicate_targets(
+        "exports",
+        spec.requirements.exports.iter().map(|x| x.package.clone()),
+        out,
+    );
+    duplicate_targets(
+        "enumerations",
+        spec.requirements
+            .enumerations
+            .iter()
+            .map(|x| x.name.clone()),
+        out,
+    );
+}
+
+fn duplicate_targets(
+    category: &str,
+    targets: impl Iterator<Item = String>,
+    out: &mut Vec<SpecViolation>,
+) {
+    let mut seen = HashSet::new();
+    for target in targets {
+        if !seen.insert(target.clone()) {
+            out.push(SpecViolation {
+                code: "DUPLICATE_TARGET".to_owned(),
+                message: format!("{category}: target '{target}' appears more than once"),
+            });
+        }
     }
 }
 
@@ -244,15 +192,172 @@ fn sorted_key(values: &[String]) -> String {
     sorted.join(",")
 }
 
-/// A spec of pure prohibitions passes on an empty repository.
+fn check_items(spec: &Spec, out: &mut Vec<SpecViolation>) {
+    let tree = &spec.requirements.tree;
+    check_item_lists(
+        "tree",
+        "",
+        &tree.required,
+        &tree.exists,
+        &tree.forbidden,
+        out,
+    );
+    if !tree.exists.is_empty() {
+        out.push(SpecViolation {
+            code: "EXISTS_SINGLE_PLACE".to_owned(),
+            message: "tree: exists is not allowed because tree has one place".to_owned(),
+        });
+    }
+    for block in &spec.requirements.content {
+        let target = sorted_key(&block.files);
+        check_item_lists(
+            "content",
+            &target,
+            &block.required,
+            &block.exists,
+            &block.forbidden,
+            out,
+        );
+    }
+    for block in &spec.requirements.dependencies {
+        let target = sorted_key(&block.manifests);
+        check_item_lists(
+            "dependencies",
+            &target,
+            &block.required,
+            &block.exists,
+            &block.forbidden,
+            out,
+        );
+    }
+    for block in &spec.requirements.exports {
+        check_export_items(block, out);
+    }
+    for block in &spec.requirements.enumerations {
+        let mut seen = HashSet::new();
+        for value in &block.values {
+            check_plain_item("enumerations", &block.name, value, false, out);
+            if !seen.insert(value) {
+                out.push(SpecViolation {
+                    code: "DUPLICATE_ITEM".to_owned(),
+                    message: format!(
+                        "enumerations/{}: item '{value}' appears more than once",
+                        block.name
+                    ),
+                });
+            }
+        }
+    }
+}
+
+fn check_export_items(block: &ExportRequirement, out: &mut Vec<SpecViolation>) {
+    check_item_lists(
+        "exports",
+        &block.package,
+        &block.required,
+        &block.exists,
+        &block.forbidden,
+        out,
+    );
+    if !block.exists.is_empty() {
+        out.push(SpecViolation {
+            code: "EXISTS_SINGLE_PLACE".to_owned(),
+            message: format!(
+                "exports/{}: exists is not allowed because exports has one place",
+                block.package
+            ),
+        });
+    }
+}
+
+fn check_item_lists(
+    category: &str,
+    target: &str,
+    required: &[String],
+    exists: &[String],
+    forbidden: &[String],
+    out: &mut Vec<SpecViolation>,
+) {
+    let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
+    for item in required.iter().chain(exists).chain(forbidden) {
+        *counts.entry(item.as_str()).or_insert(0) += 1;
+    }
+    let label = target_label(category, target);
+    for (item, count) in counts {
+        if count > 1 {
+            out.push(SpecViolation {
+                code: "DUPLICATE_ITEM".to_owned(),
+                message: format!("{label}: item '{item}' appears more than once"),
+            });
+        }
+    }
+    for item in required {
+        check_plain_item(category, target, item, category == "tree", out);
+    }
+    for item in exists {
+        check_plain_item(category, target, item, category == "tree", out);
+    }
+    let required_set: HashSet<&str> = required.iter().map(String::as_str).collect();
+    let exists_set: HashSet<&str> = exists.iter().map(String::as_str).collect();
+    let forbidden_set: HashSet<&str> = forbidden.iter().map(String::as_str).collect();
+    for item in required_set.intersection(&forbidden_set) {
+        out.push(SpecViolation {
+            code: "CONTRADICTION".to_owned(),
+            message: format!("{label}: item '{item}' is both required and forbidden"),
+        });
+    }
+    for item in required_set.intersection(&exists_set) {
+        out.push(SpecViolation {
+            code: "REDUNDANT".to_owned(),
+            message: format!("{label}: item '{item}' is both required and exists"),
+        });
+    }
+}
+
+fn check_plain_item(
+    category: &str,
+    target: &str,
+    item: &str,
+    also_check_path: bool,
+    out: &mut Vec<SpecViolation>,
+) {
+    let bad_glob = item.contains('*') || item.contains('?') || item.contains('[');
+    if item.is_empty() || item.trim() != item || bad_glob {
+        out.push(SpecViolation {
+            code: "ITEM_FORMAT".to_owned(),
+            message: format!(
+                "{}: required/exists item '{item}' must be non-empty, trimmed, and non-glob",
+                target_label(category, target)
+            ),
+        });
+    }
+    if also_check_path {
+        check_path_text(category, item, out);
+    }
+}
+
+fn target_label(category: &str, target: &str) -> String {
+    if target.is_empty() {
+        category.to_owned()
+    } else {
+        format!("{category}/{target}")
+    }
+}
+
 fn check_vacuous(spec: &Spec, out: &mut Vec<SpecViolation>) {
     let r = &spec.requirements;
-    let positive = r.tree.iter().any(|x| !x.required_paths.is_empty())
-        || r.content.iter().any(|x| !x.required_substrings.is_empty())
-        || r.dependencies.iter().any(|x| !x.required_crates.is_empty())
-        || !r.exports.is_empty()
-        || !r.enumerations.is_empty()
-        || !r.schemas.is_empty();
+    let positive = !r.tree.required.is_empty()
+        || !r.tree.exists.is_empty()
+        || r.content
+            .iter()
+            .any(|x| !x.required.is_empty() || !x.exists.is_empty())
+        || r.dependencies
+            .iter()
+            .any(|x| !x.required.is_empty() || !x.exists.is_empty())
+        || r.exports
+            .iter()
+            .any(|x| !x.required.is_empty() || !x.exists.is_empty())
+        || r.enumerations.iter().any(|x| !x.values.is_empty());
     if !positive {
         out.push(SpecViolation {
             code: "VACUOUS_SPEC".to_owned(),
@@ -261,14 +366,25 @@ fn check_vacuous(spec: &Spec, out: &mut Vec<SpecViolation>) {
     }
 }
 
-/// Every non-empty category resolves to a verifier: its builtin, or an override
-/// in the `verifiers` map. Map keys must name a real category.
 fn check_verifiers(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    for key in spec.verifiers.keys() {
-        if Category::parse(key).is_none() {
+    for (key, command) in &spec.verifiers {
+        let Some(category) = Category::parse(key) else {
             out.push(SpecViolation {
                 code: "UNKNOWN_CATEGORY".to_owned(),
                 message: format!("verifiers map names '{key}', which is not a category"),
+            });
+            continue;
+        };
+        if command.is_empty() {
+            out.push(SpecViolation {
+                code: "VERIFIER_COMMAND_EMPTY".to_owned(),
+                message: format!("verifier for '{key}' has an empty command array"),
+            });
+        }
+        if category_is_empty(spec, category) {
+            out.push(SpecViolation {
+                code: "DEAD_VERIFIER".to_owned(),
+                message: format!("verifier for '{key}' is declared but the category is empty"),
             });
         }
     }
@@ -281,7 +397,7 @@ fn check_verifiers(spec: &Spec, out: &mut Vec<SpecViolation>) {
             out.push(SpecViolation {
                 code: "CATEGORY_HAS_NO_VERIFIER".to_owned(),
                 message: format!(
-                    "category '{}' has requirements but no builtin verifier and no override",
+                    "category '{}' has requirements but no builtin verifier and no verifier entry",
                     category.as_str()
                 ),
             });
@@ -292,11 +408,24 @@ fn check_verifiers(spec: &Spec, out: &mut Vec<SpecViolation>) {
 fn category_is_empty(spec: &Spec, category: Category) -> bool {
     let r = &spec.requirements;
     match category {
-        Category::Tree => r.tree.is_empty(),
+        Category::Tree => {
+            r.tree.required.is_empty() && r.tree.exists.is_empty() && r.tree.forbidden.is_empty()
+        }
         Category::Content => r.content.is_empty(),
         Category::Dependencies => r.dependencies.is_empty(),
         Category::Exports => r.exports.is_empty(),
         Category::Enumerations => r.enumerations.is_empty(),
-        Category::Schemas => r.schemas.is_empty(),
+        Category::Custom => r.custom.is_empty(),
+    }
+}
+
+fn check_custom_shape(spec: &Spec, out: &mut Vec<SpecViolation>) {
+    for (index, entry) in spec.requirements.custom.iter().enumerate() {
+        if !entry.is_object() {
+            out.push(SpecViolation {
+                code: "CUSTOM_SHAPE".to_owned(),
+                message: format!("custom[{index}] must be an object"),
+            });
+        }
     }
 }

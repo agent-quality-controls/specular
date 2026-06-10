@@ -1,35 +1,35 @@
 {
   "suite": "lint",
   "kind": "approved",
-  "run_id": "2026-06-07T21-24-04.70627Z-f49ef2e2",
-  "run_commit": "8013721",
+  "run_id": "2026-06-10T17-45-13.199822Z-f49ef2e2",
+  "run_commit": "7ed641a",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-07T21:24:04.70627Z",
-  "fixture_hash": "sha256:36ca2718cee90e6c78e6279280b383087c65d9d65d1411cfd7112461b6ed3502",
+  "recorded_at": "2026-06-10T17:45:13.199822Z",
+  "fixture_hash": "sha256:9a102f33d2a4f1cc431cf26b1df8e571c393b05c9a15d30ecbe1a7f39a6937fa",
   "manifest_hash": "sha256:f49ef2e2f56e2e71003b1819b88f8347e53eaac34ea6bf21db2a81bc4a3b7a25",
   "tool_version": "0.1.8",
   "output_schema_version": "1",
   "fixtures": [
     {
       "path": "behavior/fixtures/lint/lint-R00-clean-golden/fixture.json",
-      "sha256": "sha256:7fe2fb6abe2e3f3bedb04a562fe812d1199bce46b645cc4b7a8ff4040f2fe7d1"
+      "sha256": "sha256:6594d594ba232aa94cd25bf1b24f691a0377924c31605224318e1d9e323125b6"
     },
     {
       "path": "behavior/fixtures/lint/lint-R10-not-json/fixture.json",
-      "sha256": "sha256:33684120b9626f71aa5a857a55b14f3ec9f9b818729167b3f8d7f5db411000fd"
+      "sha256": "sha256:ab80cf229d2c16018f5f9e975133afb193531e16607e9f05d65f4d86c2f5a4db"
     },
     {
       "path": "behavior/fixtures/lint/lint-R11-schema-broken/fixture.json",
-      "sha256": "sha256:86f8333f78536180e18085ab11ce8156b6aa29cad43f2e6f591627977e7b598f"
+      "sha256": "sha256:a14fa4d8c1bcfd6b6f6cc19e2150e08e9284ed7284c2a38c9589b532247905ec"
     },
     {
       "path": "behavior/fixtures/lint/lint-R20-semantic/fixture.json",
-      "sha256": "sha256:1dd78fc0779e2e64d49523f2876784c4869a91a47d81f4a02edc955bf0766dd3"
+      "sha256": "sha256:886e4a305e8e52681cff74feadd3f0d810d80e6b5e085f9cdd7f474b07276006"
     },
     {
       "path": "behavior/fixtures/lint/lint-R21-vacuous/fixture.json",
-      "sha256": "sha256:db97fe83d66f45f8c502675973b9e9270767469d8406664833d0cbc694b6e5ef"
+      "sha256": "sha256:f853d501ea09f9c49aa935b12f2cd160c2d744d07e79da9eef1223fbf47bd0d3"
     }
   ],
-  "comment": "Per-category verifier model: R00 clean (omitted empties, dependencies overridden); R10 parse; R11 schema; R20 seven semantic codes incl CATEGORY_HAS_NO_VERIFIER + UNKNOWN_CATEGORY; R21 vacuous"
+  "comment": "per-item-spec-model-redesign"
 }

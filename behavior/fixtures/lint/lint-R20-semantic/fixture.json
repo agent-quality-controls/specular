@@ -1,1 +1,1 @@
-{"id":"lint-R20-semantic","commands":[["lint","spec.json","--json"]],"notes":"DUPLICATE_ID, ID_FORMAT, PATH_RULE, GLOB, MERGEABLE_REQUIREMENTS (dep split), CATEGORY_HAS_NO_VERIFIER (exports), UNKNOWN_CATEGORY (notacategory); exit 2"}
+{"id":"lint-R20-semantic","commands":[["lint","spec.json"]],"notes":"new semantic rule inventory: duplicate target/item, contradiction, redundant, item format, exists single place, dead verifier, custom shape, path/glob, unknown category, missing verifier; exit 2"}

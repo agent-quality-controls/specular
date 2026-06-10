@@ -1,1 +1,1 @@
-{"id":"verify-R21-protocol-violation","commands":[["verify","spec.json","--json"]],"notes":"override emits id outside its category; exit 2"}
+{"id":"verify-R21-protocol-violation","commands":[["verify","spec.json"]],"notes":"typed verifier emits item outside its block; exit 2"}

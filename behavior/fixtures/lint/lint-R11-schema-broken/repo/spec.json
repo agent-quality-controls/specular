@@ -1,1 +1,11 @@
-{ "version": 1, "bogus": true, "requirements": { "tree": [{ "id": "A", "requiredPaths": "not-array", "forbiddenGlobs": [] }] } }
+{
+  "version": 1,
+  "bogus": true,
+  "requirements": {
+    "tree": [
+      {
+        "required": "not-array"
+      }
+    ]
+  }
+}

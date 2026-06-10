@@ -1,39 +1,37 @@
 # Coverage map
 
 Plan: `2026-06-07-124603-spec3-plan-v2-lock-free.md`
-Spec: `2026-06-07-124603-spec3-plan-v2-lock-free.md.spec.json` (7 requirements; verifiers per category)
+Spec: `2026-06-07-124603-spec3-plan-v2-lock-free.md.spec.json`
 
-Purpose of this spec: confirm the building agent delivered everything the plan pins as repository state — files, dependencies, public API, closed sets — and nothing forbidden. `fixture3` = binary behavior, outside this spec's reach (no fixtures exist yet; those entries are open work).
+Purpose: verify the repository-state facts pinned by the product plan after the per-item redesign. Behavior is covered by `fixture3`; the spec covers files, dependencies, exported API, closed enums, scripts, and key content tripwires.
 
-- Goal — WORKSPACE_TREE, PUBLIC_LIBRARY_SURFACE; behavior: fixture3
-- Problem statement — WORKSPACE_CRATES (thin over aqc-*); guardrail3 coupling: see Boundary entry
-- Design principles / Mechanism, not policy — RUST_FORBIDDEN_SUBSTRINGS (bypass flags); read-only, --json, exit codes: fixture3
-- Design principles / Source recorded, never judged — ENUM_VERIFIER_SOURCE; report labeling: fixture3
-- Design principles / Closed-world core, open-world escape hatch — fixture3 (lint behavior)
-- Repository — WORKSPACE_TREE
-- Non-Goals — WORKSPACE_TREE, RUST_FORBIDDEN_SUBSTRINGS, WORKSPACE_CRATES; feature absences: reviewed, not verified
-- V1 Source Format — WORKSPACE_CRATES; the stack running: fixture3
-- JSON Shape Rules — fixture3 (lint behavior)
-- Spec Model — ENUM_CATEGORY (six categories closed); lint behavior: fixture3
-- Custom Verifiers — fixture3 (execution protocol)
-- Requirement Coverage — fixture3
-- Public Library Surface — PUBLIC_LIBRARY_SURFACE, ENUM_CATEGORY, ENUM_VERDICT, ENUM_VERIFIER_SOURCE
-- Commands (lint, verify) — fixture3
-- Spec Change Review — not-applicable (decision record)
-- Evidence Model — ENUM_VERDICT, ENUM_VERIFIER_SOURCE (typed fields); report shape, stamps: fixture3
-- Verification Phases — fixture3
-- V1 Requirement Categories (tree, content, ownership, backend attachment) — WORKSPACE_CRATES (aqc-* attached); verifier behavior: fixture3; "no placeholder walk/read": review-enforced for library code (adjudicated 2026-06-07: throwaway verifier scripts are exempt; the rule governs how the library is built)
-- Deferred Categories — not-applicable (future work)
-- Deferred: Lock Layer — not-applicable (decision record)
-- Path, Glob, And Walk Semantics — WORKSPACE_CRATES (camino, globset); lint path rules: fixture3
-- Git State Diagnostics — WORKSPACE_CRATES (aqc-git-helpers); output: fixture3
-- Boundary With Guardrail3 v2 — WORKSPACE_CRATES (adjudicated 2026-06-07: prefixes g3/guardrail banned, plus the aqc-shared engine crates; pinned in the plan's Boundary section)
-- Relationship To Other Tools — not-applicable (narrative)
-- Dependency Health Gate — WORKSPACE_CRATES, WORKSPACE_CRATES
-- G3RS And Test Policy — WORKSPACE_TREE (policy file), WORKSPACE_TREE, RUST_FORBIDDEN_SUBSTRINGS
-- Implementation Order — not-applicable (sequencing)
-- V1 Definition Of Done — repository-state items covered by the seven IDs; every behavioral item: fixture3
+- Goal: `tree` required source files; `exports` public API; behavior in fixture3.
+- Problem statement: dependency items for `aqc-filetree`, `aqc-fs-utils`, and `aqc-git-helpers`; no Guardrail3 coupling through forbidden dependency globs.
+- Design principles / Mechanism, not policy: `src/main.rs` forbids flags, fixture3 checks JSON-only command behavior.
+- Design principles / Source recorded, never judged: `VerifierSource` enum, report evidence source fields in fixture3.
+- Design principles / Closed-world core, open-world escape hatch: `Category` enum and fixture3 lint behavior for missing verifiers.
+- Repository: `tree` required files.
+- Non-Goals: forbidden test directories, forbidden bypass flag strings, forbidden dependency globs; remaining non-goals are review-only.
+- V1 Source Format: dependency items for serde, serde_json, schemars, jsonschema, camino, globset.
+- JSON Shape Rules: fixture3 lint suite.
+- Spec Model: `src/model.rs` content checks, `Category` enum, HELP format example.
+- Verifiers (per category): script tree items and verify fixtures for typed/custom verifier behavior.
+- Requirement Coverage: fixture3 verify suite for missing, unknown, duplicate, and silent evidence failures.
+- Commands: `src/main.rs` JSON-only content checks and fixture3 command outputs.
+- Spec Change Review: not-applicable, decision record.
+- Public Library Surface: `exports` item list plus enum checks.
+- Evidence Model: `src/evidence.rs` exported types and fixture3 report goldens.
+- Verification Phases: fixture3 lint and verify suites.
+- V1 Requirement Categories: dependency items for platform crates; fixture3 covers tree/content behavior.
+- Deferred Categories: `dependencies`, `exports`, and `enumerations` use script verifiers; custom covers opaque checks.
+- Deferred: Lock Layer: not-applicable, decision record.
+- Path, Glob, And Walk Semantics: dependency items for camino/globset and fixture3 lint path/glob behavior.
+- Git State Diagnostics: dependency item for `aqc-git-helpers`; fixture3 report goldens show diagnostics.
+- Boundary With Guardrail3 v2: forbidden dependency globs `guardrail*` and `g3*`.
+- Relationship To Other Tools: not-applicable, narrative.
+- Dependency Health Gate: dependency required/forbidden items.
+- G3RS And Test Policy: forbidden test directories and forbidden Rust content strings.
+- Implementation Order: not-applicable, sequencing.
+- V1 Definition Of Done: repository-state items in the spec; behavior in fixture3.
 
-## Summary
-
-7 requirements cover the repository-state facts the plan pins: one merged tree row (4 core files + HELP.txt, test dirs forbidden), one content row (test markers + bypass flags forbidden), one merged dependencies row (10 required, 7 forbidden crates, 2 forbidden prefixes), the public API (16 types + 2 functions), and 3 closed enums. Verifiers per category: tree/content builtin; dependencies/exports/enumerations overridden to the bash scripts. Behavior is fixture3's lane. UNCOVERED: 0. The placeholder-walk ban is review-enforced for library code (throwaway verifier scripts exempt).
+UNCOVERED: 0.

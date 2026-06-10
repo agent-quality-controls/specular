@@ -1,2 +1,2 @@
 #!/bin/sh
-echo "{\"id\": \"NO_PG\", \"status\": \"pass\"}"
+echo "{\"item\": \"pg\", \"status\": \"pass\"}"

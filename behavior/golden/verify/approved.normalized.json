@@ -2,32 +2,71 @@
   {
     "command": [
       "verify",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 0,
     "fixture": "verify-R00-clean-golden",
     "output": {
+      "conforms": true,
       "evidence": [
         {
-          "id": "DOCS",
-          "source": {
-            "builtin": "tree"
-          },
+          "category": "tree",
+          "item": "docs/readme.txt",
+          "polarity": "required",
+          "source": "builtin",
           "status": "pass"
         },
         {
-          "id": "MARKER",
-          "source": {
-            "builtin": "content"
-          },
+          "category": "tree",
+          "item": "junk/**",
+          "polarity": "forbidden",
+          "source": "builtin",
           "status": "pass"
         },
         {
-          "id": "NO_PG",
-          "source": {
-            "custom": "dependencies"
-          },
+          "category": "content",
+          "item": "INVOICE",
+          "polarity": "required",
+          "source": "builtin",
+          "status": "pass",
+          "target": [
+            "docs/*.txt"
+          ]
+        },
+        {
+          "category": "content",
+          "item": "ledger",
+          "polarity": "exists",
+          "source": "builtin",
+          "status": "pass",
+          "target": [
+            "docs/*.txt"
+          ]
+        },
+        {
+          "category": "content",
+          "item": "LEGACY",
+          "polarity": "forbidden",
+          "source": "builtin",
+          "status": "pass",
+          "target": [
+            "docs/*.txt"
+          ]
+        },
+        {
+          "category": "dependencies",
+          "item": "pg",
+          "polarity": "forbidden",
+          "source": "custom",
+          "status": "pass",
+          "target": [
+            "go.mod"
+          ]
+        },
+        {
+          "category": "custom",
+          "check": "version-sync",
+          "source": "custom",
           "status": "pass"
         }
       ],
@@ -37,19 +76,27 @@
           "state": "not-a-repository"
         },
         {
+          "path": "scripts/custom.sh",
+          "state": "not-a-repository"
+        },
+        {
           "path": "scripts/deps.sh",
           "state": "not-a-repository"
         }
       ],
       "spec": {
         "path": "spec.json",
-        "sha256": "81f916a9f587cbae452b90e4eecdbea49a7fefae40dc018070aebb31f31239b8"
+        "sha256": "ca241051522a36c77559c50e02ce9cfcd74badee1c2434514c1eb386f2fc0610"
       },
-      "spec3_version": "0.1.0",
+      "spec3_version": "0.2.0",
       "verifier_files": [
         {
+          "path": "scripts/custom.sh",
+          "sha256": "f832ff37ef540bdf9b593eea66924dbffd2049a09a776a90410dff71cbc76db9"
+        },
+        {
           "path": "scripts/deps.sh",
-          "sha256": "96e847b2d26415b985ae4568c1b2bb59b4019e4daf78731f292aad39e0d478bd"
+          "sha256": "11a003d57792306800283a77e95c346f23a294f369af47b75a1d7b4fa42b62e5"
         }
       ]
     }
@@ -57,38 +104,81 @@
   {
     "command": [
       "verify",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 1,
     "fixture": "verify-R10-requirement-failures",
     "output": {
+      "conforms": false,
       "evidence": [
         {
-          "id": "DOCS",
-          "message": "missing required path: docs/readme.txt; forbidden paths present: junk/leftover.txt",
-          "source": {
-            "builtin": "tree"
-          },
+          "category": "tree",
+          "item": "docs/readme.txt",
+          "message": "missing required path: docs/readme.txt",
+          "polarity": "required",
+          "source": "builtin",
           "status": "fail"
         },
         {
-          "id": "MARKER",
-          "message": "forbidden 'LEGACY' found in docs/other.txt; required 'INVOICE' found in no scoped file",
-          "source": {
-            "builtin": "content"
-          },
+          "category": "tree",
+          "item": "junk/**",
+          "message": "forbidden paths present: junk/leftover.txt",
+          "polarity": "forbidden",
+          "source": "builtin",
           "status": "fail"
         },
         {
+          "category": "content",
+          "item": "INVOICE",
+          "message": "missing in docs/other.txt",
+          "polarity": "required",
+          "source": "builtin",
+          "status": "fail",
+          "target": [
+            "docs/*.txt"
+          ]
+        },
+        {
+          "category": "content",
+          "item": "ledger",
+          "message": "found in no scoped file: ledger",
+          "polarity": "exists",
+          "source": "builtin",
+          "status": "fail",
+          "target": [
+            "docs/*.txt"
+          ]
+        },
+        {
+          "category": "content",
+          "item": "LEGACY",
+          "message": "forbidden substring found in docs/other.txt",
+          "polarity": "forbidden",
+          "source": "builtin",
+          "status": "fail",
+          "target": [
+            "docs/*.txt"
+          ]
+        },
+        {
+          "category": "dependencies",
           "expected": "absent",
-          "id": "NO_PG",
+          "item": "pg",
           "message": "pg declared",
           "observed": "pg 1.0",
           "path": "go.mod",
-          "source": {
-            "custom": "dependencies"
-          },
+          "polarity": "forbidden",
+          "source": "custom",
+          "status": "fail",
+          "target": [
+            "go.mod"
+          ]
+        },
+        {
+          "category": "custom",
+          "check": "version-sync",
+          "message": "versions differ",
+          "source": "custom",
           "status": "fail"
         }
       ],
@@ -98,19 +188,27 @@
           "state": "not-a-repository"
         },
         {
+          "path": "scripts/custom.sh",
+          "state": "not-a-repository"
+        },
+        {
           "path": "scripts/deps.sh",
           "state": "not-a-repository"
         }
       ],
       "spec": {
         "path": "spec.json",
-        "sha256": "81f916a9f587cbae452b90e4eecdbea49a7fefae40dc018070aebb31f31239b8"
+        "sha256": "ca241051522a36c77559c50e02ce9cfcd74badee1c2434514c1eb386f2fc0610"
       },
-      "spec3_version": "0.1.0",
+      "spec3_version": "0.2.0",
       "verifier_files": [
         {
+          "path": "scripts/custom.sh",
+          "sha256": "acc85a7f54701223b49af2a9f7fc9c42d0caca859435edfdc8000dd124f8667d"
+        },
+        {
           "path": "scripts/deps.sh",
-          "sha256": "950e2defdbceb6d0cd53e835c53666c558b8d68696d2e059b014586891cb3996"
+          "sha256": "0181bd2e110ed845d09f5af56037535984cc359bdb5f17ddb189084dd56492c4"
         }
       ]
     }
@@ -118,47 +216,43 @@
   {
     "command": [
       "verify",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "verify-R20-verifier-nonzero",
     "output": {
-      "message": "verifier dependencies: exit Some(3); stderr: ",
+      "message": "verifier dependencies[0]: exit Some(3); stderr: ",
       "result": "error"
     }
   },
   {
     "command": [
       "verify",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "verify-R21-protocol-violation",
     "output": {
-      "message": "verifier dependencies: reported 'NOT_IN_CATEGORY', which is not a requirement in category 'dependencies'",
+      "message": "verifier dependencies[0]: reported item 'not-in-block', expected one of [pg]",
       "result": "error"
     }
   },
   {
     "command": [
       "verify",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "verify-R22-coverage-miss",
     "output": {
-      "message": "coverage: 'NO_PG' produced no evidence",
+      "message": "coverage: dependencies[0] item 'pg' produced no evidence",
       "result": "error"
     }
   },
   {
     "command": [
       "verify",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "verify-R23-invalid-spec",
@@ -166,12 +260,8 @@
       "result": "fail",
       "violations": [
         {
-          "code": "DUPLICATE_ID",
-          "message": "requirement id 'SAME' appears more than once"
-        },
-        {
-          "code": "MERGEABLE_REQUIREMENTS",
-          "message": "same scope and polarity; merge into one row: SAME+SAME"
+          "code": "DUPLICATE_TARGET",
+          "message": "content: target 'docs/*.txt' appears more than once"
         }
       ]
     }
@@ -179,13 +269,36 @@
   {
     "command": [
       "verify",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "verify-R24-verifier-missing",
     "output": {
       "message": "cannot stamp scripts/deps.sh: No such file or directory (os error 2)",
+      "result": "error"
+    }
+  },
+  {
+    "command": [
+      "verify",
+      "spec.json"
+    ],
+    "exit_code": 2,
+    "fixture": "verify-R25-custom-silent",
+    "output": {
+      "message": "verifier custom: custom verifier emitted zero evidence lines",
+      "result": "error"
+    }
+  },
+  {
+    "command": [
+      "verify",
+      "spec.json"
+    ],
+    "exit_code": 2,
+    "fixture": "verify-R26-custom-broken",
+    "output": {
+      "message": "verifier custom: exit Some(4); stderr: ",
       "result": "error"
     }
   }

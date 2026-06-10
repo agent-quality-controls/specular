@@ -1,1 +1,15 @@
-{ "version": 1, "requirements": { "tree": [ { "id": "SAME", "requiredPaths": ["a"], "forbiddenGlobs": [] }, { "id": "SAME", "requiredPaths": ["b"], "forbiddenGlobs": [] } ] } }
+{
+  "version": 1,
+  "requirements": {
+    "content": [
+      {
+        "files": ["docs/*.txt"],
+        "required": ["A"]
+      },
+      {
+        "files": ["docs/*.txt"],
+        "required": ["B"]
+      }
+    ]
+  }
+}

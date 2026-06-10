@@ -1,1 +1,1 @@
-{"id":"lint-R11-schema-broken","commands":[["lint","spec.json","--json"]],"notes":"unknown field + wrong type; schema layer; exit 2"}
+{"id":"lint-R11-schema-broken","commands":[["lint","spec.json"]],"notes":"unknown field plus tree array instead of object; schema layer; exit 2"}

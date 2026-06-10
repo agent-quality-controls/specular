@@ -2,7 +2,6 @@
 
 use std::collections::BTreeMap;
 
-use garde::Validate;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -17,21 +16,23 @@ pub enum Reason {
 }
 
 /// The closed set of requirement categories.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, JsonSchema,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum Category {
-    /// Required and forbidden repository paths.
+    /// Required, existing, and forbidden repository paths.
     Tree,
-    /// Required or forbidden fixed substrings in scoped files.
+    /// Required, existing, or forbidden fixed substrings in scoped files.
     Content,
-    /// Required and forbidden crates in manifests.
+    /// Required, existing, and forbidden packages in manifests.
     Dependencies,
-    /// Public types and functions.
+    /// Public items exposed by a package.
     Exports,
-    /// Closed variant sets.
+    /// Closed named value sets.
     Enumerations,
-    /// Durable format artifacts.
-    Schemas,
+    /// Opaque author-defined checks.
+    Custom,
 }
 
 impl Category {
@@ -42,7 +43,7 @@ impl Category {
         Self::Dependencies,
         Self::Exports,
         Self::Enumerations,
-        Self::Schemas,
+        Self::Custom,
     ];
 
     /// The wire name (same as the JSON key).
@@ -54,7 +55,7 @@ impl Category {
             Self::Dependencies => "dependencies",
             Self::Exports => "exports",
             Self::Enumerations => "enumerations",
-            Self::Schemas => "schemas",
+            Self::Custom => "custom",
         }
     }
 
@@ -72,183 +73,136 @@ impl Category {
 }
 
 /// The spec file: the source contract.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Spec {
     /// Spec format version; only 1 is supported.
-    #[garde(range(min = 1, max = 1))]
     pub version: u32,
-    /// Requirements by category. Unused categories may be omitted.
-    #[garde(dive)]
-    pub requirements: Requirements,
     /// Verifier overrides: category name -> command argv. A category absent here
-    /// uses its builtin verifier (tree, content) or fails lint. Keys are
-    /// validated against the category set in lint, so an unknown key is a clean
-    /// `UNKNOWN_CATEGORY` violation rather than a parse error.
+    /// uses its builtin verifier (tree, content) or fails lint.
     #[serde(default)]
-    #[garde(skip)]
     pub verifiers: BTreeMap<String, Vec<String>>,
+    /// Requirements by category. Unused categories may be omitted.
+    #[serde(default)]
+    pub requirements: Requirements,
 }
 
 /// Requirements by category.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Requirements {
-    /// Required and forbidden repository paths.
+    /// Required, existing, and forbidden repository paths.
     #[serde(default)]
-    #[garde(dive)]
-    pub tree: Vec<TreeRequirement>,
-    /// Required or forbidden fixed substrings in scoped files.
+    pub tree: TreeRequirement,
+    /// Required, existing, or forbidden fixed substrings in scoped files.
     #[serde(default)]
-    #[garde(dive)]
     pub content: Vec<ContentRequirement>,
-    /// Required and forbidden crates in manifests.
+    /// Required, existing, and forbidden packages in manifests.
     #[serde(default)]
-    #[garde(dive)]
     pub dependencies: Vec<DependencyRequirement>,
-    /// Public types and functions.
+    /// Public items exposed by a package.
     #[serde(default)]
-    #[garde(dive)]
     pub exports: Vec<ExportRequirement>,
-    /// Closed variant sets.
+    /// Closed named value sets.
     #[serde(default)]
-    #[garde(dive)]
     pub enumerations: Vec<EnumerationRequirement>,
-    /// Durable format artifacts.
+    /// Opaque author-defined checks.
     #[serde(default)]
-    #[garde(dive)]
-    pub schemas: Vec<SchemaRequirement>,
+    pub custom: Vec<serde_json::Value>,
 }
 
-/// Required and forbidden repository paths.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
+/// Required, existing, and forbidden repository paths.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct TreeRequirement {
-    /// Unique requirement ID.
-    #[garde(length(min = 1))]
-    pub id: String,
     /// Plan citations.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[garde(skip)]
     pub reason: Option<Reason>,
     /// Paths that must exist.
     #[serde(default)]
-    #[garde(skip)]
-    pub required_paths: Vec<String>,
+    pub required: Vec<String>,
+    /// Paths where at least one must exist. Rejected by lint.
+    #[serde(default)]
+    pub exists: Vec<String>,
     /// Globs no repository path may match.
     #[serde(default)]
-    #[garde(skip)]
-    pub forbidden_globs: Vec<String>,
+    pub forbidden: Vec<String>,
 }
 
-/// Required or forbidden fixed substrings in scoped files.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
+/// Required, existing, or forbidden fixed substrings in scoped files.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ContentRequirement {
-    /// Unique requirement ID.
-    #[garde(length(min = 1))]
-    pub id: String,
+    /// Globs scoping which files are read.
+    #[serde(default)]
+    pub files: Vec<String>,
     /// Plan citations.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[garde(skip)]
     pub reason: Option<Reason>,
-    /// Globs scoping which files are read.
-    #[garde(length(min = 1))]
-    pub files: Vec<String>,
+    /// Substrings that must exist in every scoped file.
+    #[serde(default)]
+    pub required: Vec<String>,
+    /// Substrings that must exist in at least one scoped file.
+    #[serde(default)]
+    pub exists: Vec<String>,
     /// Substrings no scoped file may contain.
     #[serde(default)]
-    #[garde(skip)]
-    pub forbidden_substrings: Vec<String>,
-    /// Substrings at least one scoped file must contain.
-    #[serde(default)]
-    #[garde(skip)]
-    pub required_substrings: Vec<String>,
+    pub forbidden: Vec<String>,
 }
 
-/// Required and forbidden crates in manifests.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
+/// Required, existing, and forbidden packages in manifests.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct DependencyRequirement {
-    /// Unique requirement ID.
-    #[garde(length(min = 1))]
-    pub id: String,
+    /// Globs selecting the manifests to inspect.
+    #[serde(default)]
+    pub manifests: Vec<String>,
     /// Plan citations.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[garde(skip)]
     pub reason: Option<Reason>,
-    /// Globs selecting the manifests to inspect.
-    #[garde(length(min = 1))]
-    pub manifest_globs: Vec<String>,
-    /// Crates that must be declared.
+    /// Packages that must be declared in every matched manifest.
     #[serde(default)]
-    #[garde(skip)]
-    pub required_crates: Vec<String>,
-    /// Crates that must not be declared.
+    pub required: Vec<String>,
+    /// Packages that must be declared in at least one matched manifest.
     #[serde(default)]
-    #[garde(skip)]
-    pub forbidden_crates: Vec<String>,
-    /// Name prefixes no declared crate may start with.
+    pub exists: Vec<String>,
+    /// Packages or package globs that must not be declared.
     #[serde(default)]
-    #[garde(skip)]
-    pub forbidden_crate_prefixes: Vec<String>,
+    pub forbidden: Vec<String>,
 }
 
-/// Public types and functions that must be exposed.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
+/// Public items exposed by a package.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ExportRequirement {
-    /// Unique requirement ID.
-    #[garde(length(min = 1))]
-    pub id: String,
+    /// The package whose public surface is checked.
+    #[serde(default)]
+    pub package: String,
     /// Plan citations.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[garde(skip)]
     pub reason: Option<Reason>,
-    /// The package whose public surface is checked.
-    #[garde(length(min = 1))]
-    pub package: String,
-    /// Public type names that must exist.
+    /// Public item names that must exist.
     #[serde(default)]
-    #[garde(skip)]
-    pub types: Vec<String>,
-    /// Public function names that must exist.
+    pub required: Vec<String>,
+    /// Public item names where at least one must exist. Rejected by lint.
     #[serde(default)]
-    #[garde(skip)]
-    pub functions: Vec<String>,
+    pub exists: Vec<String>,
+    /// Public item names that must not exist.
+    #[serde(default)]
+    pub forbidden: Vec<String>,
 }
 
-/// A closed variant set; drift in either direction fails.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
+/// A closed value set; drift in either direction fails.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EnumerationRequirement {
-    /// Unique requirement ID.
-    #[garde(length(min = 1))]
-    pub id: String,
+    /// The set name.
+    #[serde(default)]
+    pub name: String,
     /// Plan citations.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[garde(skip)]
     pub reason: Option<Reason>,
-    /// The enum type name.
-    #[serde(rename = "type")]
-    #[garde(length(min = 1))]
-    pub type_name: String,
-    /// The exact variant set.
-    #[garde(length(min = 1))]
-    pub variants: Vec<String>,
-}
-
-/// A durable format artifact committed to the repository.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Validate)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct SchemaRequirement {
-    /// Unique requirement ID.
-    #[garde(length(min = 1))]
-    pub id: String,
-    /// Plan citations.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[garde(skip)]
-    pub reason: Option<Reason>,
-    /// The committed artifact path.
-    #[garde(length(min = 1))]
-    pub file: String,
+    /// The exact value set.
+    #[serde(default)]
+    pub values: Vec<String>,
 }

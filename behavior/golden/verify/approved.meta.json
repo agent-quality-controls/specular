@@ -1,43 +1,51 @@
 {
   "suite": "verify",
   "kind": "approved",
-  "run_id": "2026-06-07T21-24-05.355899Z-f49ef2e2",
-  "run_commit": "8013721",
+  "run_id": "2026-06-10T17-51-05.866186Z-f49ef2e2",
+  "run_commit": "7ed641a",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-07T21:24:05.355899Z",
-  "fixture_hash": "sha256:7c49e97b28ef326d460e152dff7860abcad332ff901107e340e066cc7d0b5a1e",
+  "recorded_at": "2026-06-10T17:51:05.866186Z",
+  "fixture_hash": "sha256:417c1eeaa78821503ab4184ecf0020185ffbd3512a84a41cac860220a9237df1",
   "manifest_hash": "sha256:f49ef2e2f56e2e71003b1819b88f8347e53eaac34ea6bf21db2a81bc4a3b7a25",
   "tool_version": "0.1.8",
   "output_schema_version": "1",
   "fixtures": [
     {
       "path": "behavior/fixtures/verify/verify-R00-clean-golden/fixture.json",
-      "sha256": "sha256:a607fa72dd43635cb43386c9312107e16960970d550e06cb17307a52c9ed4b3c"
+      "sha256": "sha256:ce9c31530a00e7c324ab9e6f0cf9a2185d77479c1b72757a4ea560adb8402632"
     },
     {
       "path": "behavior/fixtures/verify/verify-R10-requirement-failures/fixture.json",
-      "sha256": "sha256:1ba79a859707186d66639d13ad7f60c1824f91e656f405f8a37701f9cfe769e3"
+      "sha256": "sha256:7a3d3105eff4a1009631f0fd5b86c4df5dd1410b126061b2208147aaa054b7f1"
     },
     {
       "path": "behavior/fixtures/verify/verify-R20-verifier-nonzero/fixture.json",
-      "sha256": "sha256:fc2975bea5b24ecd12be6db87e9a3ce0b2b84bc54b7aa824a41f305fbb7632ae"
+      "sha256": "sha256:f12c13bf8f2eec7886da4e1d88cc3760c101759ace0f465e4a525e352efae6de"
     },
     {
       "path": "behavior/fixtures/verify/verify-R21-protocol-violation/fixture.json",
-      "sha256": "sha256:987702ff81d46e8761c22b0534af4b1fe42d63fb0ded5240d7b56961295c22ae"
+      "sha256": "sha256:dc0f5eb72a853dd8db367780a46e620f0e511ecf8608e585c70bca2c4601f4a1"
     },
     {
       "path": "behavior/fixtures/verify/verify-R22-coverage-miss/fixture.json",
-      "sha256": "sha256:a38dea4015e7a16f305ec329626fc934c177887cecb17e779435eaf7cf3a7784"
+      "sha256": "sha256:4b54b549e6a0358e94ef6e13e6bac21738d7e2f91beea36546d87d0f6f811d38"
     },
     {
       "path": "behavior/fixtures/verify/verify-R23-invalid-spec/fixture.json",
-      "sha256": "sha256:c2da69458914c13930407daa7f52462e94674f20a92bdad9a77455acb4e29904"
+      "sha256": "sha256:33e98492e8fabc1b613af8efd92aa6d0f6c0e99203bc42e91dcdcd26b58c1526"
     },
     {
       "path": "behavior/fixtures/verify/verify-R24-verifier-missing/fixture.json",
-      "sha256": "sha256:6e41133eac5782578ca328d062710290e84504e3c6cbc3c84fb3803d8fe01d48"
+      "sha256": "sha256:c19635237c30709ce94517e3ad31bd5bd62bfa1680971e0e5ba226889f887715"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R25-custom-silent/fixture.json",
+      "sha256": "sha256:0ea5d03121171343a7020d8beda77690b658feb9c3a6b2b00d02f7106f29b2ad"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R26-custom-broken/fixture.json",
+      "sha256": "sha256:19d701ff913944d4430c13d0bc60a2d772ca3e9b1644b3eeb9dfec5ccf3c5bc9"
     }
   ],
-  "comment": "Per-category model: R00 builtin+custom pass; R10 all failure modes (exit 1); R20 nonzero, R21 protocol (id outside category), R22 coverage miss, R23 lint preflight, R24 verifier file missing (exit 2)"
+  "comment": "typed-script-polarity-evidence"
 }

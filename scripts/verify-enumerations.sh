@@ -1,36 +1,40 @@
 #!/usr/bin/env bash
-# verify-enumerations.sh <spec.json>
-# Checks requirements.enumerations: the named pub enum exists under src/ and its
-# variant identifiers match the spec exactly (drift in either direction fails).
-# Emits one JSON evidence line per requirement.
+# verify-enumerations.sh <spec.json> enumerations <blockIndex>
+# Emits one JSON evidence line per expected value in the selected block.
 set -uo pipefail
 
-SPEC="${1:?usage: verify-enumerations.sh <spec.json>}"
+SPEC="${1:?usage: verify-enumerations.sh <spec.json> enumerations <blockIndex>}"
+CATEGORY="${2:?usage: verify-enumerations.sh <spec.json> enumerations <blockIndex>}"
+INDEX="${3:?usage: verify-enumerations.sh <spec.json> enumerations <blockIndex>}"
+[ "$CATEGORY" = "enumerations" ] || exit 2
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-jq -c '.requirements.enumerations[]' "$SPEC" | while IFS= read -r REQ; do
-  ID=$(echo "$REQ" | jq -r '.id')
-  TYPE=$(echo "$REQ" | jq -r '.type')
-  EXPECTED=$(echo "$REQ" | jq -r '.variants[]' | sort)
-  PROBLEMS=""
-  FILE=$(grep -rlE "pub enum $TYPE\b" src/ 2>/dev/null | head -1)
+BLOCK=$(jq -c --argjson index "$INDEX" '.requirements.enumerations[$index]' "$SPEC")
+NAME=$(echo "$BLOCK" | jq -r '.name')
+EXPECTED=$(echo "$BLOCK" | jq -r '.values[]?' | sort)
+FILE=$(grep -rlE "pub enum $NAME\b" src/ 2>/dev/null | head -1)
+ACTUAL=""
+if [ -n "$FILE" ]; then
+  ENUM_BLOCK=$(awk "/pub enum $NAME[ {]/{f=1} f{print} f && /^}/{exit}" "$FILE")
+  ACTUAL=$(echo "$ENUM_BLOCK" |
+    sed -nE 's/^[[:space:]]+([A-Z][A-Za-z0-9_]*)[[:space:]]*([,({=].*)?$/\1/p' |
+    sort)
+fi
+
+EXTRA=$(comm -13 <(echo "$EXPECTED") <(echo "$ACTUAL") | tr '\n' ' ')
+echo "$BLOCK" | jq -r '.values[]?' | while IFS= read -r item; do
   if [ -z "$FILE" ]; then
-    PROBLEMS="pub enum $TYPE not found under src/;"
+    jq -nc --arg item "$item" --arg name "$NAME" \
+      '{item: $item, status: "fail", message: ("enum " + $name + " not found")}'
+  elif echo "$ACTUAL" | grep -qx "$item" && [ -z "${EXTRA// /}" ]; then
+    jq -nc --arg item "$item" '{item: $item, status: "pass"}'
+  elif echo "$ACTUAL" | grep -qx "$item"; then
+    jq -nc --arg item "$item" --arg observed "$EXTRA" \
+      '{item: $item, status: "fail", message: "enum has extra values", observed: $observed}'
   else
-    # Take the enum block: from the declaration to the first line that is just '}'.
-    # No \b in awk (BSD awk reads it as backspace); a space or '{' bounds the name.
-    BLOCK=$(awk "/pub enum $TYPE[ {]/{f=1} f{print} f && /^}/{exit}" "$FILE")
-    # Variant identifiers: lines starting with an uppercase identifier,
-    # optionally followed by payload/discriminant. Attributes and comments excluded.
-    ACTUAL=$(echo "$BLOCK" | sed -nE 's/^[[:space:]]+([A-Z][A-Za-z0-9_]*)[[:space:]]*([,({=].*)?$/\1/p' | sort)
-    if [ "$ACTUAL" != "$EXPECTED" ]; then
-      PROBLEMS="variants of $TYPE differ; expected: $(echo $EXPECTED | tr '\n' ' '); observed: $(echo $ACTUAL | tr '\n' ' ') (in $FILE);"
-    fi
-  fi
-  if [ -z "$PROBLEMS" ]; then
-    jq -nc --arg id "$ID" '{id: $id, status: "pass"}'
-  else
-    jq -nc --arg id "$ID" --arg m "$PROBLEMS" '{id: $id, status: "fail", message: $m}'
+    jq -nc --arg item "$item" \
+      '{item: $item, status: "fail", message: "enum value not found"}'
   fi
 done

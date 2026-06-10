@@ -1,1 +1,1 @@
-{"id":"lint-R21-vacuous","commands":[["lint","spec.json","--json"]],"notes":"pure prohibitions; VACUOUS_SPEC; exit 2"}
+{"id":"lint-R21-vacuous","commands":[["lint","spec.json"]],"notes":"tree has only forbidden items; VACUOUS_SPEC; exit 2"}

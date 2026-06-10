@@ -1,46 +1,52 @@
 //! Evidence and the verify report.
 
+use std::collections::BTreeMap;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::model::Category;
 
-/// The judged outcome of one requirement. No soft states.
+/// The judged outcome of one item. No soft states.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
-    /// The requirement holds.
+    /// The item holds.
     Pass,
-    /// The requirement does not hold.
+    /// The item does not hold.
     Fail,
 }
 
 /// Which verifier produced a piece of evidence. Recorded, never judged.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum VerifierSource {
     /// The builtin verifier for this category.
-    Builtin(Category),
-    /// A custom verifier overriding this category.
-    Custom(Category),
+    Builtin,
+    /// A script verifier.
+    Custom,
 }
 
-impl core::fmt::Display for VerifierSource {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Builtin(category) => write!(f, "builtin:{}", category.as_str()),
-            Self::Custom(category) => write!(f, "custom:{}", category.as_str()),
-        }
-    }
+/// The typed quantifier an item belongs to.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum Polarity {
+    /// Present in every matched place.
+    Required,
+    /// Present in at least one matched place.
+    Exists,
+    /// Present in no matched place.
+    Forbidden,
 }
 
-/// One evidence line as a custom verifier emits it on stdout.
+/// One evidence line as a verifier emits it on stdout.
 #[derive(Debug, Deserialize)]
 pub struct WireEvidence {
-    /// The requirement ID this line judges.
-    pub id: String,
     /// The judged outcome.
     pub status: Status,
+    /// The typed item this line judges.
+    #[serde(default)]
+    pub item: Option<String>,
     /// Concrete failure description.
     #[serde(default)]
     pub message: Option<String>,
@@ -53,13 +59,25 @@ pub struct WireEvidence {
     /// The repository path involved.
     #[serde(default)]
     pub path: Option<String>,
+    /// Custom verifier fields, included verbatim for custom evidence.
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, serde_json::Value>,
 }
 
-/// One judged requirement in the report.
+/// One judged item in the report.
 #[derive(Debug, Serialize)]
 pub struct Evidence {
-    /// The requirement ID.
-    pub id: String,
+    /// The category this evidence belongs to.
+    pub category: Category,
+    /// The block target, if the category has one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target: Option<serde_json::Value>,
+    /// The item's quantifier, for typed categories.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub polarity: Option<Polarity>,
+    /// The typed item.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item: Option<String>,
     /// Which verifier judged it.
     pub source: VerifierSource,
     /// The outcome.
@@ -76,6 +94,9 @@ pub struct Evidence {
     /// The repository path involved.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    /// Custom verifier fields.
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, serde_json::Value>,
 }
 
 /// A raw-byte hash of one input-closure file.
@@ -97,25 +118,41 @@ pub struct GitDiagnostic {
     pub state: String,
 }
 
-/// The verify report: input-closure stamps plus per-requirement evidence.
+/// The verify report: input-closure stamps plus per-item evidence.
 #[derive(Debug, Serialize)]
 pub struct Report {
     /// The spec3 version that produced this report.
     pub spec3_version: String,
     /// Stamp of the spec file.
     pub spec: FileStamp,
-    /// Stamps of every declared custom verifier file.
+    /// Stamps of every declared verifier file.
     pub verifier_files: Vec<FileStamp>,
     /// Git state of the closure files.
     pub git: Vec<GitDiagnostic>,
-    /// Per-requirement evidence.
+    /// Per-item evidence.
     pub evidence: Vec<Evidence>,
+    /// True when every item passed.
+    pub conforms: bool,
 }
 
 impl Report {
-    /// True when every requirement passed.
+    /// Build a report and derive conformance from its evidence.
     #[must_use]
-    pub fn conforms(&self) -> bool {
-        self.evidence.iter().all(|e| e.status == Status::Pass)
+    pub fn new(
+        spec3_version: String,
+        spec: FileStamp,
+        verifier_files: Vec<FileStamp>,
+        git: Vec<GitDiagnostic>,
+        evidence: Vec<Evidence>,
+    ) -> Self {
+        let conforms = evidence.iter().all(|e| e.status == Status::Pass);
+        Self {
+            spec3_version,
+            spec,
+            verifier_files,
+            git,
+            evidence,
+            conforms,
+        }
     }
 }

@@ -2,21 +2,18 @@
   {
     "command": [
       "lint",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 0,
     "fixture": "lint-R00-clean-golden",
     "output": {
-      "result": "pass",
-      "spec": "spec.json"
+      "result": "pass"
     }
   },
   {
     "command": [
       "lint",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "lint-R10-not-json",
@@ -28,8 +25,7 @@
   {
     "command": [
       "lint",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "lint-R11-schema-broken",
@@ -38,7 +34,7 @@
       "violations": [
         {
           "code": "JSON_SCHEMA",
-          "message": "\"not-array\" is not of type \"array\" (at /requirements/tree/0/requiredPaths)"
+          "message": "[{\"required\":\"not-array\"}] is not of type \"object\" (at /requirements/tree)"
         },
         {
           "code": "JSON_SCHEMA",
@@ -50,8 +46,7 @@
   {
     "command": [
       "lint",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "lint-R20-semantic",
@@ -59,28 +54,68 @@
       "result": "fail",
       "violations": [
         {
-          "code": "DUPLICATE_ID",
-          "message": "requirement id 'DUP' appears more than once"
-        },
-        {
-          "code": "ID_FORMAT",
-          "message": "requirement id 'lower_id' is not SCREAMING_SNAKE_CASE"
-        },
-        {
           "code": "PATH_RULE",
-          "message": "lower_id: '/abs' must be repo-root-relative with '/', no '..', no empty components"
+          "message": "tree: '/abs' must be repo-root-relative with '/', no '..', no empty components"
         },
         {
           "code": "GLOB",
-          "message": "lower_id: glob '[' does not compile: error parsing glob '[': unclosed character class; missing ']'"
+          "message": "tree: glob '[' does not compile: error parsing glob '[': unclosed character class; missing ']'"
         },
         {
-          "code": "MERGEABLE_REQUIREMENTS",
-          "message": "same scope and polarity; merge into one row: DUP+DUP+lower_id"
+          "code": "DUPLICATE_TARGET",
+          "message": "content: target 'docs/*.txt' appears more than once"
         },
         {
-          "code": "MERGEABLE_REQUIREMENTS",
-          "message": "same scope and polarity; merge into one row: D_ONE+D_TWO"
+          "code": "DUPLICATE_TARGET",
+          "message": "dependencies: target 'Cargo.toml' appears more than once"
+        },
+        {
+          "code": "DUPLICATE_ITEM",
+          "message": "tree: item 'a' appears more than once"
+        },
+        {
+          "code": "ITEM_FORMAT",
+          "message": "tree: required/exists item ' has-space ' must be non-empty, trimmed, and non-glob"
+        },
+        {
+          "code": "ITEM_FORMAT",
+          "message": "tree: required/exists item 'has*glob' must be non-empty, trimmed, and non-glob"
+        },
+        {
+          "code": "PATH_RULE",
+          "message": "tree: '/abs' must be repo-root-relative with '/', no '..', no empty components"
+        },
+        {
+          "code": "CONTRADICTION",
+          "message": "tree: item 'a' is both required and forbidden"
+        },
+        {
+          "code": "REDUNDANT",
+          "message": "tree: item 'a' is both required and exists"
+        },
+        {
+          "code": "EXISTS_SINGLE_PLACE",
+          "message": "tree: exists is not allowed because tree has one place"
+        },
+        {
+          "code": "DUPLICATE_ITEM",
+          "message": "content/docs/*.txt: item 'x' appears more than once"
+        },
+        {
+          "code": "CONTRADICTION",
+          "message": "content/docs/*.txt: item 'x' is both required and forbidden"
+        },
+        {
+          "code": "REDUNDANT",
+          "message": "content/docs/*.txt: item 'x' is both required and exists"
+        },
+        {
+          "code": "EXISTS_SINGLE_PLACE",
+          "message": "exports/p: exists is not allowed because exports has one place"
+        },
+        {
+          "code": "DEAD_VERIFIER",
+          "message": "verifier for 'enumerations' is declared but the category is empty"
         },
         {
           "code": "UNKNOWN_CATEGORY",
@@ -88,7 +123,11 @@
         },
         {
           "code": "CATEGORY_HAS_NO_VERIFIER",
-          "message": "category 'exports' has requirements but no builtin verifier and no override"
+          "message": "category 'exports' has requirements but no builtin verifier and no verifier entry"
+        },
+        {
+          "code": "CUSTOM_SHAPE",
+          "message": "custom[0] must be an object"
         }
       ]
     }
@@ -96,8 +135,7 @@
   {
     "command": [
       "lint",
-      "spec.json",
-      "--json"
+      "spec.json"
     ],
     "exit_code": 2,
     "fixture": "lint-R21-vacuous",

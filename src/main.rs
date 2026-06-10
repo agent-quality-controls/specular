@@ -16,7 +16,7 @@ const HELP: &str = include_str!("../HELP.txt");
 fn run() -> i32 {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.is_empty() {
-        eprintln!("usage: spec3 <lint|verify> <spec.json> [--json]; run `spec3 --help`");
+        print_error("usage: spec3 <lint|verify> <spec.json>; run `spec3 --help`");
         return 2;
     }
     if args
@@ -26,124 +26,81 @@ fn run() -> i32 {
         println!("{HELP}");
         return 0;
     }
-    let json = args.iter().any(|a| a == "--json");
-    let positional: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
-    let (Some(command), Some(spec_path)) = (positional.first(), positional.get(1)) else {
-        eprintln!("usage: spec3 <lint|verify> <spec.json> [--json]; run `spec3 --help`");
-        return 2;
-    };
-    if args.iter().any(|a| a.starts_with("--") && a != "--json") {
-        eprintln!("unknown flag; usage: spec3 <lint|verify> <spec.json> [--json]");
+    if args.len() != 2 {
+        print_error("usage: spec3 <lint|verify> <spec.json>; run `spec3 --help`");
         return 2;
     }
+    if args.iter().any(|a| a.starts_with("--")) {
+        print_error("flags are not supported; output is always JSON");
+        return 2;
+    }
+    let command = &args[0];
+    let spec_path = Path::new(&args[1]);
     match command.as_str() {
-        "lint" => run_lint(Path::new(spec_path), json),
-        "verify" => run_verify(Path::new(spec_path), json),
+        "lint" => run_lint(spec_path),
+        "verify" => run_verify(spec_path),
         other => {
-            eprintln!("unknown command '{other}'; run `spec3 --help`");
+            print_error(&format!("unknown command '{other}'; run `spec3 --help`"));
             2
         }
     }
 }
 
-fn run_lint(spec_path: &Path, json: bool) -> i32 {
+fn run_lint(spec_path: &Path) -> i32 {
     match lint(spec_path) {
         Ok(_) => {
-            if json {
-                println!(
-                    "{}",
-                    serde_json::json!({"result": "pass", "spec": spec_path.display().to_string()})
-                );
-            } else {
-                println!("LINT PASS: {}", spec_path.display());
-            }
+            println!("{}", serde_json::json!({"result": "pass"}));
             0
         }
         Err(error) => {
-            print_lint_error(&error, json);
+            print_lint_error(&error);
             2
         }
     }
 }
 
-fn print_lint_error(error: &LintError, json: bool) {
+fn print_lint_error(error: &LintError) {
     if let LintError::InvalidSpec(violations) = error {
-        if json {
-            println!(
-                "{}",
-                serde_json::json!({"result": "fail", "violations": violations})
-            );
-        } else {
-            for violation in violations {
-                println!("LINT FAIL [{}] {}", violation.code, violation.message);
-            }
-        }
-    } else if json {
         println!(
             "{}",
-            serde_json::json!({"result": "error", "message": error.to_string()})
+            serde_json::json!({"result": "fail", "violations": violations})
         );
     } else {
-        eprintln!("error: {error}");
+        print_error(&error.to_string());
     }
 }
 
-fn run_verify(spec_path: &Path, json: bool) -> i32 {
+fn run_verify(spec_path: &Path) -> i32 {
     let spec = match lint(spec_path) {
         Ok(spec) => spec,
         Err(error) => {
-            print_lint_error(&error, json);
+            print_lint_error(&error);
             return 2;
         }
     };
     let root = std::env::current_dir().unwrap_or_else(|_| Path::new(".").to_path_buf());
     match verify(&spec, &root, spec_path) {
         Ok(report) => {
-            print_report(&report, json);
-            i32::from(!report.conforms())
+            print_report(&report);
+            i32::from(!report.conforms)
         }
         Err(error) => {
-            if json {
-                println!(
-                    "{}",
-                    serde_json::json!({"result": "error", "message": error.to_string()})
-                );
-            } else {
-                eprintln!("error: {error}");
-            }
+            print_error(&error.to_string());
             2
         }
     }
 }
 
-fn print_report(report: &Report, json: bool) {
-    if json {
-        match serde_json::to_string_pretty(report) {
-            Ok(text) => println!("{text}"),
-            Err(error) => eprintln!("error: report does not serialize: {error}"),
-        }
-        return;
+fn print_report(report: &Report) {
+    match serde_json::to_string_pretty(report) {
+        Ok(text) => println!("{text}"),
+        Err(error) => print_error(&format!("report does not serialize: {error}")),
     }
-    println!("spec sha256: {}", report.spec.sha256);
-    for stamp in &report.verifier_files {
-        println!("verifier {}: sha256 {}", stamp.path, stamp.sha256);
-    }
-    for diagnostic in &report.git {
-        println!("git {}: {}", diagnostic.path, diagnostic.state);
-    }
-    for item in &report.evidence {
-        let status = match item.status {
-            spec3::Status::Pass => "pass",
-            spec3::Status::Fail => "FAIL",
-        };
-        match &item.message {
-            Some(message) => println!("{} ({}): {status} — {message}", item.id, item.source),
-            None => println!("{} ({}): {status}", item.id, item.source),
-        }
-    }
+}
+
+fn print_error(message: &str) {
     println!(
-        "evidence: {} items; conforms: {}",
-        report.evidence.len(),
-        report.conforms()
+        "{}",
+        serde_json::json!({"result": "error", "message": message})
     );
 }

@@ -1,98 +1,69 @@
 #!/usr/bin/env bash
-# verify-dependencies.sh <spec.json>
-# Checks requirements.dependencies: requiredCrates declared somewhere in the workspace;
-# forbiddenCrates declared nowhere.
-# Fact source: cargo metadata (the ecosystem's machine interface) when a workspace exists;
-# falls back to a manifest text scan when cargo metadata is unavailable, and reports
-# required crates as failing when no manifests exist at all.
-# Emits one JSON evidence line per requirement.
+# verify-dependencies.sh <spec.json> dependencies <blockIndex>
+# Emits one JSON evidence line per package item in the selected block.
 set -uo pipefail
 
-SPEC="${1:?usage: verify-dependencies.sh <spec.json>}"
+SPEC="${1:?usage: verify-dependencies.sh <spec.json> dependencies <blockIndex>}"
+CATEGORY="${2:?usage: verify-dependencies.sh <spec.json> dependencies <blockIndex>}"
+INDEX="${3:?usage: verify-dependencies.sh <spec.json> dependencies <blockIndex>}"
+[ "$CATEGORY" = "dependencies" ] || exit 2
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-glob_to_re() {
-  printf '%s' "$1" | sed \
-    -e 's/[][()+?^${|}\\]/\\&/g' -e 's/\./\\./g' \
-    -e 's|\*\*/|<DSL>|g' -e 's|\*\*|<DS>|g' -e 's|\*|[^/]*|g' \
-    -e 's|<DSL>|(.*/)?|g' -e 's|<DS>|.*|g'
-}
+BLOCK=$(jq -c --argjson index "$INDEX" '.requirements.dependencies[$index]' "$SPEC")
 
-PATHS=$(git ls-files --cached --others --exclude-standard)
-
-# Declared dependency names, workspace-wide.
-SOURCE="cargo-metadata"
 DECLARED=""
-if [ -f Cargo.toml ] && DECLARED=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
-    | jq -r '.packages[].dependencies[].name' | sort -u); then
+SOURCE="cargo-metadata"
+if [ -f Cargo.toml ] && DECLARED=$(cargo metadata --no-deps --format-version 1 2>/dev/null |
+  jq -r '.packages[].dependencies[].name' | sort -u); then
   :
 else
   SOURCE="manifest-text-scan"
-  DECLARED=""
+  DECLARED=$(find . -maxdepth 3 -name Cargo.toml -print0 2>/dev/null |
+    xargs -0 grep -hE '^[[:space:]]*"?[A-Za-z0-9_-]+"?[[:space:]]*=' 2>/dev/null |
+    sed -E 's/^[[:space:]]*"?([A-Za-z0-9_-]+)"?[[:space:]]*=.*/\1/' |
+    sort -u)
 fi
 
-jq -c '.requirements.dependencies[]' "$SPEC" | while IFS= read -r REQ; do
-  ID=$(echo "$REQ" | jq -r '.id')
-  PROBLEMS=""
+has_declared() {
+  echo "$DECLARED" | grep -qx "$1"
+}
 
-  MANIFESTS=""
-  while IFS= read -r G; do
-    [ -z "$G" ] && continue
-    RE="^$(glob_to_re "$G")$"
-    MANIFESTS="$MANIFESTS$(echo "$PATHS" | grep -E "$RE")"$'\n'
-  done < <(echo "$REQ" | jq -r '.manifestGlobs[]?')
-  MANIFESTS=$(echo "$MANIFESTS" | grep -v '^$' | sort -u)
+matches_declared() {
+  local pattern="$1"
+  while IFS= read -r name; do
+    [ -z "$name" ] && continue
+    case "$name" in
+      $pattern) echo "$name" ;;
+    esac
+  done <<< "$DECLARED"
+}
 
-  declared_has() {
-    local CRATE="$1"
-    if [ "$SOURCE" = "cargo-metadata" ]; then
-      echo "$DECLARED" | grep -qx "$CRATE"
-    else
-      [ -n "$MANIFESTS" ] || return 1
-      while IFS= read -r M; do
-        [ -z "$M" ] && continue
-        grep -Eq "^[[:space:]]*\"?$CRATE\"?[[:space:]]*=" "$M" && return 0
-      done <<< "$MANIFESTS"
-      return 1
-    fi
-  }
-
-  while IFS= read -r C; do
-    [ -z "$C" ] && continue
-    if [ -z "$MANIFESTS" ]; then
-      PROBLEMS="$PROBLEMS required crate '$C' absent (no Cargo.toml manifests exist);"
-    elif ! declared_has "$C"; then
-      PROBLEMS="$PROBLEMS required crate '$C' not declared (source: $SOURCE);"
-    fi
-  done < <(echo "$REQ" | jq -r '.requiredCrates[]?')
-
-  while IFS= read -r C; do
-    [ -z "$C" ] && continue
-    if [ -n "$MANIFESTS" ] && declared_has "$C"; then
-      PROBLEMS="$PROBLEMS forbidden crate '$C' declared (source: $SOURCE);"
-    fi
-  done < <(echo "$REQ" | jq -r '.forbiddenCrates[]?')
-
-  while IFS= read -r P; do
-    [ -z "$P" ] && continue
-    [ -z "$MANIFESTS" ] && continue
-    if [ "$SOURCE" = "cargo-metadata" ]; then
-      HITS=$(echo "$DECLARED" | grep "^$P" | tr '\n' ' ')
-    else
-      HITS=""
-      while IFS= read -r M; do
-        [ -z "$M" ] && continue
-        HITS="$HITS$(grep -hoE "^[[:space:]]*\"?$P[a-z0-9_-]*\"?[[:space:]]*=" "$M" 2>/dev/null | tr -d ' ="' )"$'\n'
-      done <<< "$MANIFESTS"
-      HITS=$(echo "$HITS" | grep -v '^$' | sort -u | tr '\n' ' ')
-    fi
-    [ -z "${HITS// /}" ] || PROBLEMS="$PROBLEMS crates with forbidden prefix '$P' declared: $HITS(source: $SOURCE);"
-  done < <(echo "$REQ" | jq -r '.forbiddenCratePrefixes[]?')
-
-  if [ -z "$PROBLEMS" ]; then
-    jq -nc --arg id "$ID" '{id: $id, status: "pass"}'
+echo "$BLOCK" | jq -r '.required[]?' | while IFS= read -r item; do
+  if has_declared "$item"; then
+    jq -nc --arg item "$item" '{item: $item, status: "pass"}'
   else
-    jq -nc --arg id "$ID" --arg m "$PROBLEMS" '{id: $id, status: "fail", message: $m}'
+    jq -nc --arg item "$item" --arg source "$SOURCE" \
+      '{item: $item, status: "fail", message: ("package not declared; source: " + $source)}'
+  fi
+done
+
+echo "$BLOCK" | jq -r '.exists[]?' | while IFS= read -r item; do
+  if has_declared "$item"; then
+    jq -nc --arg item "$item" '{item: $item, status: "pass"}'
+  else
+    jq -nc --arg item "$item" --arg source "$SOURCE" \
+      '{item: $item, status: "fail", message: ("package not declared; source: " + $source)}'
+  fi
+done
+
+echo "$BLOCK" | jq -r '.forbidden[]?' | while IFS= read -r item; do
+  HITS=$(matches_declared "$item" | tr '\n' ' ')
+  if [ -z "${HITS// /}" ]; then
+    jq -nc --arg item "$item" '{item: $item, status: "pass"}'
+  else
+    jq -nc --arg item "$item" --arg observed "$HITS" --arg source "$SOURCE" \
+      '{item: $item, status: "fail", message: ("forbidden package declared; source: " + $source), observed: $observed}'
   fi
 done

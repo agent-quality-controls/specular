@@ -1,1 +1,1 @@
-{"id":"verify-R20-verifier-nonzero","commands":[["verify","spec.json","--json"]],"notes":"override exits nonzero; runtime error; exit 2"}
+{"id":"verify-R20-verifier-nonzero","commands":[["verify","spec.json"]],"notes":"override exits nonzero; runtime error; exit 2"}

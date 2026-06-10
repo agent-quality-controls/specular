@@ -1,1 +1,8 @@
-{ "version": 1, "requirements": { "tree": [{ "id": "NO_TMP", "requiredPaths": [], "forbiddenGlobs": ["tmp/**"] }] } }
+{
+  "version": 1,
+  "requirements": {
+    "tree": {
+      "forbidden": ["tmp/**"]
+    }
+  }
+}

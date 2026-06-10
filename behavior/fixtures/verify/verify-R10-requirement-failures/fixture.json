@@ -1,1 +1,1 @@
-{"id":"verify-R10-requirement-failures","commands":[["verify","spec.json","--json"]],"notes":"missing path, forbidden path, forbidden substring, required substring absent, custom fail with full wire fields; exit 1"}
+{"id":"verify-R10-requirement-failures","commands":[["verify","spec.json"]],"notes":"per-item failures for tree, content required/exists/forbidden, typed dependency, and custom evidence; exit 1"}
