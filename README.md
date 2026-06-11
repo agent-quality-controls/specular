@@ -1,13 +1,16 @@
-# Specular checks whether code matches a plan.
-Use it when an agent builds from prose and "done" is not enough.
-Install: `cargo install --git https://github.com/agent-quality-controls/specular`, then run `specular --help`.
-Make a plan, make `<plan>.spec.json`, run `specular verify <spec.json>`, and build until it exits `0`.
-Tell your agent: "Use Specular: make the spec, add needed verifier scripts, run verify before coding, and keep going until verify exits 0."
+# Specular is a CLI for enforcing spec-driven development.
+It turns a prose plan into JSON checks. Then it tests the repo.
+Use it when an agent builds code from a plan and "done" is too weak.
+Install with `cargo install --git https://github.com/agent-quality-controls/specular`, run `specular --help`, then run `specular verify <spec.json>`.
+Tell your agent to use Specular, make the spec and coverage map, add needed scripts, and keep working until verify exits `0`.
 
-## What it does
+## What it is
 
-Specular reads a JSON spec next to your plan. It checks the repo and prints
-JSON proof for each item.
+Specular gives an agent a checked loop. The agent reads the plan, writes the
+spec, runs it, fixes the repo, and runs it again.
+
+The plan stays easy to read. The JSON spec names the parts a program can check.
+The result is JSON proof, one item at a time.
 
 Exit codes:
 
@@ -15,8 +18,7 @@ Exit codes:
 - `1`: the repo does not match it.
 - `2`: the spec, verifier, call shape, timeout, or run failed.
 
-Agents can read the JSON result. That makes status less vague than a prose
-claim.
+Agents can read the JSON result. Status is a pass or fail, not a prose claim.
 
 ## Why use it
 
@@ -30,33 +32,36 @@ Use this loop:
 4. Build the code.
 5. Run `specular verify` until it exits `0`.
 
-Use it for plans with clear parts: files, text, exports, deps, named cases,
-or checks a script can test.
+Use it for plans with clear parts: files, text, exports, deps, named cases, or
+checks a script can test.
 
 ## Install
 
 From this repo:
 
 ```bash
+# Install the local checkout.
 cargo install --path .
 ```
 
 From GitHub:
 
 ```bash
+# Install the latest main branch from GitHub.
 cargo install --git https://github.com/agent-quality-controls/specular
 ```
 
 Check the install:
 
 ```bash
+# Print the current spec format, verifier calls, and report shape.
 specular --help
 ```
 
-The help text owns the spec shape, field names, verifier calls, lint errors,
-exit codes, and report JSON.
+The help text owns the spec shape, field names, script calls, lint errors, exit
+codes, and report JSON.
 
-## Use
+## Quick start
 
 Start with a prose plan. Put a JSON spec and coverage map next to it:
 
@@ -66,39 +71,44 @@ Start with a prose plan. Put a JSON spec and coverage map next to it:
 .plans/my-change.md.spec.coverage.md
 ```
 
-Lint the spec:
+Then run the loop:
 
 ```bash
+# Check that the spec is well formed.
 specular lint .plans/my-change.md.spec.json
-```
 
-Run it before coding:
+# Run before coding. Missing work should fail here.
+specular verify .plans/my-change.md.spec.json
 
-```bash
+# Build, then run again until the command exits 0.
 specular verify .plans/my-change.md.spec.json
 ```
 
-The first verify should fail where work is missing. If it passes too early,
-the spec is too weak.
-
-Build until verify exits `0`:
-
-```bash
-specular verify .plans/my-change.md.spec.json
-```
+If the first verify passes too early, the spec is too weak.
 
 ## Tell your agent
 
 Use this prompt:
 
 ```text
-Use Specular for this plan. Make a JSON spec, write a coverage map, add any needed verifier scripts, run specular verify before coding, and keep working until specular verify exits 0. Use specular --help for the spec shape and verifier calls.
+Use Specular for this plan.
+Make a JSON spec.
+Write a coverage map.
+Add any needed verifier scripts.
+Run specular verify before coding.
+Keep working until specular verify exits 0.
+Use specular --help for the spec shape and script calls.
 ```
 
 For larger plans, ask for three passes:
 
 ```text
-Use Specular. Run three separate passes from the plan, lint each draft, merge disagreements, write the accepted spec and coverage map, then build until specular verify exits 0.
+Use Specular.
+Run three separate spec drafts from the plan.
+Lint each draft.
+Merge conflicts.
+Write the accepted spec and coverage map.
+Build until specular verify exits 0.
 ```
 
 The coverage map shows which plan headings Specular checks, which belong in
@@ -108,28 +118,28 @@ behavior fixtures, which need custom verifiers, and which are not covered.
 
 There are three patterns:
 
-1. Predefined categories with built-in verifiers: `tree`, `content`.
-2. Predefined categories that need your verifier: `dependencies`, `exports`,
+1. Predefined categories with built-in checks: `tree`, `content`.
+2. Predefined categories that need your script: `dependencies`, `exports`,
    `enumerations`.
-3. Custom categories: put any JSON under `custom`, then write the verifier.
+3. Custom categories: put any JSON under `custom`, then write the script.
 
 Predefined categories have fixed fields. Custom entries can hold any JSON.
 
 Run `specular --help` before writing a spec. It includes full examples and the
-verifier call rules.
+script call rules.
 
-## Verifiers
+## Verifier scripts
 
 Verifier commands can be any script the OS can run. Python is usually the least
 annoying choice.
 
-Typed verifier blocks are called once per block:
+Typed script blocks are called once per block:
 
 ```text
 <command...> <spec.json> <category> <blockIndex>
 ```
 
-Custom verifiers are called once:
+Custom scripts are called once:
 
 ```text
 <command...> <spec.json> custom
