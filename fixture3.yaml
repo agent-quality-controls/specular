@@ -3,7 +3,7 @@ version: 1
 suites:
   lint:
     tags:
-      - "speculus"
+      - "specular"
     fixtures:
       - "behavior/fixtures/lint/*/fixture.json"
     command:
@@ -19,7 +19,7 @@ suites:
 
   verify:
     tags:
-      - "speculus"
+      - "specular"
     fixtures:
       - "behavior/fixtures/verify/*/fixture.json"
     command:

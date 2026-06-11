@@ -1,4 +1,4 @@
-# Speculus CLI plan v2 (lock-free) + build contract
+# Specular CLI plan v2 (lock-free) + build contract
 
 ## Summary
 
@@ -11,14 +11,14 @@ Replaced the 2026-05-14 preliminary plan with a lock-free V1 plan, then produced
 - One noun: verifier (builtin/custom are adjectives). No trust types; `VerifierSource { Builtin(Category), Custom(VerifierId) }` records origin; the library never judges.
 - `Status { Pass, Fail }` — same name as its wire field `status` (Verdict rejected: one concept, one name).
 - Public API pinned in plan (Public Library Surface): `lint`/`verify` functions; 15 types.
-- aqc backends attach in V1 (crates landed in aqc-shared 2026-06-07); spec glob matching uses speculus's own GlobSet (literal separator on), not `FileTree::glob`.
+- aqc backends attach in V1 (crates landed in aqc-shared 2026-06-07); spec glob matching uses specular's own GlobSet (literal separator on), not `FileTree::glob`.
 - Guardrail3 boundary pinned concretely: forbidden crate prefixes `g3`/`guardrail` + aqc-shared engine crates; allowed aqc crates are exactly the three fact crates.
 - Granularity is derived (scope+polarity merge rule), MERGEABLE_REQUIREMENTS and VACUOUS_SPEC are lint rules; coverage map is a required artifact (0 UNCOVERED).
 - Test policy: no Rust tests; behavior is fixture3's lane per the guardrails fixture development guide.
 
 ## Key files for context
 
-- `.plans/2026-06-07-124603-speculus-plan-v2-lock-free.md` — the plan (single source of truth)
+- `.plans/2026-06-07-124603-specular-plan-v2-lock-free.md` — the plan (single source of truth)
 - `.plans/...md.spec.json` — the build contract (9 requirements)
 - `.plans/...md.spec.coverage.md` — plan-section -> coverage mapping
 - `scripts/spec-lint.sh`, `scripts/spec-verify.sh`, `scripts/verify-{tree,content,dependencies,exports,enumerations}.sh`
@@ -29,4 +29,4 @@ Replaced the 2026-05-14 preliminary plan with a lock-free V1 plan, then produced
 
 - Build the workspace until `scripts/spec-verify.sh` exits 0 (Cargo.toml, guardrail3-rs.toml, src/lib.rs, src/main.rs, the 10 crates, public API, 3 enums).
 - Smoke-test the binary by hand (lint/verify against a sample spec).
-- fixture3 behavior suite per the fixture development guide: layered fixtures (R00 clean golden -> R10 breakage layers), `fixture3.yaml` at repo root, replay = run `speculus` against fixture trees, one JSON record per command.
+- fixture3 behavior suite per the fixture development guide: layered fixtures (R00 clean golden -> R10 breakage layers), `fixture3.yaml` at repo root, replay = run `specular` against fixture trees, one JSON record per command.

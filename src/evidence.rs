@@ -121,8 +121,8 @@ pub struct GitDiagnostic {
 /// The verify report: input-closure stamps plus per-item evidence.
 #[derive(Debug, Serialize)]
 pub struct Report {
-    /// The speculus version that produced this report.
-    pub speculus_version: String,
+    /// The specular version that produced this report.
+    pub specular_version: String,
     /// Stamp of the spec file.
     pub spec: FileStamp,
     /// Stamps of every declared verifier file.
@@ -139,7 +139,7 @@ impl Report {
     /// Build a report and derive conformance from its evidence.
     #[must_use]
     pub fn new(
-        speculus_version: String,
+        specular_version: String,
         spec: FileStamp,
         verifier_files: Vec<FileStamp>,
         git: Vec<GitDiagnostic>,
@@ -147,7 +147,7 @@ impl Report {
     ) -> Self {
         let conforms = evidence.iter().all(|e| e.status == Status::Pass);
         Self {
-            speculus_version,
+            specular_version,
             spec,
             verifier_files,
             git,

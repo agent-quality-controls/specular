@@ -11,8 +11,8 @@ and the committed ID-based model.
   place), `exists` (in at least one), `forbidden` (in none).
 - One verifier model: every category's verifier is declared in the `verifiers`
   map; every verifier script judges its category and emits the same JSON
-  evidence lines that speculus's own builtin verifiers produce.
-- A `custom` category whose entries are free-form dicts; speculus never interprets
+  evidence lines that specular's own builtin verifiers produce.
+- A `custom` category whose entries are free-form dicts; specular never interprets
   them — the custom verifier reads the spec and does its own checks.
 - All output is JSON. No flags, no text format.
 
@@ -43,7 +43,7 @@ and the committed ID-based model.
         "forbidden": ["openssl", "guardrail*", "g3*"] }
     ],
     "exports": [
-      { "package": "speculus", "required": ["Spec", "lint", "verify"] }
+      { "package": "specular", "required": ["Spec", "lint", "verify"] }
     ],
     "enumerations": [
       { "name": "Status", "values": ["Pass", "Fail"] }
@@ -61,8 +61,8 @@ Shape rules:
 - `tree` is a single object (cannot be duplicated by construction). `content`,
   `dependencies`, `exports`, `enumerations` are arrays of typed blocks.
 - `custom` is an array of free-form objects. No schema beyond "is an object";
-  speculus passes them through untouched. The example's `check`/`files` keys are
-  the author's own vocabulary, not speculus's.
+  specular passes them through untouched. The example's `check`/`files` keys are
+  the author's own vocabulary, not specular's.
 - Block target keys are descriptive per category: `files` (content),
   `manifests` (dependencies), `package` (exports), `name` (enumerations).
   `tree` has no target: the repository.
@@ -94,12 +94,12 @@ Shape rules:
   judges that category. `tree` and `content` have builtins used when no map
   entry exists; the other categories require a map entry.
 - Every verifier script — typed or custom — does its own checking and emits
-  evidence lines (below). speculus does not re-judge script output; for typed
+  evidence lines (below). specular does not re-judge script output; for typed
   categories it only checks bookkeeping (every item answered exactly once).
 
 ## Wire protocol (one, for all scripts)
 
-Evidence line = the same object that appears in speculus's report:
+Evidence line = the same object that appears in specular's report:
 
 ```json
 {"item": "serde", "status": "pass"}
@@ -117,7 +117,7 @@ Invocation:
 
 - Typed categories: once per block — `<command...> <spec.json> <category>
   <blockIndex>` from the repo root. The script reads its block from the spec.
-  speculus enforces: one line per item in the block, no unknown items, no
+  specular enforces: one line per item in the block, no unknown items, no
   duplicates. Violations = exit 2 with expected-vs-got.
 - Custom: once — `<command...> <spec.json> custom`. The script reads the whole
   custom array and emits whatever evidence lines it produces.
@@ -154,7 +154,7 @@ The only output format, for both commands. No flags.
 
 ```json
 {
-  "speculus_version": "0.2.0",
+  "specular_version": "0.2.0",
   "spec": {"path": "spec.json", "sha256": "..."},
   "verifier_files": [{"path": "scripts/verify-deps.sh", "sha256": "..."}],
   "git": [{"path": "spec.json", "state": "clean"}],
@@ -215,7 +215,7 @@ The only output format, for both commands. No flags.
 
 1. Library (1-5); cargo check/clippy/fmt clean.
 2. HELP.txt (6); embedded JSON example must parse and lint.
-3. Contract + scripts (7-8); `speculus verify` on own contract green.
+3. Contract + scripts (7-8); `specular verify` on own contract green.
 4. Fixtures (9); `fixture3 check --all` re-approved.
 5. Skill + plan sync (10-11).
 6. Worklog + commit per unit.

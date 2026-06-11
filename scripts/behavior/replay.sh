@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # replay.sh <fixture.json>...
 # fixture3 replay: copies each fixture's repo/ tree to a temp dir, runs the
-# real speculus binary per the fixture's commands, and emits ONE JSON array of
+# real specular binary per the fixture's commands, and emits ONE JSON array of
 # records {fixture, command, exit_code, output} on stdout.
 set -uo pipefail
 
@@ -11,7 +11,7 @@ cargo build --quiet >&2 || {
   echo '{"replay_error": "cargo build failed"}'
   exit 1
 }
-BIN="$ROOT/target/debug/speculus"
+BIN="$ROOT/target/debug/specular"
 
 RECORDS="[]"
 for FIX in "$@"; do

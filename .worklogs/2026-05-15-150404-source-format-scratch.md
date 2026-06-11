@@ -1,5 +1,5 @@
 Summary
-- Added scratch examples comparing the same `speculus` contract in CUE, Pkl, and JSON.
+- Added scratch examples comparing the same `specular` contract in CUE, Pkl, and JSON.
 - The scratch file records first-pass observations before deeper tool validation.
 
 Decisions made

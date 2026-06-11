@@ -12,7 +12,7 @@ Renamed the custom verifier declaration field `claims` to `requirementIds` (Rust
 ## Key files for context
 
 - src/model.rs (VerifierDecl), src/lint.rs, src/verify.rs
-- .plans/2026-06-07-124603-speculus-plan-v2-lock-free.md (Custom Verifiers section)
+- .plans/2026-06-07-124603-specular-plan-v2-lock-free.md (Custom Verifiers section)
 - behavior/fixtures/*/repo/spec.json (7 files), behavior/golden/verify/
 
 ## Next steps

@@ -1,4 +1,4 @@
-//! speculus: deterministic spec-driven development.
+//! specular: deterministic spec-driven development.
 //!
 //! The library starts at the JSON spec: [`lint`] is the only constructor of a
 //! valid [`Spec`]; [`verify`] judges a repository against it and returns a

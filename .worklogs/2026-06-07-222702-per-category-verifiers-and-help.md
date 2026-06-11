@@ -5,7 +5,7 @@
 Implemented the design from `.plans/2026-06-07-202732-*`. Verifiers are now per
 category (builtin or an overriding command in a top-level `verifiers` map);
 required+forbidden merge into one row per scope; empty categories are omittable;
-all format docs moved into `speculus help`; the skill shrank to a pointer. All gates
+all format docs moved into `specular help`; the skill shrank to a pointer. All gates
 green: cargo build/clippy/fmt clean, `fixture3 check --all` matched, the binary
 verifies its own build contract (exit 0, 7 requirements).
 
@@ -28,7 +28,7 @@ verifies its own build contract (exit 0, 7 requirements).
   not a lint concern, since the spec JSON is identical whether the file exists.
 - `verify` runs an override as `<command...> <spec.json> <category>`; coverage is
   per category; a line for an id outside the category is a protocol error.
-- `speculus help` / `--help` / `-h` prints `include_str!("../HELP.txt")`. HELP.txt is
+- `specular help` / `--help` / `-h` prints `include_str!("../HELP.txt")`. HELP.txt is
   the committed help body and a required file in the build contract.
 - The build contract is now verified by the BINARY (dogfood): builtin tree+content
   plus the three bash scripts as per-category overrides.

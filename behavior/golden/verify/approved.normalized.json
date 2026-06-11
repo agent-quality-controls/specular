@@ -88,7 +88,7 @@
         "path": "spec.json",
         "sha256": "ca241051522a36c77559c50e02ce9cfcd74badee1c2434514c1eb386f2fc0610"
       },
-      "speculus_version": "0.2.0",
+      "specular_version": "0.2.0",
       "verifier_files": [
         {
           "path": "scripts/custom.sh",
@@ -200,7 +200,7 @@
         "path": "spec.json",
         "sha256": "ca241051522a36c77559c50e02ce9cfcd74badee1c2434514c1eb386f2fc0610"
       },
-      "speculus_version": "0.2.0",
+      "specular_version": "0.2.0",
       "verifier_files": [
         {
           "path": "scripts/custom.sh",

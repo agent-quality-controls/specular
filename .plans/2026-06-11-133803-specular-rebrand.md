@@ -1,17 +1,17 @@
-# Speculus rebrand
+# Specular rebrand
 
 ## Goal
 
-Rename the current product surface to Speculus while leaving the active project folder path alone.
+Rename the current product surface to Specular while leaving the active project folder path alone.
 
 ## Approach
 
-- Change the Cargo package and binary name to `speculus`.
-- Change Rust crate imports, module comments, CLI usage text, and help text to use Speculus / `speculus`.
-- Rename the report version field to `speculus_version` because report JSON is part of the public interface.
+- Change the Cargo package and binary name to `specular`.
+- Change Rust crate imports, module comments, CLI usage text, and help text to use Specular / `specular`.
+- Rename the report version field to `specular_version` because report JSON is part of the public interface.
 - Update fixture commands, behavior replay, and approved verify goldens to expect the new binary and report field.
-- Update plan/worklog filenames and prose references so repository-visible mentions use Speculus.
-- Update local spec-driven-development skill copies so future sessions call `speculus`.
+- Update plan/worklog filenames and prose references so repository-visible mentions use Specular.
+- Update local spec-driven-development skill copies so future sessions call `specular`.
 
 ## Key Decisions
 

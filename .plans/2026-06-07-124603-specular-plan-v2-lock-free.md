@@ -1,8 +1,8 @@
 # Goal
 
-Build `speculus`: a Rust CLI and library for deterministic spec-driven development.
+Build `specular`: a Rust CLI and library for deterministic spec-driven development.
 
-`speculus` verifies that implementation matches a machine-readable JSON spec. It does not know about prose plans, Markdown descriptions, tickets, prompts, or how the spec was produced. The library starts at the JSON spec.
+`specular` verifies that implementation matches a machine-readable JSON spec. It does not know about prose plans, Markdown descriptions, tickets, prompts, or how the spec was produced. The library starts at the JSON spec.
 
 Core flow:
 
@@ -10,7 +10,7 @@ Core flow:
 spec.json -> repository facts -> evidence
 ```
 
-Supersedes `.plans/2026-05-14-203402-speculus-preliminary-plan.md`. Major changes from that plan:
+Supersedes `.plans/2026-05-14-203402-specular-preliminary-plan.md`. Major changes from that plan:
 
 - The lock file is removed from V1 and redesigned as a thin, additive later layer.
 - Custom verifiers move from non-goal to V1 core, with a narrow execution and evidence protocol.
@@ -22,7 +22,7 @@ Superseded in part by `.plans/2026-06-10-154943-per-item-spec-model.md`: the com
 
 # Problem statement
 
-`speculus` must verify repository shape and file content against a JSON contract without:
+`specular` must verify repository shape and file content against a JSON contract without:
 
 - duplicating walk, ignore, symlink, encoding, or Git semantics in the product
 - growing its own crawler, config parser, or AST visitor stack for V1 `tree` / `content` checks
@@ -37,13 +37,13 @@ V1 builtin verifiers (`tree`, `content`) must be thin: spec routing + evidence o
 The library cannot know its caller: human, CI, orchestrator, or agent. It therefore contains no roles, no identity, no approval flows, no agent-awareness. It provides mechanisms that any outer policy can attach to:
 
 - Every command's semantics are visible in its syntax, so external permission systems can discriminate by command pattern.
-- All commands in V1 are read-only with respect to the repository. `speculus` writes nothing into the repository it verifies.
+- All commands in V1 are read-only with respect to the repository. `specular` writes nothing into the repository it verifies.
 - No bypass flags. There is no `--force`, `--skip`, or environment variable that softens a refusal. Integrity refusals are non-negotiable in-library.
 - Every decision point emits structured JSON output with stable exit codes, so outer layers consume facts as data, never parse prose.
 
 ## Source recorded, never judged
 
-- `builtin` evidence: produced by builtin verifiers shipped and fixture-tested with `speculus`, independent of whoever authored the implementation under verification.
+- `builtin` evidence: produced by builtin verifiers shipped and fixture-tested with `specular`, independent of whoever authored the implementation under verification.
 - `custom` evidence: produced by verifier commands declared in the spec — authored by the same parties writing the implementation.
 
 Every evidence item carries its verifier source (`builtin` or `custom`). The library records source as a fact and attaches no judgment to it — what builtin vs custom implies about trustworthiness is the consumer's inference. There is no trust type, grade, score, or rolled-up builtin/custom tally anywhere in the model; the per-item source is the whole contract, and a report must never present the two sources indistinguishably.
@@ -57,19 +57,19 @@ Typed builtin categories are the product: convergent to extract, mechanically tr
 Local path:
 
 ```text
-/Users/tartakovsky/Projects/agent-quality-controls/speculus
+/Users/tartakovsky/Projects/agent-quality-controls/specular
 ```
 
 Remote:
 
 ```text
-https://github.com/agent-quality-controls/speculus
+https://github.com/agent-quality-controls/specular
 ```
 
 Package and binary name:
 
 ```text
-speculus
+specular
 ```
 
 # Non-Goals
@@ -193,7 +193,7 @@ Category shape:
 - `dependencies`: array of blocks with `manifests`, `required`, `exists`, `forbidden`; forbidden items may be globs.
 - `exports`: array of blocks with `package`, `required`, `exists`, `forbidden`; `exists` is rejected by lint.
 - `enumerations`: array of blocks with `name` and exact `values`.
-- `custom`: array of opaque objects. speculus validates only that each entry is an object.
+- `custom`: array of opaque objects. specular validates only that each entry is an object.
 
 `reason` is optional on every typed block. It may be a string or an array of strings. The extraction workflow fills it, but the schema does not require it.
 
@@ -232,8 +232,8 @@ Rules:
 
 Execution protocol (`verify`):
 
-- For typed categories, `speculus` runs the override once per block as `<command...> <spec.json> <category> <blockIndex>` from the repository root. The script reads that block and emits one JSON line per item in the block: `{"item": "...", "status": "pass" | "fail", "message": "...", "observed": ..., "expected": ..., "path": ...}`.
-- For `custom`, `speculus` runs the override once as `<command...> <spec.json> custom`. The script reads the whole `requirements.custom` array. Only `status` is mandatory; all other fields are script-owned and copied into the report.
+- For typed categories, `specular` runs the override once per block as `<command...> <spec.json> <category> <blockIndex>` from the repository root. The script reads that block and emits one JSON line per item in the block: `{"item": "...", "status": "pass" | "fail", "message": "...", "observed": ..., "expected": ..., "path": ...}`.
+- For `custom`, `specular` runs the override once as `<command...> <spec.json> custom`. The script reads the whole `requirements.custom` array. Only `status` is mandatory; all other fields are script-owned and copied into the report.
 - A nonzero exit, timeout, missing item, duplicate item, unknown item, invalid JSON line, or custom verifier that emits zero lines is a runtime error (exit class 2), not a requirement failure.
 - A missing command file is not a lint concern (the spec is identical whether or not the file exists); it fails at `verify` when the command cannot be stamped or spawned.
 
@@ -253,8 +253,8 @@ Fatal verification errors:
 # Commands
 
 ```bash
-speculus lint <spec>
-speculus verify <spec>
+specular lint <spec>
+specular verify <spec>
 ```
 
 All command output is JSON. No `--json` flag exists. All commands are read-only with respect to the repository.
@@ -291,7 +291,7 @@ Checks implementation against the spec.
 Steps:
 
 - run `lint` internally; any lint failure is exit class 2
-- resolve the input closure: spec file + every declared custom verifier file + `speculus` version
+- resolve the input closure: spec file + every declared custom verifier file + `specular` version
 - walk repository via `aqc-filetree`; read scoped files via `aqc-fs-utils` where needed
 - run builtin verifiers (thin layer over those facts)
 - execute custom verifiers per the protocol
@@ -344,7 +344,7 @@ Naming decisions and their reasons:
 - No exit-code type. The CLI maps `Ok`+conform / `Ok`+nonconform / `Err` to 0/1/2; the code set is a binary behavior, verified in fixture3.
 - One concept, one name across representations: the type is `Status`, the wire field is `status` (`"pass"` | `"fail"`). The overload concern that argued for a different type name died with the removal of the `status` command. Script exit codes never express check results: nonzero exit = runtime error, never a failed requirement.
 
-Speculus CLI-owned (not an `aqc-shared` crate).
+Specular CLI-owned (not an `aqc-shared` crate).
 
 Every evidence item includes at least:
 
@@ -361,7 +361,7 @@ The report header stamps the input closure:
 
 - raw-byte hash of the spec file
 - raw-byte hash of every custom verifier file
-- `speculus` version
+- `specular` version
 - Git state of the closure files as diagnostics (tracked/dirty/untracked, via `aqc-git-helpers`); recorded, never enforced
 
 External tool versions observed by verifiers are recorded in evidence as diagnostics, never enforced. Platform-dependent binary identity must not gate verification.
@@ -382,19 +382,19 @@ Do not expose precondition, postcondition, or invariant terminology in the user-
 
 # V1 Requirement Categories
 
-V1 `tree` and `content` builtin verifiers are thin Speculus CLI logic over `aqc-shared` platform crates. They do not call Guardrail3 policies, connectors, or legacy family checkers (Guardrail3 vocabulary).
+V1 `tree` and `content` builtin verifiers are thin Specular CLI logic over `aqc-shared` platform crates. They do not call Guardrail3 policies, connectors, or legacy family checkers (Guardrail3 vocabulary).
 
 ## Ownership boundary
 
 | Layer | Owner |
 |-------|--------|
-| JSON spec, schema, semantic validation, routing, evidence, CLI | `speculus` |
+| JSON spec, schema, semantic validation, routing, evidence, CLI | `specular` |
 | Walk -> `FileTree`, path/glob/ignore/symlink semantics | `aqc-filetree` |
 | File read semantics for text checks | `aqc-fs-utils` |
 | Porcelain worktree state for closure diagnostics | `aqc-git-helpers` |
 | Linter/policy enforcement | Guardrail3 v2 (separate product; same `aqc-*` where applicable) |
 
-Speculus CLI must not reimplement walk, read, or Git rules that already live in those crates' plans.
+Specular CLI must not reimplement walk, read, or Git rules that already live in those crates' plans.
 
 ## Backend attachment (decided 2026-06-07, revised same day)
 
@@ -404,7 +404,7 @@ Originally: facade traits with no implementation ("backend not attached", exit c
 - closure Git diagnostics use `aqc-git-helpers` (`worktree_changes` + `changes_affecting_paths`; `NotARepository` is the recorded diagnostic for non-Git directories)
 - `aqc-filetree`, `aqc-fs-utils`, `aqc-git-helpers` are required dependencies
 - no placeholder walk or read implementation may be added anywhere in the workspace — unchanged
-- spec glob matching uses speculus's own `GlobSet` (literal separator on) over `FileTree.entries`, not `FileTree::glob` (whose default lets `*` cross `/`), so spec glob semantics stay under speculus's own lint contract
+- spec glob matching uses specular's own `GlobSet` (literal separator on) over `FileTree.entries`, not `FileTree::glob` (whose default lets `*` cross `/`), so spec glob semantics stay under specular's own lint contract
 
 ## `tree`
 
@@ -416,7 +416,7 @@ Verifier behavior:
 
 - load `FileTree` from `aqc-filetree` with documented option values
 - repo-root-relative paths and `globset` matching on `rel_path` entries
-- required path / forbidden glob checks in Speculus CLI only — no second walk semantics layer
+- required path / forbidden glob checks in Specular CLI only — no second walk semantics layer
 
 Path, glob, walk, ignore recovery, and symlink semantics: `aqc-filetree` plan is authoritative.
 
@@ -438,16 +438,16 @@ Encoding, NUL, size cap, CRLF normalization, and symlink read behavior: `aqc-fs-
 
 `dependencies`, `exports`, and `enumerations` exist in the typed model from V1 but have no builtin verifiers in V1. The custom lane carries them and opaque checks until builtins land.
 
-When built, each backend is a per-ecosystem builtin inside `speculus` for its category and ecosystem, for example cargo dependencies, Go dependencies, or npm dependencies:
+When built, each backend is a per-ecosystem builtin inside `specular` for its category and ecosystem, for example cargo dependencies, Go dependencies, or npm dependencies:
 
-- `dependencies`: consume the ecosystem's stable machine interface — `cargo metadata`, `go list -deps -json`, package-manager graphs. No linter layer in between; a linter between `speculus` and the toolchain interface adds a vocabulary translation and a managed binary while contributing nothing.
+- `dependencies`: consume the ecosystem's stable machine interface — `cargo metadata`, `go list -deps -json`, package-manager graphs. No linter layer in between; a linter between `specular` and the toolchain interface adds a vocabulary translation and a managed binary while contributing nothing.
 - `exports`, `enumerations`: bespoke static-analysis work (source parsing, DDL parsing). Each pair is built when usage shows recurrence, not upfront.
 
 Coverage rule: a non-empty category with no builtin and no verifier entry fails `lint` with `CATEGORY_HAS_NO_VERIFIER`.
 
 Where Guardrail3 needs the identical fact (for example the cargo metadata graph), the parsing lives once in an `aqc-*` fact crate consumed by both products. No shared linter layer, no shared findings schema.
 
-`commands` and `cli` do not exist as categories: `commands` risks turning `speculus` into a generic task runner beyond the constrained verifier protocol; `cli` belongs in behavior fixtures (`fixture3`).
+`commands` and `cli` do not exist as categories: `commands` risks turning `specular` into a generic task runner beyond the constrained verifier protocol; `cli` belongs in behavior fixtures (`fixture3`).
 
 # Deferred: Lock Layer
 
@@ -459,9 +459,9 @@ The lock is removed from V1. Rationale: its irreplicable in-library contribution
 
 If usage proves the need, the lock returns as a thin additive layer with no changes to verifiers, categories, the verifier protocol, or the evidence model:
 
-- `speculus lock <spec>`: serialize the input closure hashes to `spec.lock.json`.
-- `speculus status <lock>`: compare recorded closure to current files.
-- `speculus verify <lock>`: compare, refuse on mismatch, then verify.
+- `specular lock <spec>`: serialize the input closure hashes to `spec.lock.json`.
+- `specular status <lock>`: compare recorded closure to current files.
+- `specular verify <lock>`: compare, refuse on mismatch, then verify.
 - Command surface splits along the trust boundary: a loosening re-lock requires an explicit `--allow-loosening --reason <text>` invocation (direction computed internally, exact cases only; see Spec Change Review), so any external permission system can gate it as a command pattern.
 - The lock records parent-lock hash, diff classification, and declared reason (self-describing lineage; a record, not a proof).
 
@@ -475,7 +475,7 @@ Spec rules (enforced at lint time on the JSON contract):
 - reject absolute paths, `..`, and empty path components
 - glob patterns must compile (`globset`)
 
-Runtime walk behavior is not redefined here. Speculus CLI passes explicit options into `aqc-filetree` (see its plan: `SymlinkPolicy`, `skip_dir_names`, `.gitignore` / recovery, sorted entries). Record the chosen defaults in Speculus CLI constants when implementing builtin verifiers.
+Runtime walk behavior is not redefined here. Specular CLI passes explicit options into `aqc-filetree` (see its plan: `SymlinkPolicy`, `skip_dir_names`, `.gitignore` / recovery, sorted entries). Record the chosen defaults in Specular CLI constants when implementing builtin verifiers.
 
 Likely dependencies:
 
@@ -487,31 +487,31 @@ Likely dependencies:
 
 There is no Git enforcement in V1. `verify` records the worktree state of the input-closure files (spec, custom verifier scripts) in the report header as diagnostics: tracked/dirty/untracked per file.
 
-Git invocation and porcelain parsing are owned by `aqc-git-helpers` (`--porcelain=v1 -z`, NUL-separated records). Speculus CLI consumes helper output; it does not fork its own `git status` parser. Non-Git directories: the diagnostic field reports `NotARepository`; verification proceeds.
+Git invocation and porcelain parsing are owned by `aqc-git-helpers` (`--porcelain=v1 -z`, NUL-separated records). Specular CLI consumes helper output; it does not fork its own `git status` parser. Non-Git directories: the diagnostic field reports `NotARepository`; verification proceeds.
 
 # Boundary With Guardrail3 v2
 
 The discriminator for where a rule lives:
 
 - Standing workspace invariant, true every commit -> a Guardrail3 policy (persistent config, linters wired into hooks/CI).
-- Plan-scoped contract, done when verified -> a `speculus` requirement (spec exists for the implementation window).
+- Plan-scoped contract, done when verified -> a `specular` requirement (spec exists for the implementation window).
 - The same rule may migrate between them; the underlying fact extraction lives once in an `aqc-*` crate either way.
 
 Capability mirror:
 
 - Guardrail3 v2 authors configuration and never executes processes or parses source (its R1/R2 capability boundary).
-- `speculus` executes (custom verifiers, toolchain interfaces) and parses anything, and authors nothing persistent in the repository it verifies.
+- `specular` executes (custom verifiers, toolchain interfaces) and parses anything, and authors nothing persistent in the repository it verifies.
 
 Decided boundaries:
 
 - No dependency on Guardrail3 policy crates, adapters, engines, or connectors. Concretely (decided 2026-06-07): no crate whose name starts with `g3` or `guardrail`, and none of the guardrails file-engine machinery in aqc-shared — `aqc-file-engine-core`, `aqc-cargo-toml-engine`, `aqc-clippy-toml-engine`, or any future `aqc-*-engine` crate. The allowed aqc-shared crates are exactly the three fact crates: `aqc-filetree`, `aqc-fs-utils`, `aqc-git-helpers`.
-- No shared finding/evidence crate across products; Speculus CLI owns its evidence model.
+- No shared finding/evidence crate across products; Specular CLI owns its evidence model.
 - No shared linter layer and no shared findings schema between the products.
-- Speculus CLI depends on neutral `aqc-*` crates, never on guardrail3 package paths.
+- Specular CLI depends on neutral `aqc-*` crates, never on guardrail3 package paths.
 
 # Relationship To Other Tools
 
-`speculus`:
+`specular`:
 
 - verifies structural implementation contracts from JSON specs
 - owns spec parsing, routing, evidence, builtin `tree`/`content` verifiers, and the custom verifier protocol
@@ -530,8 +530,8 @@ The `spec-driven-development` skill:
 `g3rs` / `g3ts` (Guardrail3 v2):
 
 - metalinter/scaffolder: policies, adapters, broker, engines, wired linters
-- separate CLI and config from Speculus CLI; may share `aqc-*` crates
-- does not replace Speculus CLI verification; users may run both
+- separate CLI and config from Specular CLI; may share `aqc-*` crates
+- does not replace Specular CLI verification; users may run both
 
 # Dependency Health Gate
 
@@ -582,22 +582,22 @@ Verification model:
 4. Add Rust semantic validation: ID uniqueness, paths, globs, ownership totality, custom verifier rules.
 5. Add `lint`.
 6. Add the input-closure concept and report stamps (spec hash, verifier file hashes, version, Git diagnostics via `aqc-git-helpers`).
-7. Add the Speculus CLI evidence model with trust-grade labels.
+7. Add the Specular CLI evidence model with trust-grade labels.
 8. Wire `aqc-filetree`, `aqc-fs-utils`, `aqc-git-helpers` as dependencies (see Backend attachment).
 9. Add builtin `tree` verifier: `FileTree` + path/glob rules only.
 10. Add builtin `content` verifier: scoped `read_text` + fixed substring rules only.
 11. Add custom verifier execution: protocol, JSON-lines parsing, coverage enforcement.
 12. Add `verify` end to end with the report.
-13. Add fixture coverage for `speculus` itself through `fixture3`.
+13. Add fixture coverage for `specular` itself through `fixture3`.
 
 Do not block on Guardrail3 v2 product code — only on the neutral `aqc-*` crates.
 
 # V1 Definition Of Done
 
-- `speculus lint` rejects invalid JSON, JSON Schema violations, invalid typed specs, semantic validation failures, duplicate targets/items, contradictions, redundant items, vacuous specs, categories with no verifier, dead verifiers, bad custom shapes, and unknown verifier-map keys.
-- `speculus verify` checks builtin `tree` and `content` requirements over `aqc-filetree`/`aqc-fs-utils` with no own walk or read stack.
-- `speculus verify` runs each category's verifier (builtin or script), enforces the evidence protocol and per-item coverage, and fails loudly on protocol violations.
-- Every report labels evidence `builtin`/`custom` and stamps the input closure (spec hash, verifier file hashes, `speculus` version, Git diagnostics).
+- `specular lint` rejects invalid JSON, JSON Schema violations, invalid typed specs, semantic validation failures, duplicate targets/items, contradictions, redundant items, vacuous specs, categories with no verifier, dead verifiers, bad custom shapes, and unknown verifier-map keys.
+- `specular verify` checks builtin `tree` and `content` requirements over `aqc-filetree`/`aqc-fs-utils` with no own walk or read stack.
+- `specular verify` runs each category's verifier (builtin or script), enforces the evidence protocol and per-item coverage, and fails loudly on protocol violations.
+- Every report labels evidence `builtin`/`custom` and stamps the input closure (spec hash, verifier file hashes, `specular` version, Git diagnostics).
 - Exit codes: 0 conform, 1 nonconform, 2 input/protocol/runtime error. No bypass flags exist.
 - The library contains no roles, identity, approval, or caller-awareness; all commands are repository-read-only.
 - Rust tests are absent.
