@@ -9,6 +9,7 @@ Extraction note: this spec was not produced by three isolated sub-agent passes b
   - Public GitHub state through `scripts/verify-repo-quality.py`
   - Community files through `tree`
   - CI, CodeQL, Scorecard, release, Dependabot through `tree` and `content`
+  - CLI version verification through `scripts/verify-cli-version.py`
   - Cargo and README metadata through `content` and custom verifier
 
 ## Approach
@@ -18,7 +19,7 @@ Extraction note: this spec was not produced by three isolated sub-agent passes b
   - Step 1 GitHub visibility/settings: custom checks `github-*`
   - Step 2 dependency boundary: `Cargo.toml` content plus `no-local-aqc-path-deps`
   - Step 3 health files: `tree` plus content checks for `SECURITY.md`, contributing, and PR template
-  - Step 4 workflows: `tree`, workflow content checks, and `workflow-actions-pinned`
+  - Step 4 workflows: `tree`, workflow content checks, CLI version check content, and `workflow-actions-pinned`
   - Step 5 Dependabot: `tree` and `.github/dependabot.yml` content
   - Step 6 release workflow: `.github/workflows/release.yml` content plus `release-trusted-publishing`
   - Step 7 Cargo metadata: `Cargo.toml` content plus `cargo-metadata-complete`

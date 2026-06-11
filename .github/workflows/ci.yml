@@ -29,6 +29,8 @@ jobs:
         run: cargo test
       - name: Help
         run: cargo run -- --help
+      - name: Version
+        run: python3 scripts/verify-cli-version.py
       - name: Package smoke test
         run: cargo package --no-verify
       - name: Install Fixture3

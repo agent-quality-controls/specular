@@ -29,7 +29,7 @@ OpenSSF Best Practices registration is out of scope for this pass.
 
 4. Add CI and static-analysis workflows.
    - Add `.github/workflows/ci.yml`.
-   - CI runs `cargo fmt --check`, Clippy with denied warnings, `cargo test`, `cargo run -- --help`, `cargo package --no-verify`, `fixture3 check --all`, and `slopless README.md`.
+   - CI runs `cargo fmt --check`, Clippy with denied warnings, `cargo test`, `cargo run -- --help`, `python3 scripts/verify-cli-version.py`, `cargo package --no-verify`, `fixture3 check --all`, and `slopless README.md`.
    - Add `.github/workflows/codeql.yml` for Rust CodeQL scanning.
    - Add `.github/workflows/scorecard.yml` for OpenSSF Scorecard SARIF upload.
    - Pin third-party actions by commit SHA.
@@ -95,6 +95,7 @@ OpenSSF Best Practices registration is out of scope for this pass.
 - `.github/workflows/scorecard.yml`
 - `.github/workflows/release.yml`
 - `scripts/verify-repo-quality.py`
+- `scripts/verify-cli-version.py`
 - `.plans/2026-06-11-171235-repo-quality-hardening.md.spec.json`
 - `.plans/2026-06-11-171235-repo-quality-hardening.md.spec.coverage.md`
 - `.worklogs/<timestamp>-repo-quality-hardening.md`

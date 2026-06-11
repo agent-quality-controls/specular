@@ -7,12 +7,13 @@ USAGE
   specular lint   <spec.json>   lint the spec file for correctness
   specular verify <spec.json>   check the repository against the spec
   specular --help               print this text (also: -h, help)
+  specular --version            print the package version (also: -v)
 
 EXIT CODES
   0  spec valid (lint) / repository conforms (verify)
   1  repository does not conform (verify only)
   2  spec invalid, verifier error, protocol error, timeout, or runtime error
-  No flags exist. Output is always JSON.
+  Other flags are not supported. lint and verify output is always JSON.
 
 THREE WAYS TO USE A SPEC
   1. Predefined category, built-in verifier.

@@ -12,6 +12,7 @@ fn main() {
 }
 
 const HELP: &str = include_str!("../HELP.txt");
+const VERSION_FLAGS: &[&str] = &["--version", "-v"];
 
 fn run() -> i32 {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -24,6 +25,10 @@ fn run() -> i32 {
         .any(|a| a == "help" || a == "--help" || a == "-h")
     {
         println!("{HELP}");
+        return 0;
+    }
+    if args.iter().any(|a| VERSION_FLAGS.contains(&a.as_str())) {
+        println!("{}", env!("CARGO_PKG_VERSION"));
         return 0;
     }
     if args.len() != 2 {
