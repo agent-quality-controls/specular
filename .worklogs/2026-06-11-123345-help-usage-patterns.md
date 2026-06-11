@@ -21,8 +21,8 @@ Reworked `HELP.txt` so the first spec-format explanation separates the three usa
 - `cargo check`
 - `cargo clippy --all-targets --all-features -- -D warnings`
 - `fixture3 check --all`
-- `driftless verify .plans/2026-06-10-154943-per-item-spec-model.md.spec.json` -> `conforms: true`
+- `speculus verify .plans/2026-06-10-154943-per-item-spec-model.md.spec.json` -> `conforms: true`
 
 ## Next steps
 
-- Reinstall `driftless` after commit so the globally installed help text includes this change.
+- Reinstall `speculus` after commit so the globally installed help text includes this change.

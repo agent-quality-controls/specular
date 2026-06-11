@@ -1,12 +1,12 @@
-driftless - deterministic spec-driven development
+speculus - deterministic spec-driven development
 
-Verify a repository against a machine-readable JSON spec. driftless reads the spec,
+Verify a repository against a machine-readable JSON spec. speculus reads the spec,
 checks repository state, and reports one evidence object per item.
 
 USAGE
-  driftless lint   <spec.json>   lint the spec file for correctness
-  driftless verify <spec.json>   check the repository against the spec
-  driftless --help               print this text (also: -h, help)
+  speculus lint   <spec.json>   lint the spec file for correctness
+  speculus verify <spec.json>   check the repository against the spec
+  speculus --help               print this text (also: -h, help)
 
 EXIT CODES
   0  spec valid (lint) / repository conforms (verify)
@@ -17,7 +17,7 @@ EXIT CODES
 THREE WAYS TO USE A SPEC
   1. Predefined category, built-in verifier.
 
-     Use `tree` or `content`. Write requirements only. Driftless already knows
+     Use `tree` or `content`. Write requirements only. Speculus already knows
      how to verify these categories.
 
        "requirements": {
@@ -30,8 +30,8 @@ THREE WAYS TO USE A SPEC
   2. Predefined category, no built-in verifier.
 
      Use `dependencies`, `exports`, or `enumerations`. These categories have
-     fixed fields, but Driftless needs a verifier command that you write.
-     Driftless runs that command and checks that it emits exactly one evidence
+     fixed fields, but Speculus needs a verifier command that you write.
+     Speculus runs that command and checks that it emits exactly one evidence
      line for each item in the block.
 
        "verifiers": { "dependencies": ["scripts/verify_deps.py"] },
@@ -44,7 +44,7 @@ THREE WAYS TO USE A SPEC
   3. Opaque custom checks.
 
      Use `custom` when no predefined category fits. Each entry can contain any
-     JSON object fields you need. Driftless only checks that each entry is an
+     JSON object fields you need. Speculus only checks that each entry is an
      object. Your verifier interprets those objects and emits evidence.
 
        "verifiers": { "custom": ["scripts/verify_custom.py"] },
@@ -97,7 +97,7 @@ SPEC FORMAT
       ],
       "exports": [
         {
-          "package": "driftless",
+          "package": "speculus",
           "required": ["Spec", "lint", "verify"]
         }
       ],
@@ -123,7 +123,7 @@ FIELDS
   dependencies  manifests, reason, required, exists, forbidden
   exports       package, reason, required, exists, forbidden
   enumerations  name, reason, values
-  custom        array of objects; driftless does not interpret their keys
+  custom        array of objects; speculus does not interpret their keys
 
 SEMANTICS
   required   each item is present in every matched place
@@ -233,8 +233,8 @@ WORKFLOW
   1. Write the plan in prose.
   2. Extract a JSON spec for checkable items.
   3. Write verifier scripts for categories without a builtin.
-  4. Run driftless verify before coding and confirm it fails where expected.
-  5. Build until driftless verify exits 0.
+  4. Run speculus verify before coding and confirm it fails where expected.
+  5. Build until speculus verify exits 0.
   6. Spot-check by hand; the spec is not exhaustive.
 
 REPORT
@@ -247,7 +247,7 @@ REPORT
   verify:
 
     {
-      "driftless_version": "0.2.0",
+      "speculus_version": "0.2.0",
       "spec": {"path": "spec.json", "sha256": "..."},
       "verifier_files": [{"path": "scripts/verify_deps.py", "sha256": "..."}],
       "git": [{"path": "spec.json", "state": "clean"}],

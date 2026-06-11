@@ -65,7 +65,7 @@ impl Category {
         Self::ALL.into_iter().find(|c| c.as_str() == name)
     }
 
-    /// Whether driftless ships a builtin verifier for this category.
+    /// Whether speculus ships a builtin verifier for this category.
     #[must_use]
     pub const fn has_builtin(self) -> bool {
         matches!(self, Self::Tree | Self::Content)

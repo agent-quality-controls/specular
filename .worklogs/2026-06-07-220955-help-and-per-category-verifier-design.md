@@ -5,7 +5,7 @@
 Two design docs for the next change set. No source touched. Decides: verifiers
 become per-category (builtin or an overriding script via a top-level `verifiers`
 map), required+forbidden merge into one row per scope, empty categories are
-omittable, and all format docs move into `driftless help` so the skill shrinks to a
+omittable, and all format docs move into `speculus help` so the skill shrinks to a
 pointer.
 
 ## Decisions made (this session)
@@ -26,12 +26,12 @@ pointer.
   scope-merge-enforced and cannot converge in 3-pass extraction — the two
   properties that justify the library over the skill. The open-world need is
   already served by the skill, outside the library.
-- Workflow gains: run `driftless verify` before coding to confirm it fails in the
+- Workflow gains: run `speculus verify` before coding to confirm it fails in the
   right places (also surfaces missing verifier files).
 
 ## Key files for context
 
-- `.plans/2026-06-07-202732-help-output-draft.md` — exact `driftless help` text
+- `.plans/2026-06-07-202732-help-output-draft.md` — exact `speculus help` text
 - `.plans/2026-06-07-202732-help-and-verifier-model-plan.md` — the change list
 
 ## Next steps

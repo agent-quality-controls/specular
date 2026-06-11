@@ -1,12 +1,12 @@
 {
   "suite": "verify",
   "kind": "approved",
-  "run_id": "2026-06-11T09-40-00.848691Z-31ef068a",
-  "run_commit": "3783b9f",
+  "run_id": "2026-06-11T12-40-17.674089Z-4a9fa9db",
+  "run_commit": "4d8c060",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-11T09:40:00.848691Z",
+  "recorded_at": "2026-06-11T12:40:17.674089Z",
   "fixture_hash": "sha256:417c1eeaa78821503ab4184ecf0020185ffbd3512a84a41cac860220a9237df1",
-  "manifest_hash": "sha256:31ef068a8e6308f9302cd209258cab654f0bfbb4b49349a20e175000c4a273a2",
+  "manifest_hash": "sha256:4a9fa9db2ad3726eae5c854912ab762917b69da1b60fa6552f35a9f6c4fe8aec",
   "tool_version": "0.1.8",
   "output_schema_version": "1",
   "fixtures": [
@@ -46,6 +46,5 @@
       "path": "behavior/fixtures/verify/verify-R26-custom-broken/fixture.json",
       "sha256": "sha256:19d701ff913944d4430c13d0bc60a2d772ca3e9b1644b3eeb9dfec5ccf3c5bc9"
     }
-  ],
-  "comment": "driftless-rebrand-version-field"
+  ]
 }

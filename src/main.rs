@@ -1,11 +1,11 @@
-//! The driftless CLI: a thin caller of the library.
+//! The speculus CLI: a thin caller of the library.
 //!
 //! Exit codes: 0 = conforms, 1 = does not conform, 2 = spec, verifier, or
 //! runtime error. No bypass flags exist.
 
 use std::path::Path;
 
-use driftless::{LintError, Report, lint, verify};
+use speculus::{LintError, Report, lint, verify};
 
 fn main() {
     std::process::exit(run());
@@ -16,7 +16,7 @@ const HELP: &str = include_str!("../HELP.txt");
 fn run() -> i32 {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.is_empty() {
-        print_error("usage: driftless <lint|verify> <spec.json>; run `driftless --help`");
+        print_error("usage: speculus <lint|verify> <spec.json>; run `speculus --help`");
         return 2;
     }
     if args
@@ -27,7 +27,7 @@ fn run() -> i32 {
         return 0;
     }
     if args.len() != 2 {
-        print_error("usage: driftless <lint|verify> <spec.json>; run `driftless --help`");
+        print_error("usage: speculus <lint|verify> <spec.json>; run `speculus --help`");
         return 2;
     }
     if args.iter().any(|a| a.starts_with("--")) {
@@ -40,9 +40,7 @@ fn run() -> i32 {
         "lint" => run_lint(spec_path),
         "verify" => run_verify(spec_path),
         other => {
-            print_error(&format!(
-                "unknown command '{other}'; run `driftless --help`"
-            ));
+            print_error(&format!("unknown command '{other}'; run `speculus --help`"));
             2
         }
     }

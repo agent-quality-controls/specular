@@ -1,17 +1,17 @@
-# `driftless --help` — output
+# `speculus --help` — output
 
-The literal text `driftless --help` (also `-h`, `help`) prints. Committed as `HELP.txt`, embedded via `include_str!`.
+The literal text `speculus --help` (also `-h`, `help`) prints. Committed as `HELP.txt`, embedded via `include_str!`.
 
 ```
-driftless — deterministic spec-driven development
+speculus — deterministic spec-driven development
 
-Verify a repository against a machine-readable JSON spec. driftless reads the spec,
+Verify a repository against a machine-readable JSON spec. speculus reads the spec,
 checks repository state, and reports per-requirement evidence.
 
 USAGE
-  driftless lint   <spec.json> [--json]   validate the spec file alone
-  driftless verify <spec.json> [--json]   check the repository against the spec
-  driftless --help                        print this text (also: -h, help)
+  speculus lint   <spec.json> [--json]   validate the spec file alone
+  speculus verify <spec.json> [--json]   check the repository against the spec
+  speculus --help                        print this text (also: -h, help)
 
 EXIT CODES
   0  spec valid (lint) / repository conforms (verify)
@@ -63,7 +63,7 @@ SPEC FORMAT
         {
           "id": "PUBLIC_API",
           "reason": "plan: Public surface",
-          "package": "driftless",
+          "package": "speculus",
           "types": ["Spec", "Report"],
           "functions": ["lint", "verify"]
         }
@@ -119,7 +119,7 @@ VERIFIERS
     "verifiers": { "dependencies": ["scripts/verify-deps.sh"] }
 
   Writing a verifier — three steps:
-    1. Make an executable command. driftless runs it as:
+    1. Make an executable command. speculus runs it as:
          <command...> <spec.json> <category>
        Read requirements.<category> from the spec file (argv 1).
     2. Print one JSON object per line to stdout, one per requirement in that
@@ -127,7 +127,7 @@ VERIFIERS
          {"id":"CRATES","status":"pass"}
          {"id":"CRATES","status":"fail","message":"openssl present",
           "observed":"openssl 0.10","expected":"absent","path":"Cargo.toml"}
-    3. Add the category to "verifiers" and run `driftless verify`.
+    3. Add the category to "verifiers" and run `speculus verify`.
   Exit nonzero, a missing line for a requirement, or a line for an id outside the
   category is a runtime error (exit 2).
 
@@ -143,14 +143,14 @@ LINT ERRORS (all reported at once)
 
 WORKFLOW
   1. Write the plan in prose (kept as the detailed source).
-  2. Write spec.json for everything driftless can check.
+  2. Write spec.json for everything speculus can check.
   3. Write verifier scripts for the non-builtin categories you use.
-  4. Run `driftless verify` on the unbuilt repo; confirm it fails where expected.
-  5. Build until `driftless verify` exits 0.
+  4. Run `speculus verify` on the unbuilt repo; confirm it fails where expected.
+  5. Build until `speculus verify` exits 0.
   6. Spot-check by hand; the spec is not exhaustive.
 
 REPORT
   Per requirement: id, source (builtin:<category> or custom:<category>), status,
   and a message on failure. Header stamps the spec hash, each verifier file hash,
-  the driftless version, and the Git state of those files. --json emits it as data.
+  the speculus version, and the Git state of those files. --json emits it as data.
 ```

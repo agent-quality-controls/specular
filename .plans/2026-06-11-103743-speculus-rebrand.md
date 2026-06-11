@@ -1,6 +1,6 @@
 # Goal
 
-Rename the product from its old name to Driftless CLI while keeping the repository folder path unchanged.
+Rename the product from its old name to Speculus CLI while keeping the repository folder path unchanged.
 
 # Approach
 
@@ -11,10 +11,10 @@ Rename the product from its old name to Driftless CLI while keeping the reposito
 
 # Key decisions
 
-- CLI command and package name: `driftless`.
-- Display name in prose: `Driftless CLI`.
-- Report field: rename the old version field to `driftless_version` and update goldens.
-- Folder name `/spec3` is left unchanged per request.
+- CLI command and package name: `speculus`.
+- Display name in prose: `Speculus CLI`.
+- Report field: rename the old version field to `speculus_version` and update goldens.
+- Folder name `/speculus` is left unchanged per request.
 
 # Files to modify
 

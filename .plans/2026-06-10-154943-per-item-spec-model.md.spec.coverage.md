@@ -1,6 +1,6 @@
 # Coverage Map: per-item spec model
 
-Extraction note: this spec was not produced by three isolated sub-agent passes because the available agent tool is restricted unless the user explicitly asks for sub-agents. The accepted contract is still checked mechanically by driftless after the implementation.
+Extraction note: this spec was not produced by three isolated sub-agent passes because the available agent tool is restricted unless the user explicitly asks for sub-agents. The accepted contract is still checked mechanically by speculus after the implementation.
 
 ## Plan: per-item spec model
 

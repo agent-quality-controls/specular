@@ -2,7 +2,7 @@
 
 ## Summary
 
-Implemented `.plans/2026-06-10-154943-per-item-spec-model.md`: driftless now uses item-based evidence instead of requirement IDs, uniform `required` / `exists` / `forbidden` typed blocks, an opaque `custom` category, JSON-only CLI output, and one verifier protocol for builtin and script-produced evidence. Updated HELP, build-contract specs, fixture suites, scripts, skill copies, and the older product plan to match.
+Implemented `.plans/2026-06-10-154943-per-item-spec-model.md`: speculus now uses item-based evidence instead of requirement IDs, uniform `required` / `exists` / `forbidden` typed blocks, an opaque `custom` category, JSON-only CLI output, and one verifier protocol for builtin and script-produced evidence. Updated HELP, build-contract specs, fixture suites, scripts, skill copies, and the older product plan to match.
 
 ## Decisions made
 
@@ -30,8 +30,8 @@ Implemented `.plans/2026-06-10-154943-per-item-spec-model.md`: driftless now use
 - `cargo check`
 - `cargo clippy --all-targets --all-features -- -D warnings`
 - `fixture3 check --all`
-- `driftless verify .plans/2026-06-10-154943-per-item-spec-model.md.spec.json` -> `conforms: true`
-- `driftless verify .plans/2026-06-07-124603-driftless-plan-v2-lock-free.md.spec.json` -> `conforms: true`
+- `speculus verify .plans/2026-06-10-154943-per-item-spec-model.md.spec.json` -> `conforms: true`
+- `speculus verify .plans/2026-06-07-124603-speculus-plan-v2-lock-free.md.spec.json` -> `conforms: true`
 
 ## Next steps
 

@@ -1,5 +1,5 @@
 Summary
-- Added a research memo explaining the validation models relevant to `driftless`.
+- Added a research memo explaining the validation models relevant to `speculus`.
 - Resolved the user's inline comments in the main plan with plain-language decisions and examples.
 
 Decisions made
@@ -9,8 +9,8 @@ Decisions made
 - Required non-empty unsupported categories, orphan requirements, and orphan checker outputs to fail.
 
 Key files for context
-- `.plans/2026-05-14-203402-driftless-preliminary-plan.md`
-- `.plans/2026-05-15-132431-driftless-validation-model-research.md`
+- `.plans/2026-05-14-203402-speculus-preliminary-plan.md`
+- `.plans/2026-05-15-132431-speculus-validation-model-research.md`
 
 Verification
 - Read the user's plan comments from the working-tree diff.
