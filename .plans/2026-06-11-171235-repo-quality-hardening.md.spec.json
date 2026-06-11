@@ -1,0 +1,242 @@
+{
+  "version": 1,
+  "verifiers": {
+    "custom": ["scripts/verify-repo-quality.py"]
+  },
+  "requirements": {
+    "tree": {
+      "reason": [
+        "Plan: add public repo quality files, CI workflows, dependency automation, release workflow, and Specular verification artifacts.",
+        "Plan: OpenSSF Best Practices registration is out of scope."
+      ],
+      "required": [
+        "README.md",
+        "Cargo.toml",
+        "Cargo.lock",
+        "LICENSE",
+        "SECURITY.md",
+        ".github/CONTRIBUTING.md",
+        ".github/CODE_OF_CONDUCT.md",
+        ".github/CODEOWNERS",
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        ".github/ISSUE_TEMPLATE/bug.yml",
+        ".github/ISSUE_TEMPLATE/spec-verifier-request.yml",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        ".github/dependabot.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/scorecard.yml",
+        ".github/workflows/release.yml",
+        "scripts/verify-repo-quality.py",
+        ".plans/2026-06-11-171235-repo-quality-hardening.md",
+        ".plans/2026-06-11-171235-repo-quality-hardening.md.spec.json",
+        ".plans/2026-06-11-171235-repo-quality-hardening.md.spec.coverage.md"
+      ],
+      "forbidden": [
+        ".github/workflows/npm*.yml",
+        ".github/workflows/*node*.yml"
+      ]
+    },
+    "content": [
+      {
+        "files": ["Cargo.toml"],
+        "reason": "Plan: Cargo metadata is crates.io-ready and the public install path does not depend on private local path crates.",
+        "required": [
+          "description = \"Deterministic spec-driven development CLI\"",
+          "license = \"MIT\"",
+          "repository = \"https://github.com/agent-quality-controls/specular\"",
+          "readme = \"README.md\"",
+          "rust-version = \"1.85\"",
+          "\"cli\", \"spec\", \"agents\", \"verification\", \"json\"",
+          "\"command-line-utilities\", \"development-tools\"",
+          "aqc-filetree = \"0.1.0\"",
+          "aqc-fs-utils = \"0.1.0\"",
+          "aqc-git-helpers = \"0.1.0\""
+        ],
+        "forbidden": [
+          "path = \"../aqc-shared",
+          "patch.crates-io",
+          "git = \"https://github.com/agent-quality-controls/aqc-shared\""
+        ]
+      },
+      {
+        "files": ["README.md"],
+        "reason": "Plan: README exposes current quality posture and accurate install/use paths.",
+        "required": [
+          "img.shields.io/github/actions/workflow/status/agent-quality-controls/specular/ci.yml",
+          "img.shields.io/github/actions/workflow/status/agent-quality-controls/specular/codeql.yml",
+          "img.shields.io/github/license/agent-quality-controls/specular",
+          "img.shields.io/badge/rust-1.85%2B-orange",
+          "cargo install --git https://github.com/agent-quality-controls/specular",
+          "Specular is a CLI for enforcing spec-driven development."
+        ]
+      },
+      {
+        "files": [".github/workflows/ci.yml"],
+        "reason": "Plan: CI runs Rust, Fixture3, packaging, help, and prose gates.",
+        "required": [
+          "name: CI",
+          "cargo fmt --check",
+          "cargo clippy --all-targets --all-features -- -D warnings",
+          "cargo test",
+          "cargo run -- --help",
+          "cargo package --no-verify",
+          "fixture3 check --all",
+          "slopless README.md"
+        ],
+        "forbidden": [
+          "actions/checkout@v",
+          "continue-on-error: true"
+        ]
+      },
+      {
+        "files": [".github/workflows/codeql.yml"],
+        "reason": "Plan: CodeQL scans Rust on push, pull request, and a weekly schedule.",
+        "required": [
+          "name: CodeQL",
+          "languages: rust",
+          "github/codeql-action/init",
+          "github/codeql-action/analyze",
+          "security-events: write"
+        ],
+        "forbidden": [
+          "actions/checkout@v"
+        ]
+      },
+      {
+        "files": [".github/workflows/scorecard.yml"],
+        "reason": "Plan: OpenSSF Scorecard runs with SARIF upload and pinned actions.",
+        "required": [
+          "name: Scorecard supply-chain security",
+          "ossf/scorecard-action",
+          "results_format: sarif",
+          "github/codeql-action/upload-sarif",
+          "security-events: write"
+        ],
+        "forbidden": [
+          "actions/checkout@v"
+        ]
+      },
+      {
+        "files": [".github/workflows/release.yml"],
+        "reason": "Plan: release workflow verifies tag/version, runs gates, and uses crates.io Trusted Publishing.",
+        "required": [
+          "name: Release",
+          "id-token: write",
+          "rust-lang/crates-io-auth-action",
+          "CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}",
+          "cargo publish",
+          "cargo package --no-verify"
+        ],
+        "forbidden": [
+          "CARGO_REGISTRY_TOKEN: ${{ secrets.",
+          "actions/checkout@v"
+        ]
+      },
+      {
+        "files": [".github/dependabot.yml"],
+        "reason": "Plan: Dependabot updates Cargo and GitHub Actions dependencies.",
+        "required": [
+          "package-ecosystem: \"cargo\"",
+          "package-ecosystem: \"github-actions\"",
+          "interval: \"weekly\""
+        ]
+      },
+      {
+        "files": ["SECURITY.md"],
+        "reason": "Plan: security reporting is documented.",
+        "required": [
+          "Report security vulnerabilities through GitHub private vulnerability reporting",
+          "Do not open a public issue with exploit details",
+          "Only the latest released version of Specular is supported"
+        ]
+      },
+      {
+        "files": [".github/CONTRIBUTING.md"],
+        "reason": "Plan: contributor setup, local gates, test policy, and release caveat are documented.",
+        "required": [
+          "cargo fmt --check",
+          "cargo clippy --all-targets --all-features -- -D warnings",
+          "cargo test",
+          "fixture3 check --all",
+          "slopless README.md",
+          "The first crates.io publish for each crate must be manual"
+        ]
+      },
+      {
+        "files": [".github/PULL_REQUEST_TEMPLATE.md"],
+        "reason": "Plan: PRs must declare tests and docs.",
+        "required": [
+          "cargo fmt --check",
+          "cargo clippy --all-targets --all-features -- -D warnings",
+          "cargo test",
+          "fixture3 check --all",
+          "Specular spec or coverage map updated"
+        ]
+      }
+    ],
+    "custom": [
+      {
+        "check": "github-specular-public",
+        "repo": "agent-quality-controls/specular",
+        "field": "isPrivate",
+        "equals": false,
+        "reason": "Plan step 1: Specular repo is public."
+      },
+      {
+        "check": "github-aqc-shared-public",
+        "repo": "agent-quality-controls/aqc-shared",
+        "field": "isPrivate",
+        "equals": false,
+        "reason": "Plan step 1: AQC shared repo is public."
+      },
+      {
+        "check": "github-specular-issues",
+        "repo": "agent-quality-controls/specular",
+        "field": "hasIssuesEnabled",
+        "equals": true
+      },
+      {
+        "check": "github-specular-discussions",
+        "repo": "agent-quality-controls/specular",
+        "field": "hasDiscussionsEnabled",
+        "equals": true
+      },
+      {
+        "check": "github-specular-topics",
+        "repo": "agent-quality-controls/specular",
+        "topics": ["agent-quality", "cli", "json", "rust", "spec-driven-development", "static-analysis", "verification"]
+      },
+      {
+        "check": "github-security-settings",
+        "repo": "agent-quality-controls/specular",
+        "security": {
+          "secret_scanning": "enabled",
+          "secret_scanning_push_protection": "enabled",
+          "dependabot_security_updates": "enabled"
+        }
+      },
+      {
+        "check": "cargo-metadata-complete",
+        "file": "Cargo.toml"
+      },
+      {
+        "check": "no-local-aqc-path-deps",
+        "file": "Cargo.toml"
+      },
+      {
+        "check": "workflow-actions-pinned",
+        "files": [
+          ".github/workflows/ci.yml",
+          ".github/workflows/codeql.yml",
+          ".github/workflows/scorecard.yml",
+          ".github/workflows/release.yml"
+        ]
+      },
+      {
+        "check": "release-trusted-publishing",
+        "file": ".github/workflows/release.yml"
+      }
+    ]
+  }
+}

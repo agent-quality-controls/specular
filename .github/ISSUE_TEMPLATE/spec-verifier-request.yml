@@ -1,0 +1,29 @@
+name: Spec or verifier request
+description: Propose a spec-format, verifier, or evidence behavior change
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Need
+      description: What plan requirement cannot be checked well today?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: Show the spec JSON or verifier output you want to support.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current workaround
+      description: How are you checking it now?
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
+      description: What false positives, false negatives, or protocol ambiguity should be avoided?

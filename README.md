@@ -1,5 +1,10 @@
 # Specular is a CLI for enforcing spec-driven development.
 
+[![ci](https://img.shields.io/github/actions/workflow/status/agent-quality-controls/specular/ci.yml?branch=main&label=ci)](https://github.com/agent-quality-controls/specular/actions/workflows/ci.yml)
+[![codeql](https://img.shields.io/github/actions/workflow/status/agent-quality-controls/specular/codeql.yml?branch=main&label=codeql)](https://github.com/agent-quality-controls/specular/actions/workflows/codeql.yml)
+[![license](https://img.shields.io/github/license/agent-quality-controls/specular)](LICENSE)
+[![rust](https://img.shields.io/badge/rust-1.85%2B-orange)](Cargo.toml)
+
 It turns a prose plan into JSON checks that a machine can enforce.
 
 Use it when an agent builds code from a plan and "done" is too weak.

@@ -2,11 +2,26 @@
 name = "specular"
 version = "0.2.0"
 edition = "2024"
+rust-version = "1.85"
+description = "Deterministic spec-driven development CLI"
+license = "MIT"
+repository = "https://github.com/agent-quality-controls/specular"
+readme = "README.md"
+keywords = ["cli", "spec", "agents", "verification", "json"]
+categories = ["command-line-utilities", "development-tools"]
+include = [
+  "Cargo.toml",
+  "Cargo.lock",
+  "LICENSE",
+  "README.md",
+  "src/**",
+  "HELP.txt",
+]
 
 [dependencies]
-aqc-filetree = { version = "0.1.0", path = "../aqc-shared/packages/aqc-filetree" }
-aqc-fs-utils = { version = "0.1.0", path = "../aqc-shared/packages/aqc-fs-utils" }
-aqc-git-helpers = { version = "0.1.0", path = "../aqc-shared/packages/aqc-git-helpers" }
+aqc-filetree = "0.1.0"
+aqc-fs-utils = "0.1.0"
+aqc-git-helpers = "0.1.0"
 camino = "1.2.2"
 garde = { version = "0.23.0", features = ["derive"] }
 globset = "0.4.18"
