@@ -1,16 +1,19 @@
 # Specular is a CLI for enforcing spec-driven development.
-It turns a prose plan into JSON checks. Then it tests the repo.
+
+It turns a prose plan into JSON checks that a machine can enforce.
+
 Use it when an agent builds code from a plan and "done" is too weak.
-Install with `cargo install --git https://github.com/agent-quality-controls/specular`, run `specular --help`, then run `specular verify <spec.json>`.
+
+Install with
+```bash
+cargo install --git https://github.com/agent-quality-controls/specular
+```
+
 Tell your agent to use Specular, make the spec and coverage map, add needed scripts, and keep working until verify exits `0`.
 
 ## What it is
 
-Specular gives an agent a checked loop. The agent reads the plan, writes the
-spec, runs it, fixes the repo, and runs it again.
-
-The plan stays easy to read. The JSON spec names the parts a program can check.
-The result is JSON proof, one item at a time.
+Specular uses JSON spec files to enforce spec-driven development. It gives an agent a test loop instead of a prose-only plan. The agent reads the plan, writes the spec, runs it, fixes the repo, and runs it again.
 
 Exit codes:
 
@@ -18,7 +21,7 @@ Exit codes:
 - `1`: the repo does not match it.
 - `2`: the spec, verifier, call shape, timeout, or run failed.
 
-Agents can read the JSON result. Status is a pass or fail, not a prose claim.
+Agents can read the JSON result. Status is a pass or fail.
 
 ## Why use it
 
@@ -35,57 +38,6 @@ Use this loop:
 Use it for plans with clear parts: files, text, exports, deps, named cases, or
 checks a script can test.
 
-## Install
-
-From this repo:
-
-```bash
-# Install the local checkout.
-cargo install --path .
-```
-
-From GitHub:
-
-```bash
-# Install the latest main branch from GitHub.
-cargo install --git https://github.com/agent-quality-controls/specular
-```
-
-Check the install:
-
-```bash
-# Print the current spec format, verifier calls, and report shape.
-specular --help
-```
-
-The help text owns the spec shape, field names, script calls, lint errors, exit
-codes, and report JSON.
-
-## Quick start
-
-Start with a prose plan. Put a JSON spec and coverage map next to it:
-
-```text
-.plans/my-change.md
-.plans/my-change.md.spec.json
-.plans/my-change.md.spec.coverage.md
-```
-
-Then run the loop:
-
-```bash
-# Check that the spec is well formed.
-specular lint .plans/my-change.md.spec.json
-
-# Run before coding. Missing work should fail here.
-specular verify .plans/my-change.md.spec.json
-
-# Build, then run again until the command exits 0.
-specular verify .plans/my-change.md.spec.json
-```
-
-If the first verify passes too early, the spec is too weak.
-
 ## Tell your agent
 
 Use this prompt:
@@ -93,6 +45,7 @@ Use this prompt:
 ```text
 Use Specular for this plan.
 Make a JSON spec.
+Run specular lint.
 Write a coverage map.
 Add any needed verifier scripts.
 Run specular verify before coding.
@@ -100,30 +53,16 @@ Keep working until specular verify exits 0.
 Use specular --help for the spec shape and script calls.
 ```
 
-For larger plans, ask for three passes:
-
-```text
-Use Specular.
-Run three separate spec drafts from the plan.
-Lint each draft.
-Merge conflicts.
-Write the accepted spec and coverage map.
-Build until specular verify exits 0.
-```
-
-The coverage map shows which plan headings Specular checks, which belong in
-behavior fixtures, which need custom verifiers, and which are not covered.
-
 ## Spec patterns
 
 There are three patterns:
 
-1. Predefined categories with built-in checks: `tree`, `content`.
-2. Predefined categories that need your script: `dependencies`, `exports`,
+1. Predefined groups with built-in checks: `tree`, `content`.
+2. Predefined groups that need your script: `dependencies`, `exports`,
    `enumerations`.
-3. Custom categories: put any JSON under `custom`, then write the script.
+3. Custom groups: put any JSON under `custom`, then write the script.
 
-Predefined categories have fixed fields. Custom entries can hold any JSON.
+Predefined groups have fixed fields. Custom entries can hold any JSON.
 
 Run `specular --help` before writing a spec. It includes full examples and the
 script call rules.
