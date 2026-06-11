@@ -4,7 +4,7 @@ Verify a repository against a machine-readable JSON spec. driftless reads the sp
 checks repository state, and reports one evidence object per item.
 
 USAGE
-  driftless lint   <spec.json>   validate the spec file alone
+  driftless lint   <spec.json>   lint the spec file for correctness
   driftless verify <spec.json>   check the repository against the spec
   driftless --help               print this text (also: -h, help)
 
@@ -14,6 +14,50 @@ EXIT CODES
   2  spec invalid, verifier error, protocol error, timeout, or runtime error
   No flags exist. Output is always JSON.
 
+THREE WAYS TO USE A SPEC
+  1. Predefined category, built-in verifier.
+
+     Use `tree` or `content`. Write requirements only. Driftless already knows
+     how to verify these categories.
+
+       "requirements": {
+         "tree": { "required": ["src/lib.rs"], "forbidden": ["tests/**"] },
+         "content": [
+           { "files": ["**/*.rs"], "forbidden": ["#[test]"] }
+         ]
+       }
+
+  2. Predefined category, no built-in verifier.
+
+     Use `dependencies`, `exports`, or `enumerations`. These categories have
+     fixed fields, but Driftless needs a verifier command that you write.
+     Driftless runs that command and checks that it emits exactly one evidence
+     line for each item in the block.
+
+       "verifiers": { "dependencies": ["scripts/verify_deps.py"] },
+       "requirements": {
+         "dependencies": [
+           { "manifests": ["Cargo.toml"], "required": ["serde"] }
+         ]
+       }
+
+  3. Opaque custom checks.
+
+     Use `custom` when no predefined category fits. Each entry can contain any
+     JSON object fields you need. Driftless only checks that each entry is an
+     object. Your verifier interprets those objects and emits evidence.
+
+       "verifiers": { "custom": ["scripts/verify_custom.py"] },
+       "requirements": {
+         "custom": [
+           { "check": "version-sync", "files": ["README.md", "Cargo.toml"] }
+         ]
+       }
+
+  Predefined categories have predefined fields. Unknown fields fail lint.
+  Custom entries are opaque objects. Put data there only when no predefined
+  category describes the requirement.
+
 SPEC FORMAT
   Strict JSON, no comments. This example uses every category; copy and delete
   what you do not need. Any category may be omitted. List fields default to [].
@@ -21,10 +65,10 @@ SPEC FORMAT
   {
     "version": 1,
     "verifiers": {
-      "dependencies": ["scripts/verify-deps.sh"],
-      "exports": ["scripts/verify-exports.sh"],
-      "enumerations": ["scripts/verify-enums.sh"],
-      "custom": ["scripts/verify-custom.sh"]
+      "dependencies": ["scripts/verify_deps.py"],
+      "exports": ["scripts/verify_exports.py"],
+      "enumerations": ["scripts/verify_enums.py"],
+      "custom": ["scripts/verify_custom.py"]
     },
     "requirements": {
       "tree": {
@@ -102,14 +146,14 @@ VERIFIERS
 
   A verifier is declared in the top-level verifiers map:
 
-    "verifiers": { "dependencies": ["scripts/verify-deps.sh"] }
+    "verifiers": { "dependencies": ["scripts/verify_deps.py"] }
 
   Typed categories run once per block:
 
     <command...> <spec.json> <category> <blockIndex>
 
-  The script reads requirements.<category>[blockIndex] from the spec and prints
-  one JSON object per item in that block. Required keys: item, status.
+  The executable reads requirements.<category>[blockIndex] from the spec and
+  prints one JSON object per item in that block. Required keys: item, status.
 
     {"item":"serde","status":"pass"}
     {"item":"guardrail*","status":"fail","message":"guardrail3 declared","path":"Cargo.toml"}
@@ -118,8 +162,8 @@ VERIFIERS
 
     <command...> <spec.json> custom
 
-  The script reads requirements.custom and prints any evidence objects it owns.
-  Required key: status. All other keys are copied into the report.
+  The executable reads requirements.custom and prints any evidence objects it
+  owns. Required key: status. All other keys are copied into the report.
 
     {"check":"version-sync","status":"pass"}
     {"check":"version-sync","status":"fail","message":"README and Cargo.toml differ"}
@@ -128,28 +172,46 @@ VERIFIERS
   duplicate item, unknown item, zero custom lines, or a 60 second timeout is a
   runtime error with exit 2. Pass/fail verdicts travel only in evidence lines.
 
-COMPLETE TYPED SCRIPT
-  #!/usr/bin/env bash
-  set -uo pipefail
-  SPEC="${1:?spec}"
-  CATEGORY="${2:?category}"
-  INDEX="${3:?block index}"
-  BLOCK=$(jq -c ".requirements[$CATEGORY][($INDEX|tonumber)]" \
-    --arg CATEGORY "$CATEGORY" --arg INDEX "$INDEX" "$SPEC")
-  echo "$BLOCK" | jq -r '.required[]?, .exists[]?, .forbidden[]?' |
-  while IFS= read -r ITEM; do
-    jq -nc --arg item "$ITEM" '{item: $item, status: "pass"}'
-  done
+COMPLETE TYPED VERIFIER
+  This Python example accepts the protocol and returns pass evidence for every
+  item in one typed block.
 
-COMPLETE CUSTOM SCRIPT
-  #!/usr/bin/env bash
-  set -uo pipefail
-  SPEC="${1:?spec}"
-  jq -c '.requirements.custom[]' "$SPEC" |
-  while IFS= read -r CHECK; do
-    NAME=$(echo "$CHECK" | jq -r '.check // "custom"')
-    jq -nc --arg check "$NAME" '{check: $check, status: "pass"}'
-  done
+  #!/usr/bin/env python3
+  import json
+  import sys
+  from pathlib import Path
+
+  spec_path = Path(sys.argv[1])
+  category = sys.argv[2]
+  block_index = int(sys.argv[3])
+
+  spec = json.loads(spec_path.read_text())
+  block = spec["requirements"][category][block_index]
+
+  for item in block.get("required", []):
+      print(json.dumps({"item": item, "status": "pass"}))
+  for item in block.get("exists", []):
+      print(json.dumps({"item": item, "status": "pass"}))
+  for item in block.get("forbidden", []):
+      print(json.dumps({"item": item, "status": "pass"}))
+
+COMPLETE CUSTOM VERIFIER
+  This Python example reads opaque custom entries and returns one pass evidence
+  line per entry.
+
+  #!/usr/bin/env python3
+  import json
+  import sys
+  from pathlib import Path
+
+  spec_path = Path(sys.argv[1])
+  spec = json.loads(spec_path.read_text())
+
+  for entry in spec["requirements"].get("custom", []):
+      print(json.dumps({
+          "check": entry.get("check", "custom"),
+          "status": "pass"
+      }))
 
 LINT ERRORS
   JSON_SCHEMA               wrong shape, unknown field, wrong type, or bad version
@@ -187,7 +249,7 @@ REPORT
     {
       "driftless_version": "0.2.0",
       "spec": {"path": "spec.json", "sha256": "..."},
-      "verifier_files": [{"path": "scripts/verify-deps.sh", "sha256": "..."}],
+      "verifier_files": [{"path": "scripts/verify_deps.py", "sha256": "..."}],
       "git": [{"path": "spec.json", "state": "clean"}],
       "evidence": [
         {
