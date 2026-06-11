@@ -8,6 +8,7 @@
     "fixture": "verify-R00-clean-golden",
     "output": {
       "conforms": true,
+      "driftless_version": "0.2.0",
       "evidence": [
         {
           "category": "tree",
@@ -88,7 +89,6 @@
         "path": "spec.json",
         "sha256": "ca241051522a36c77559c50e02ce9cfcd74badee1c2434514c1eb386f2fc0610"
       },
-      "spec3_version": "0.2.0",
       "verifier_files": [
         {
           "path": "scripts/custom.sh",
@@ -110,6 +110,7 @@
     "fixture": "verify-R10-requirement-failures",
     "output": {
       "conforms": false,
+      "driftless_version": "0.2.0",
       "evidence": [
         {
           "category": "tree",
@@ -200,7 +201,6 @@
         "path": "spec.json",
         "sha256": "ca241051522a36c77559c50e02ce9cfcd74badee1c2434514c1eb386f2fc0610"
       },
-      "spec3_version": "0.2.0",
       "verifier_files": [
         {
           "path": "scripts/custom.sh",

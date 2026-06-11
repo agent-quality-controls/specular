@@ -3,7 +3,7 @@ version: 1
 suites:
   lint:
     tags:
-      - "spec3"
+      - "driftless"
     fixtures:
       - "behavior/fixtures/lint/*/fixture.json"
     command:
@@ -19,7 +19,7 @@ suites:
 
   verify:
     tags:
-      - "spec3"
+      - "driftless"
     fixtures:
       - "behavior/fixtures/verify/*/fixture.json"
     command:

@@ -1,17 +1,17 @@
-# `spec3 --help` — output
+# `driftless --help` — output
 
-The literal text `spec3 --help` (also `-h`, `help`) prints. Committed as `HELP.txt`, embedded via `include_str!`.
+The literal text `driftless --help` (also `-h`, `help`) prints. Committed as `HELP.txt`, embedded via `include_str!`.
 
 ```
-spec3 — deterministic spec-driven development
+driftless — deterministic spec-driven development
 
-Verify a repository against a machine-readable JSON spec. spec3 reads the spec,
+Verify a repository against a machine-readable JSON spec. driftless reads the spec,
 checks repository state, and reports per-requirement evidence.
 
 USAGE
-  spec3 lint   <spec.json> [--json]   validate the spec file alone
-  spec3 verify <spec.json> [--json]   check the repository against the spec
-  spec3 --help                        print this text (also: -h, help)
+  driftless lint   <spec.json> [--json]   validate the spec file alone
+  driftless verify <spec.json> [--json]   check the repository against the spec
+  driftless --help                        print this text (also: -h, help)
 
 EXIT CODES
   0  spec valid (lint) / repository conforms (verify)
@@ -63,7 +63,7 @@ SPEC FORMAT
         {
           "id": "PUBLIC_API",
           "reason": "plan: Public surface",
-          "package": "spec3",
+          "package": "driftless",
           "types": ["Spec", "Report"],
           "functions": ["lint", "verify"]
         }
@@ -119,7 +119,7 @@ VERIFIERS
     "verifiers": { "dependencies": ["scripts/verify-deps.sh"] }
 
   Writing a verifier — three steps:
-    1. Make an executable command. spec3 runs it as:
+    1. Make an executable command. driftless runs it as:
          <command...> <spec.json> <category>
        Read requirements.<category> from the spec file (argv 1).
     2. Print one JSON object per line to stdout, one per requirement in that
@@ -127,7 +127,7 @@ VERIFIERS
          {"id":"CRATES","status":"pass"}
          {"id":"CRATES","status":"fail","message":"openssl present",
           "observed":"openssl 0.10","expected":"absent","path":"Cargo.toml"}
-    3. Add the category to "verifiers" and run `spec3 verify`.
+    3. Add the category to "verifiers" and run `driftless verify`.
   Exit nonzero, a missing line for a requirement, or a line for an id outside the
   category is a runtime error (exit 2).
 
@@ -143,14 +143,14 @@ LINT ERRORS (all reported at once)
 
 WORKFLOW
   1. Write the plan in prose (kept as the detailed source).
-  2. Write spec.json for everything spec3 can check.
+  2. Write spec.json for everything driftless can check.
   3. Write verifier scripts for the non-builtin categories you use.
-  4. Run `spec3 verify` on the unbuilt repo; confirm it fails where expected.
-  5. Build until `spec3 verify` exits 0.
+  4. Run `driftless verify` on the unbuilt repo; confirm it fails where expected.
+  5. Build until `driftless verify` exits 0.
   6. Spot-check by hand; the spec is not exhaustive.
 
 REPORT
   Per requirement: id, source (builtin:<category> or custom:<category>), status,
   and a message on failure. Header stamps the spec hash, each verifier file hash,
-  the spec3 version, and the Git state of those files. --json emits it as data.
+  the driftless version, and the Git state of those files. --json emits it as data.
 ```

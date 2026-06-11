@@ -1,7 +1,7 @@
 # Coverage map
 
-Plan: `2026-06-07-124603-spec3-plan-v2-lock-free.md`
-Spec: `2026-06-07-124603-spec3-plan-v2-lock-free.md.spec.json`
+Plan: `2026-06-07-124603-driftless-plan-v2-lock-free.md`
+Spec: `2026-06-07-124603-driftless-plan-v2-lock-free.md.spec.json`
 
 Purpose: verify the repository-state facts pinned by the product plan after the per-item redesign. Behavior is covered by `fixture3`; the spec covers files, dependencies, exported API, closed enums, scripts, and key content tripwires.
 

@@ -2,7 +2,7 @@
 
 Goal: verifiers become per-category (builtin or an overriding script); merge
 required+forbidden into one row per scope; omit empty categories; move all format
-docs into `spec3 --help`; shrink the skill to a pointer.
+docs into `driftless --help`; shrink the skill to a pointer.
 
 Companion: `2026-06-07-202732-help-output-draft.md` is the exact help text.
 
@@ -56,7 +56,7 @@ Companion: `2026-06-07-202732-help-output-draft.md` is the exact help text.
 - Remove `Report::source_counts`; report summary drops the builtin/custom tally,
   keeps per-row lines and a plain count + conforms flag.
 - `main.rs`: `help` / `--help` / `-h` print `include_str!("../HELP.txt")`; bare
-  no-args prints short usage + "run spec3 help". Add `HELP.txt` at repo root.
+  no-args prints short usage + "run driftless help". Add `HELP.txt` at repo root.
 
 ## Change 5 — build-contract spec + coverage map
 
@@ -74,14 +74,14 @@ Companion: `2026-06-07-202732-help-output-draft.md` is the exact help text.
   `UNKNOWN_CATEGORY`; drop fixtures for deleted codes.
 - verify suite: add case D (verifier file missing -> exit 2) replacing the old
   command-missing-at-lint path; keep protocol/coverage error fixtures.
-- Add a `help` suite: golden of `spec3 --help`.
+- Add a `help` suite: golden of `driftless --help`.
 - Re-approve goldens (report loses the tally; sources now `custom:<category>`).
 
 ## Change 7 — skill + plan doc
 
 - SKILL.md (+ codex): cut format/field/category/verifier prose now in
-  `spec3 --help`; keep the 3-pass extraction protocol, the coverage-map artifact,
-  adjudication, and "run `spec3 --help`". The workflow line "run verify before
+  `driftless --help`; keep the 3-pass extraction protocol, the coverage-map artifact,
+  adjudication, and "run `driftless --help`". The workflow line "run verify before
   coding to confirm it fails in the right places" mirrors help step 4.
 - `.plans/2026-06-07-124603-...md`: Spec Model (one row per scope, omittable
   categories), Custom Verifiers (per-category map, override), Evidence Model (no
@@ -90,7 +90,7 @@ Companion: `2026-06-07-202732-help-output-draft.md` is the exact help text.
 ## Order
 
 1. Changes 1-4 (library), one build, cargo check/clippy/fmt.
-2. Change 5-6 (contract + fixtures); spec3 verify self-check green;
+2. Change 5-6 (contract + fixtures); driftless verify self-check green;
    fixture3 check --all re-approved.
 3. Change 7 (docs/skill).
 4. Commit per agreed unit.

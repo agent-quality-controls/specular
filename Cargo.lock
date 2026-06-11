@@ -224,6 +224,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "driftless"
+version = "0.2.0"
+dependencies = [
+ "aqc-filetree",
+ "aqc-fs-utils",
+ "aqc-git-helpers",
+ "camino",
+ "garde",
+ "globset",
+ "jsonschema",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -909,23 +926,6 @@ name = "smallvec"
 version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
-
-[[package]]
-name = "spec3"
-version = "0.2.0"
-dependencies = [
- "aqc-filetree",
- "aqc-fs-utils",
- "aqc-git-helpers",
- "camino",
- "garde",
- "globset",
- "jsonschema",
- "schemars",
- "serde",
- "serde_json",
- "sha2",
-]
 
 [[package]]
 name = "stable_deref_trait"

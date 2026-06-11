@@ -1,12 +1,12 @@
-spec3 - deterministic spec-driven development
+driftless - deterministic spec-driven development
 
-Verify a repository against a machine-readable JSON spec. spec3 reads the spec,
+Verify a repository against a machine-readable JSON spec. driftless reads the spec,
 checks repository state, and reports one evidence object per item.
 
 USAGE
-  spec3 lint   <spec.json>   validate the spec file alone
-  spec3 verify <spec.json>   check the repository against the spec
-  spec3 --help               print this text (also: -h, help)
+  driftless lint   <spec.json>   validate the spec file alone
+  driftless verify <spec.json>   check the repository against the spec
+  driftless --help               print this text (also: -h, help)
 
 EXIT CODES
   0  spec valid (lint) / repository conforms (verify)
@@ -53,7 +53,7 @@ SPEC FORMAT
       ],
       "exports": [
         {
-          "package": "spec3",
+          "package": "driftless",
           "required": ["Spec", "lint", "verify"]
         }
       ],
@@ -79,7 +79,7 @@ FIELDS
   dependencies  manifests, reason, required, exists, forbidden
   exports       package, reason, required, exists, forbidden
   enumerations  name, reason, values
-  custom        array of objects; spec3 does not interpret their keys
+  custom        array of objects; driftless does not interpret their keys
 
 SEMANTICS
   required   each item is present in every matched place
@@ -171,8 +171,8 @@ WORKFLOW
   1. Write the plan in prose.
   2. Extract a JSON spec for checkable items.
   3. Write verifier scripts for categories without a builtin.
-  4. Run spec3 verify before coding and confirm it fails where expected.
-  5. Build until spec3 verify exits 0.
+  4. Run driftless verify before coding and confirm it fails where expected.
+  5. Build until driftless verify exits 0.
   6. Spot-check by hand; the spec is not exhaustive.
 
 REPORT
@@ -185,7 +185,7 @@ REPORT
   verify:
 
     {
-      "spec3_version": "0.2.0",
+      "driftless_version": "0.2.0",
       "spec": {"path": "spec.json", "sha256": "..."},
       "verifier_files": [{"path": "scripts/verify-deps.sh", "sha256": "..."}],
       "git": [{"path": "spec.json", "state": "clean"}],

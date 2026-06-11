@@ -1,5 +1,5 @@
 Summary
-- Reviewed the `spec3` preliminary plan and corrected it before implementation starts.
+- Reviewed the `driftless` preliminary plan and corrected it before implementation starts.
 - Renamed the root session helper from `code-sessions` to `resume`.
 
 Decisions made
@@ -9,7 +9,7 @@ Decisions made
 - Kept command execution and CLI surface checks deferred.
 
 Key files for context
-- `.plans/2026-05-14-203402-spec3-preliminary-plan.md`
+- `.plans/2026-05-14-203402-driftless-preliminary-plan.md`
 - `resume`
 
 Verification

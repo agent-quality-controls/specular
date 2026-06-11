@@ -1,9 +1,9 @@
 # Handoff: per-item spec model redesign (not yet implemented)
 
-## What spec3 is
+## What driftless is
 
-Rust CLI + library. Verifies a repository against a JSON spec: `spec3 lint
-<spec>`, `spec3 verify <spec>`. Exit codes: 0 valid/conforms, 1 nonconform,
+Rust CLI + library. Verifies a repository against a JSON spec: `driftless lint
+<spec>`, `driftless verify <spec>`. Exit codes: 0 valid/conforms, 1 nonconform,
 2 error. Used by the spec-driven-development skill
 (`~/.claude/skills/spec-driven-development/SKILL.md` + codex copies): prose plan
 -> extracted spec -> agent builds until verify exits 0.
@@ -15,8 +15,8 @@ Rust CLI + library. Verifies a repository against a JSON spec: `spec3 lint
   enumerations); scripts judge and emit `{"id", "status"}` lines.
 - Gates: `cargo check/clippy/fmt` clean; `fixture3 check --all` matched (two
   suites: lint, verify); the binary verifies its own build contract
-  (`.plans/2026-06-07-124603-spec3-plan-v2-lock-free.md.spec.json`) exit 0.
-- `spec3 --help` prints `HELP.txt` (committed, embedded via include_str!).
+  (`.plans/2026-06-07-124603-driftless-plan-v2-lock-free.md.spec.json`) exit 0.
+- `driftless --help` prints `HELP.txt` (committed, embedded via include_str!).
 
 ## What we are doing: full format redesign
 
@@ -33,7 +33,7 @@ the single source for the new model. Summary:
   descriptive targets (`files`, `manifests`, `package`, `name`).
 - `forbidden` accepts globs in tree/dependencies (`guardrail*`);
   `forbiddenPrefixes` and `schemas` deleted.
-- `custom` category: free-form dict entries spec3 never interprets; its
+- `custom` category: free-form dict entries driftless never interprets; its
   verifier (declared in the `verifiers` map like every other category) does its
   own checks.
 - One wire protocol for all scripts: evidence JSON lines, `status` mandatory;
@@ -71,7 +71,7 @@ worklogs.
 ## Cold-start reading list
 
 1. `.plans/2026-06-10-154943-per-item-spec-model.md` (the work)
-2. `.plans/2026-06-07-124603-spec3-plan-v2-lock-free.md` (product plan; some
+2. `.plans/2026-06-07-124603-driftless-plan-v2-lock-free.md` (product plan; some
    sections superseded by the above — sync is step 11 of the new plan)
 3. `src/` (5 files, small), `HELP.txt`
 4. `fixture3.yaml` + `behavior/` (fixture suites; `fixture3 check --all`)

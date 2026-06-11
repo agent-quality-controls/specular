@@ -1,6 +1,6 @@
 Summary
-- Updated the `spec3` plans so the library boundary starts at the machine-readable spec.
-- Removed prose plan, Markdown description, plan hash, and plan drift from the `spec3` runtime model.
+- Updated the `driftless` plans so the library boundary starts at the machine-readable spec.
+- Removed prose plan, Markdown description, plan hash, and plan drift from the `driftless` runtime model.
 
 Decisions made
 - The spec file is the source contract.
@@ -9,8 +9,8 @@ Decisions made
 - Source format remains open: JSON, JSONC, CUE, Pkl, HCL, Dhall, or another stable machine-readable format can be considered.
 
 Key files for context
-- `.plans/2026-05-14-203402-spec3-preliminary-plan.md`
-- `.plans/2026-05-15-132431-spec3-validation-model-research.md`
+- `.plans/2026-05-14-203402-driftless-preliminary-plan.md`
+- `.plans/2026-05-15-132431-driftless-validation-model-research.md`
 
 Verification
 - Grepped the plans for stale plan-hash and prose-plan pipeline references.
