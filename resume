@@ -4,6 +4,6 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 exec codex resume \
-  019d20ba-37be-7363-9919-695af71f2335 \
+  019eb295-d063-71c3-bf77-5210a05f38f7 \
   -C "${repo_root}" \
   --dangerously-bypass-approvals-and-sandbox
