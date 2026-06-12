@@ -1,0 +1,1 @@
+{"id":"lint-R24-builtin-category-mismatch","commands":[["lint","spec.json"]],"notes":"builtin verifier exists but is used on the wrong category; exit 2"}

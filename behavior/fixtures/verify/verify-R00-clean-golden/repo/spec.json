@@ -1,31 +1,55 @@
 {
-  "version": 1,
-  "verifiers": {
-    "dependencies": ["scripts/deps.sh"],
-    "custom": ["scripts/custom.sh"]
-  },
+  "version": 2,
   "requirements": {
     "tree": {
-      "required": ["docs/readme.txt"],
-      "forbidden": ["junk/**"]
+      "required": [
+        "docs/readme.txt"
+      ],
+      "forbidden": [
+        "junk/**"
+      ],
+      "verifier": [
+        "builtin:tree"
+      ]
     },
     "content": [
       {
-        "files": ["docs/*.txt"],
-        "required": ["INVOICE"],
-        "exists": ["ledger"],
-        "forbidden": ["LEGACY"]
+        "files": [
+          "docs/*.txt"
+        ],
+        "required": [
+          "INVOICE"
+        ],
+        "exists": [
+          "ledger"
+        ],
+        "forbidden": [
+          "LEGACY"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       }
     ],
     "dependencies": [
       {
-        "manifests": ["go.mod"],
-        "forbidden": ["pg"]
+        "manifests": [
+          "go.mod"
+        ],
+        "forbidden": [
+          "pg"
+        ],
+        "verifier": [
+          "scripts/deps.sh"
+        ]
       }
     ],
     "custom": [
       {
-        "check": "version-sync"
+        "check": "version-sync",
+        "verifier": [
+          "scripts/custom.sh"
+        ]
       }
     ]
   }

@@ -112,22 +112,6 @@
         {
           "code": "EXISTS_SINGLE_PLACE",
           "message": "exports/p: exists is not allowed because exports has one place"
-        },
-        {
-          "code": "DEAD_VERIFIER",
-          "message": "verifier for 'enumerations' is declared but the category is empty"
-        },
-        {
-          "code": "UNKNOWN_CATEGORY",
-          "message": "verifiers map names 'notacategory', which is not a category"
-        },
-        {
-          "code": "CATEGORY_HAS_NO_VERIFIER",
-          "message": "category 'exports' has requirements but no builtin verifier and no verifier entry"
-        },
-        {
-          "code": "CUSTOM_SHAPE",
-          "message": "custom[0] must be an object"
         }
       ]
     }
@@ -145,6 +129,74 @@
         {
           "code": "VACUOUS_SPEC",
           "message": "no positive assertion; this spec passes on an empty repository"
+        }
+      ]
+    }
+  },
+  {
+    "command": [
+      "lint",
+      "spec.json"
+    ],
+    "exit_code": 2,
+    "fixture": "lint-R22-verifier-missing",
+    "output": {
+      "result": "fail",
+      "violations": [
+        {
+          "code": "VERIFIER_MISSING",
+          "message": "tree: verifier is required"
+        }
+      ]
+    }
+  },
+  {
+    "command": [
+      "lint",
+      "spec.json"
+    ],
+    "exit_code": 2,
+    "fixture": "lint-R23-unknown-builtin",
+    "output": {
+      "result": "fail",
+      "violations": [
+        {
+          "code": "UNKNOWN_BUILTIN_VERIFIER",
+          "message": "tree: unknown builtin verifier 'builtin:missing'"
+        }
+      ]
+    }
+  },
+  {
+    "command": [
+      "lint",
+      "spec.json"
+    ],
+    "exit_code": 2,
+    "fixture": "lint-R24-builtin-category-mismatch",
+    "output": {
+      "result": "fail",
+      "violations": [
+        {
+          "code": "BUILTIN_CATEGORY_MISMATCH",
+          "message": "dependencies[0]: builtin verifier 'builtin:tree' cannot verify category 'dependencies'"
+        }
+      ]
+    }
+  },
+  {
+    "command": [
+      "lint",
+      "spec.json"
+    ],
+    "exit_code": 2,
+    "fixture": "lint-R25-top-level-verifiers",
+    "output": {
+      "result": "fail",
+      "violations": [
+        {
+          "code": "JSON_SCHEMA",
+          "message": "Additional properties are not allowed ('verifiers' was unexpected) (at )"
         }
       ]
     }

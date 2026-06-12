@@ -1,11 +1,5 @@
 {
-  "version": 1,
-  "verifiers": {
-    "dependencies": ["scripts/verify-dependencies.sh"],
-    "exports": ["scripts/verify-exports.sh"],
-    "enumerations": ["scripts/verify-enumerations.sh"],
-    "custom": ["scripts/verify-custom.sh"]
-  },
+  "version": 2,
   "requirements": {
     "tree": {
       "reason": [
@@ -28,11 +22,19 @@
         "scripts/verify-enumerations.sh",
         "scripts/verify-custom.sh"
       ],
-      "forbidden": ["tests/**", "**/tests/**"]
+      "forbidden": [
+        "tests/**",
+        "**/tests/**"
+      ],
+      "verifier": [
+        "builtin:tree"
+      ]
     },
     "content": [
       {
-        "files": ["HELP.txt"],
+        "files": [
+          "HELP.txt"
+        ],
         "reason": "Plan: HELP documents the new format, quantifiers, one wire protocol, JSON-only output, lint rules, workflow, and report shape.",
         "required": [
           "\"tree\": {",
@@ -45,10 +47,18 @@
           "CUSTOM_SHAPE",
           "\"conforms\": false"
         ],
-        "forbidden": ["schemas", "forbiddenPrefixes"]
+        "forbidden": [
+          "schemas",
+          "forbiddenPrefixes"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       },
       {
-        "files": ["src/model.rs"],
+        "files": [
+          "src/model.rs"
+        ],
         "reason": "Plan: model has no IDs, tree is an object, schemas are deleted, custom is opaque.",
         "required": [
           "pub tree: TreeRequirement",
@@ -56,10 +66,19 @@
           "pub enum Category",
           "Custom"
         ],
-        "forbidden": ["pub id:", "SchemaRequirement", "Schemas"]
+        "forbidden": [
+          "pub id:",
+          "SchemaRequirement",
+          "Schemas"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       },
       {
-        "files": ["src/lint.rs"],
+        "files": [
+          "src/lint.rs"
+        ],
         "reason": "Plan: lint implements the new rule set and deletes ID checks.",
         "required": [
           "DUPLICATE_TARGET",
@@ -71,10 +90,19 @@
           "DEAD_VERIFIER",
           "CUSTOM_SHAPE"
         ],
-        "forbidden": ["DUPLICATE_ID", "ID_FORMAT", "MERGEABLE_REQUIREMENTS"]
+        "forbidden": [
+          "DUPLICATE_ID",
+          "ID_FORMAT",
+          "MERGEABLE_REQUIREMENTS"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       },
       {
-        "files": ["src/verify.rs"],
+        "files": [
+          "src/verify.rs"
+        ],
         "reason": "Plan: verify emits per-item evidence, runs typed scripts per block, runs custom once, and times out scripts after 60 seconds.",
         "required": [
           "const VERIFIER_TIMEOUT: Duration = Duration::from_secs(60)",
@@ -83,21 +111,38 @@
           "reported item",
           "produced no evidence"
         ],
-        "forbidden": ["category_ids", "check_coverage"]
+        "forbidden": [
+          "category_ids",
+          "check_coverage"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       },
       {
-        "files": ["src/main.rs"],
+        "files": [
+          "src/main.rs"
+        ],
         "reason": "Plan: CLI is JSON-only and --json is deleted.",
         "required": [
           "flags are not supported; output is always JSON",
           "serde_json::to_string_pretty(report)"
         ],
-        "forbidden": ["--json", "LINT PASS", "spec sha256:"]
+        "forbidden": [
+          "--json",
+          "LINT PASS",
+          "spec sha256:"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       }
     ],
     "dependencies": [
       {
-        "manifests": ["Cargo.toml"],
+        "manifests": [
+          "Cargo.toml"
+        ],
         "reason": "Plan: no new dependency is required; existing serde/jsonschema/globset stack remains.",
         "required": [
           "serde",
@@ -117,6 +162,9 @@
           "canon-json",
           "guardrail*",
           "g3*"
+        ],
+        "verifier": [
+          "scripts/verify-dependencies.sh"
         ]
       }
     ],
@@ -145,29 +193,63 @@
           "lint",
           "verify"
         ],
-        "forbidden": ["SchemaRequirement"]
+        "forbidden": [
+          "SchemaRequirement"
+        ],
+        "verifier": [
+          "scripts/verify-exports.sh"
+        ]
       }
     ],
     "enumerations": [
       {
         "name": "Category",
         "reason": "Plan: categories are the closed typed set with custom replacing schemas.",
-        "values": ["Tree", "Content", "Dependencies", "Exports", "Enumerations", "Custom"]
+        "values": [
+          "Tree",
+          "Content",
+          "Dependencies",
+          "Exports",
+          "Enumerations",
+          "Custom"
+        ],
+        "verifier": [
+          "scripts/verify-enumerations.sh"
+        ]
       },
       {
         "name": "Status",
         "reason": "Plan: status has only pass and fail.",
-        "values": ["Pass", "Fail"]
+        "values": [
+          "Pass",
+          "Fail"
+        ],
+        "verifier": [
+          "scripts/verify-enumerations.sh"
+        ]
       },
       {
         "name": "VerifierSource",
         "reason": "Plan: source is builtin or custom.",
-        "values": ["Builtin", "Custom"]
+        "values": [
+          "Builtin",
+          "Custom"
+        ],
+        "verifier": [
+          "scripts/verify-enumerations.sh"
+        ]
       },
       {
         "name": "Polarity",
         "reason": "Plan: typed evidence uses required, exists, and forbidden quantifiers.",
-        "values": ["Required", "Exists", "Forbidden"]
+        "values": [
+          "Required",
+          "Exists",
+          "Forbidden"
+        ],
+        "verifier": [
+          "scripts/verify-enumerations.sh"
+        ]
       }
     ],
     "custom": [
@@ -175,19 +257,28 @@
         "check": "help-json-only",
         "file": "HELP.txt",
         "mode": "contains",
-        "text": "No flags exist. Output is always JSON."
+        "text": "No flags exist. Output is always JSON.",
+        "verifier": [
+          "scripts/verify-custom.sh"
+        ]
       },
       {
         "check": "main-no-json-flag",
         "file": "src/main.rs",
         "mode": "absent",
-        "text": "--json"
+        "text": "--json",
+        "verifier": [
+          "scripts/verify-custom.sh"
+        ]
       },
       {
         "check": "timeout-documented",
         "file": "HELP.txt",
         "mode": "contains",
-        "text": "60 second timeout"
+        "text": "60 second timeout",
+        "verifier": [
+          "scripts/verify-custom.sh"
+        ]
       }
     ]
   }

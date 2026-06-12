@@ -23,8 +23,8 @@ pub enum Status {
 pub enum VerifierSource {
     /// The builtin verifier for this category.
     Builtin,
-    /// A script verifier.
-    Custom,
+    /// An external script verifier.
+    Script,
 }
 
 /// The typed quantifier an item belongs to.
@@ -80,6 +80,8 @@ pub struct Evidence {
     pub item: Option<String>,
     /// Which verifier judged it.
     pub source: VerifierSource,
+    /// The exact verifier command selector or external command label.
+    pub verifier: String,
     /// The outcome.
     pub status: Status,
     /// Concrete failure description.

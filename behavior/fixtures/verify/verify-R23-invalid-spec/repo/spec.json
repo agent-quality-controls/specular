@@ -1,14 +1,28 @@
 {
-  "version": 1,
+  "version": 2,
   "requirements": {
     "content": [
       {
-        "files": ["docs/*.txt"],
-        "required": ["A"]
+        "files": [
+          "docs/*.txt"
+        ],
+        "required": [
+          "A"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       },
       {
-        "files": ["docs/*.txt"],
-        "required": ["B"]
+        "files": [
+          "docs/*.txt"
+        ],
+        "required": [
+          "B"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       }
     ]
   }

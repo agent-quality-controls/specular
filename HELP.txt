@@ -15,82 +15,106 @@ EXIT CODES
   2  spec invalid, verifier error, protocol error, timeout, or runtime error
   Other flags are not supported. lint and verify output is always JSON.
 
-THREE WAYS TO USE A SPEC
-  1. Predefined category, built-in verifier.
+SPEC SHAPE
+  Strict JSON, no comments. Version 2 uses block-level verifier commands.
+  top-level verifiers are not supported.
 
-     Use `tree` or `content`. Write requirements only. Specular already knows
-     how to verify these categories.
+  A verifier is one command encoded as argv:
+
+    "verifier": ["builtin:tree"]
+    "verifier": ["scripts/verify_deps.py"]
+    "verifier": ["python3", "scripts/verify_deps.py", "--workspace"]
+
+  The first argv token selects dispatch:
+
+    builtin:<name>  run an internal Specular verifier
+    anything else   run as an external command without a shell
+
+  Initial built-ins:
+
+    builtin:tree     tree only
+    builtin:content  content only
+
+THREE WAYS TO USE A SPEC
+  1. Predefined category with a built-in verifier.
+
+     Use tree or content and choose the matching builtin explicitly.
 
        "requirements": {
-         "tree": { "required": ["src/lib.rs"], "forbidden": ["tests/**"] },
+         "tree": {
+           "verifier": ["builtin:tree"],
+           "required": ["src/lib.rs"],
+           "forbidden": ["tests/**"]
+         },
          "content": [
-           { "files": ["**/*.rs"], "forbidden": ["#[test]"] }
+           {
+             "verifier": ["builtin:content"],
+             "files": ["**/*.rs"],
+             "forbidden": ["#[test]"]
+           }
          ]
        }
 
-  2. Predefined category, no built-in verifier.
+  2. Predefined category with an external verifier.
 
-     Use `dependencies`, `exports`, or `enumerations`. These categories have
-     fixed fields, but Specular needs a verifier command that you write.
-     Specular runs that command and checks that it emits exactly one evidence
-     line for each item in the block.
+     Use dependencies, exports, or enumerations when the fixed fields fit.
+     Choose one script command for each block.
 
-       "verifiers": { "dependencies": ["scripts/verify_deps.py"] },
        "requirements": {
          "dependencies": [
-           { "manifests": ["Cargo.toml"], "required": ["serde"] }
+           {
+             "verifier": ["scripts/verify_deps.py"],
+             "manifests": ["Cargo.toml"],
+             "required": ["serde"]
+           }
          ]
        }
 
   3. Opaque custom checks.
 
-     Use `custom` when no predefined category fits. Each entry can contain any
-     JSON object fields you need. Specular only checks that each entry is an
-     object. Your verifier interprets those objects and emits evidence.
+     Use custom when no predefined category fits. Each entry can contain any
+     JSON object fields except that verifier is reserved by Specular.
 
-       "verifiers": { "custom": ["scripts/verify_custom.py"] },
        "requirements": {
          "custom": [
-           { "check": "version-sync", "files": ["README.md", "Cargo.toml"] }
+           {
+             "verifier": ["scripts/verify_custom.py"],
+             "check": "version-sync",
+             "files": ["README.md", "Cargo.toml"]
+           }
          ]
        }
 
-  Predefined categories have predefined fields. Unknown fields fail lint.
-  Custom entries are opaque objects. Put data there only when no predefined
-  category describes the requirement.
-
 SPEC FORMAT
-  Strict JSON, no comments. This example uses every category; copy and delete
-  what you do not need. Any category may be omitted. List fields default to [].
+  This example uses every category; copy and delete what you do not need.
+  Any category may be omitted. List fields default to [].
 
   {
-    "version": 1,
-    "verifiers": {
-      "dependencies": ["scripts/verify_deps.py"],
-      "exports": ["scripts/verify_exports.py"],
-      "enumerations": ["scripts/verify_enums.py"],
-      "custom": ["scripts/verify_custom.py"]
-    },
+    "version": 2,
     "requirements": {
       "tree": {
+        "verifier": ["builtin:tree"],
         "reason": "plan: repository layout",
         "required": ["src/lib.rs", "src/main.rs"],
-        "forbidden": ["tests/**"]
+        "forbidden": ["target/**"]
       },
       "content": [
         {
+          "verifier": ["builtin:content"],
           "files": ["**/*.rs"],
           "required": ["// SPDX"],
           "forbidden": ["#[test]"],
           "reason": "plan: licensing, test policy"
         },
         {
+          "verifier": ["builtin:content"],
           "files": ["docs/*.txt"],
           "exists": ["INVOICE"]
         }
       ],
       "dependencies": [
         {
+          "verifier": ["scripts/verify_deps.py"],
           "manifests": ["Cargo.toml"],
           "required": ["serde"],
           "forbidden": ["openssl", "guardrail*", "g3*"]
@@ -98,18 +122,21 @@ SPEC FORMAT
       ],
       "exports": [
         {
+          "verifier": ["scripts/verify_exports.py"],
           "package": "specular",
           "required": ["Spec", "lint", "verify"]
         }
       ],
       "enumerations": [
         {
+          "verifier": ["scripts/verify_enums.py"],
           "name": "Status",
           "values": ["Pass", "Fail"]
         }
       ],
       "custom": [
         {
+          "verifier": ["scripts/verify_custom.py"],
           "check": "version-sync",
           "files": ["README.md", "Cargo.toml"],
           "reason": "plan: release process"
@@ -119,12 +146,12 @@ SPEC FORMAT
   }
 
 FIELDS
-  tree          reason, required, exists, forbidden
-  content       files, reason, required, exists, forbidden
-  dependencies  manifests, reason, required, exists, forbidden
-  exports       package, reason, required, exists, forbidden
-  enumerations  name, reason, values
-  custom        array of objects; specular does not interpret their keys
+  tree          verifier, reason, required, exists, forbidden
+  content       verifier, files, reason, required, exists, forbidden
+  dependencies  verifier, manifests, reason, required, exists, forbidden
+  exports       verifier, package, reason, required, exists, forbidden
+  enumerations  verifier, name, reason, values
+  custom        verifier plus script-owned object fields
 
 SEMANTICS
   required   each item is present in every matched place
@@ -138,18 +165,10 @@ SEMANTICS
   Zero matched places plus non-empty required or exists fails.
   exists is rejected by lint on tree and exports because each has one place.
 
-VERIFIERS
-  Every category is judged by exactly one verifier.
+VERIFIER PROTOCOL
+  Every non-empty block is judged by exactly one verifier command.
 
-    builtin when no verifier is declared:  tree, content
-    no builtin:                            dependencies, exports,
-                                           enumerations, custom
-
-  A verifier is declared in the top-level verifiers map:
-
-    "verifiers": { "dependencies": ["scripts/verify_deps.py"] }
-
-  Typed categories run once per block:
+  External typed verifier blocks run once per block:
 
     <command...> <spec.json> <category> <blockIndex>
 
@@ -159,19 +178,19 @@ VERIFIERS
     {"item":"serde","status":"pass"}
     {"item":"guardrail*","status":"fail","message":"guardrail3 declared","path":"Cargo.toml"}
 
-  Custom runs once:
+  External custom verifier entries run once per entry:
 
-    <command...> <spec.json> custom
+    <command...> <spec.json> custom <blockIndex>
 
-  The executable reads requirements.custom and prints any evidence objects it
-  owns. Required key: status. All other keys are copied into the report.
+  The executable reads requirements.custom[blockIndex] and prints exactly one
+  evidence object. Required key: status. All other keys are copied into the report.
 
     {"check":"version-sync","status":"pass"}
     {"check":"version-sync","status":"fail","message":"README and Cargo.toml differ"}
 
   Script exit code signals health only. Nonzero exit, invalid JSON, missing item,
-  duplicate item, unknown item, zero custom lines, or a 60 second timeout is a
-  runtime error with exit 2. Pass/fail verdicts travel only in evidence lines.
+  duplicate item, unknown item, wrong custom line count, or a 60 second timeout
+  is a runtime error with exit 2. Pass/fail verdicts travel only in evidence.
 
 COMPLETE TYPED VERIFIER
   This Python example accepts the protocol and returns pass evidence for every
@@ -197,8 +216,7 @@ COMPLETE TYPED VERIFIER
       print(json.dumps({"item": item, "status": "pass"}))
 
 COMPLETE CUSTOM VERIFIER
-  This Python example reads opaque custom entries and returns one pass evidence
-  line per entry.
+  This Python example reads one opaque custom entry and returns one evidence line.
 
   #!/usr/bin/env python3
   import json
@@ -206,37 +224,38 @@ COMPLETE CUSTOM VERIFIER
   from pathlib import Path
 
   spec_path = Path(sys.argv[1])
+  block_index = int(sys.argv[3])
   spec = json.loads(spec_path.read_text())
+  entry = spec["requirements"]["custom"][block_index]
 
-  for entry in spec["requirements"].get("custom", []):
-      print(json.dumps({
-          "check": entry.get("check", "custom"),
-          "status": "pass"
-      }))
+  print(json.dumps({
+      "check": entry.get("check", "custom"),
+      "status": "pass"
+  }))
 
 LINT ERRORS
-  JSON_SCHEMA               wrong shape, unknown field, wrong type, or bad version
-  VACUOUS_SPEC              no required, exists, or values item anywhere
-  CATEGORY_HAS_NO_VERIFIER  non-builtin category has requirements and no verifier
-  UNKNOWN_CATEGORY          verifiers key is not a category
-  PATH_RULE / GLOB          bad path, or a glob that will not compile
-  DUPLICATE_TARGET          two blocks in one category have the same target
-  DUPLICATE_ITEM            same item appears twice in one block
-  CONTRADICTION             same item is required and forbidden in one block
-  REDUNDANT                 same item is both required and exists in one block
-  ITEM_FORMAT               required/exists item is empty, untrimmed, or a glob
-  EXISTS_SINGLE_PLACE       exists used on tree or exports
-  DEAD_VERIFIER             verifier declared for an empty category
-  VERIFIER_COMMAND_EMPTY    verifier command array is empty
-  CUSTOM_SHAPE              custom entry is not an object
+  JSON_SCHEMA                wrong shape, unknown field, wrong type, or bad version
+  VACUOUS_SPEC               no required, exists, or values item anywhere
+  VERIFIER_MISSING           block has requirements but no verifier field
+  VERIFIER_COMMAND_EMPTY     verifier argv is empty or contains an empty string
+  UNKNOWN_BUILTIN_VERIFIER   builtin verifier name is unknown
+  BUILTIN_CATEGORY_MISMATCH  builtin verifier cannot check that category
+  PATH_RULE / GLOB           bad path, or a glob that will not compile
+  DUPLICATE_TARGET           two blocks in one category have the same target
+  DUPLICATE_ITEM             same item appears twice in one block
+  CONTRADICTION              same item is required and forbidden in one block
+  REDUNDANT                  same item is both required and exists in one block
+  ITEM_FORMAT                required/exists item is empty, untrimmed, or a glob
+  EXISTS_SINGLE_PLACE        exists used on tree or exports
 
 WORKFLOW
   1. Write the plan in prose.
   2. Extract a JSON spec for checkable items.
-  3. Write verifier scripts for categories without a builtin.
-  4. Run specular verify before coding and confirm it fails where expected.
-  5. Build until specular verify exits 0.
-  6. Spot-check by hand; the spec is not exhaustive.
+  3. Choose one verifier for every non-empty block.
+  4. Write script verifiers where no builtin fits.
+  5. Run specular verify before coding and confirm it fails where expected.
+  6. Build until specular verify exits 0.
+  7. Spot-check by hand; the spec is not exhaustive.
 
 REPORT
   lint:
@@ -258,6 +277,7 @@ REPORT
           "polarity": "required",
           "item": "src/main.rs",
           "source": "builtin",
+          "verifier": "builtin:tree",
           "status": "fail",
           "message": "missing required path: src/main.rs"
         },
@@ -265,13 +285,15 @@ REPORT
           "category": "dependencies",
           "target": ["Cargo.toml"],
           "item": "guardrail*",
-          "source": "custom",
+          "source": "script",
+          "verifier": "scripts/verify_deps.py",
           "status": "pass"
         },
         {
           "category": "custom",
           "check": "version-sync",
-          "source": "custom",
+          "source": "script",
+          "verifier": "scripts/verify_custom.py",
           "status": "fail",
           "message": "README and Cargo.toml differ"
         }

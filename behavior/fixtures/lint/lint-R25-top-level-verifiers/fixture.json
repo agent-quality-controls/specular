@@ -1,0 +1,1 @@
+{"id":"lint-R25-top-level-verifiers","commands":[["lint","spec.json"]],"notes":"v2 rejects top-level verifiers map; exit 2"}

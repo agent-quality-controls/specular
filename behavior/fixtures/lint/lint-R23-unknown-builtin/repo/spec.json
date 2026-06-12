@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "requirements": {
+    "tree": {
+      "verifier": ["builtin:missing"],
+      "required": ["README.md"]
+    }
+  }
+}

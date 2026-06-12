@@ -1,8 +1,13 @@
 {
-  "version": 1,
+  "version": 2,
   "requirements": {
     "tree": {
-      "forbidden": ["tmp/**"]
+      "forbidden": [
+        "tmp/**"
+      ],
+      "verifier": [
+        "builtin:tree"
+      ]
     }
   }
 }

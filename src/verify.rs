@@ -1,6 +1,6 @@
 //! `verify`: judge the repository against a linted [`Spec`].
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
 use std::time::{Duration, Instant};
@@ -15,9 +15,18 @@ use crate::error::VerifyError;
 use crate::evidence::{
     Evidence, FileStamp, GitDiagnostic, Polarity, Report, Status, VerifierSource, WireEvidence,
 };
-use crate::model::{Category, ContentRequirement, Spec, TreeRequirement};
+use crate::model::{
+    Category, ContentRequirement, CustomRequirement, Spec, TreeRequirement, VerifierCommand,
+};
 
 const VERIFIER_TIMEOUT: Duration = Duration::from_secs(60);
+
+struct VerifyContext<'a> {
+    spec: &'a Spec,
+    spec_path: &'a Path,
+    root: &'a Path,
+    tree: &'a FileTree,
+}
 
 /// Check the repository at `root` against the spec loaded from `spec_path`.
 ///
@@ -28,38 +37,72 @@ const VERIFIER_TIMEOUT: Duration = Duration::from_secs(60);
 /// errors; they are evidence.
 pub fn verify(spec: &Spec, root: &Path, spec_path: &Path) -> Result<Report, VerifyError> {
     let spec_stamp = stamp(spec_path)?;
-    let mut verifier_files = Vec::new();
-    for command in spec.verifiers.values() {
-        if let Some(path) = command.first() {
-            let path = Path::new(path);
-            verifier_files.push(stamp_with_display(&root.join(path), path)?);
-        }
-    }
+    let verifier_files = verifier_file_stamps(spec, root)?;
     let git = git_diagnostics(root, &spec_stamp, &verifier_files);
 
     let tree = build_file_tree(root, &WalkOptions::default())
         .map_err(|e| VerifyError::Walk(e.to_string()))?;
+    let ctx = VerifyContext {
+        spec,
+        spec_path,
+        root,
+        tree: &tree,
+    };
 
     let mut evidence = Vec::new();
     for category in Category::ALL {
         if category_is_empty(spec, category) {
             continue;
         }
-        if let Some(command) = spec.verifiers.get(category.as_str()) {
-            run_script(command, spec, spec_path, category, root, &mut evidence)?;
-        } else {
-            match category {
-                Category::Tree => check_tree(&spec.requirements.tree, &tree, &mut evidence)?,
-                Category::Content => {
-                    for block in &spec.requirements.content {
-                        check_content(block, &tree, &mut evidence)?;
-                    }
+        match category {
+            Category::Tree => run_tree_block(&ctx, &mut evidence)?,
+            Category::Content => {
+                for (index, block) in spec.requirements.content.iter().enumerate() {
+                    run_typed_block(
+                        &ctx,
+                        Category::Content,
+                        index,
+                        &block.verifier,
+                        &mut evidence,
+                    )?;
                 }
-                _ => {
-                    return Err(VerifyError::Coverage(format!(
-                        "category '{}' has no verifier (lint should have caught this)",
-                        category.as_str()
-                    )));
+            }
+            Category::Dependencies => {
+                for (index, block) in spec.requirements.dependencies.iter().enumerate() {
+                    run_typed_block(
+                        &ctx,
+                        Category::Dependencies,
+                        index,
+                        &block.verifier,
+                        &mut evidence,
+                    )?;
+                }
+            }
+            Category::Exports => {
+                for (index, block) in spec.requirements.exports.iter().enumerate() {
+                    run_typed_block(
+                        &ctx,
+                        Category::Exports,
+                        index,
+                        &block.verifier,
+                        &mut evidence,
+                    )?;
+                }
+            }
+            Category::Enumerations => {
+                for (index, block) in spec.requirements.enumerations.iter().enumerate() {
+                    run_typed_block(
+                        &ctx,
+                        Category::Enumerations,
+                        index,
+                        &block.verifier,
+                        &mut evidence,
+                    )?;
+                }
+            }
+            Category::Custom => {
+                for (index, block) in spec.requirements.custom.iter().enumerate() {
+                    run_custom_block(spec_path, root, index, block, &mut evidence)?;
                 }
             }
         }
@@ -72,6 +115,70 @@ pub fn verify(spec: &Spec, root: &Path, spec_path: &Path) -> Result<Report, Veri
         git,
         evidence,
     ))
+}
+
+fn verifier_file_stamps(spec: &Spec, root: &Path) -> Result<Vec<FileStamp>, VerifyError> {
+    let mut paths = BTreeSet::new();
+    for command in verifier_commands(spec) {
+        if is_builtin(command) {
+            continue;
+        }
+        for part in command.as_slice() {
+            let path = Path::new(part);
+            if path.is_absolute() {
+                continue;
+            }
+            if root.join(path).is_file() {
+                paths.insert(part.clone());
+            }
+        }
+    }
+    paths
+        .into_iter()
+        .map(|path| {
+            let display = Path::new(&path);
+            stamp_with_display(&root.join(display), display)
+        })
+        .collect()
+}
+
+fn verifier_commands(spec: &Spec) -> Vec<&VerifierCommand> {
+    let mut commands = Vec::new();
+    if !category_is_empty(spec, Category::Tree) {
+        commands.push(&spec.requirements.tree.verifier);
+    }
+    commands.extend(
+        spec.requirements
+            .content
+            .iter()
+            .map(|block| &block.verifier),
+    );
+    commands.extend(
+        spec.requirements
+            .dependencies
+            .iter()
+            .map(|block| &block.verifier),
+    );
+    commands.extend(
+        spec.requirements
+            .exports
+            .iter()
+            .map(|block| &block.verifier),
+    );
+    commands.extend(
+        spec.requirements
+            .enumerations
+            .iter()
+            .map(|block| &block.verifier),
+    );
+    commands.extend(spec.requirements.custom.iter().map(|block| &block.verifier));
+    commands
+}
+
+fn is_builtin(command: &VerifierCommand) -> bool {
+    command
+        .first()
+        .is_some_and(|selector| selector.starts_with("builtin:"))
 }
 
 fn stamp(path: &Path) -> Result<FileStamp, VerifyError> {
@@ -177,6 +284,7 @@ fn glob_set(patterns: &[String]) -> Result<GlobSet, VerifyError> {
 fn check_tree(
     requirement: &TreeRequirement,
     tree: &FileTree,
+    verifier: &str,
     out: &mut Vec<Evidence>,
 ) -> Result<(), VerifyError> {
     for path in &requirement.required {
@@ -187,6 +295,7 @@ fn check_tree(
         };
         out.push(typed_evidence(
             Category::Tree,
+            verifier,
             None,
             Polarity::Required,
             path,
@@ -202,6 +311,7 @@ fn check_tree(
         };
         out.push(typed_evidence(
             Category::Tree,
+            verifier,
             None,
             Polarity::Exists,
             path,
@@ -225,6 +335,7 @@ fn check_tree(
         };
         out.push(typed_evidence(
             Category::Tree,
+            verifier,
             None,
             Polarity::Forbidden,
             pattern,
@@ -241,6 +352,7 @@ fn check_tree(
 fn check_content(
     block: &ContentRequirement,
     tree: &FileTree,
+    verifier: &str,
     out: &mut Vec<Evidence>,
 ) -> Result<(), VerifyError> {
     let scope = glob_set(&block.files)?;
@@ -270,6 +382,7 @@ fn check_content(
         };
         out.push(typed_evidence(
             Category::Content,
+            verifier,
             target.clone(),
             Polarity::Required,
             needle,
@@ -301,6 +414,7 @@ fn check_content(
         };
         out.push(typed_evidence(
             Category::Content,
+            verifier,
             target.clone(),
             Polarity::Exists,
             needle,
@@ -324,6 +438,7 @@ fn check_content(
         };
         out.push(typed_evidence(
             Category::Content,
+            verifier,
             target.clone(),
             Polarity::Forbidden,
             needle,
@@ -339,6 +454,7 @@ fn check_content(
 
 fn typed_evidence(
     category: Category,
+    verifier: &str,
     target: Option<serde_json::Value>,
     polarity: Polarity,
     item: &str,
@@ -351,6 +467,7 @@ fn typed_evidence(
         polarity: Some(polarity),
         item: Some(item.to_owned()),
         source: VerifierSource::Builtin,
+        verifier: verifier.to_owned(),
         status,
         message,
         observed: None,
@@ -368,57 +485,154 @@ fn fail_message(status: Status, message: String) -> Option<String> {
     }
 }
 
-fn run_script(
-    command: &[String],
-    spec: &Spec,
-    spec_path: &Path,
-    category: Category,
-    root: &Path,
+fn run_tree_block(
+    ctx: &VerifyContext<'_>,
     evidence: &mut Vec<Evidence>,
 ) -> Result<(), VerifyError> {
-    if category == Category::Custom {
-        let lines = run_command(command, spec_path, category, None, root)?;
-        if lines.is_empty() {
-            return Err(VerifyError::Verifier {
-                id: category.as_str().to_owned(),
-                message: "custom verifier emitted zero evidence lines".to_owned(),
-            });
-        }
-        for line in lines {
-            evidence.push(custom_evidence(category, line));
-        }
-        return Ok(());
-    }
+    run_typed_block(
+        ctx,
+        Category::Tree,
+        0,
+        &ctx.spec.requirements.tree.verifier,
+        evidence,
+    )
+}
 
-    let blocks = typed_blocks(spec, category);
-    for (block_index, block) in blocks.into_iter().enumerate() {
-        let lines = run_command(command, spec_path, category, Some(block_index), root)?;
-        check_script_block(category, block_index, &block, lines, evidence)?;
+fn run_typed_block(
+    ctx: &VerifyContext<'_>,
+    category: Category,
+    block_index: usize,
+    verifier: &VerifierCommand,
+    evidence: &mut Vec<Evidence>,
+) -> Result<(), VerifyError> {
+    match verifier.first() {
+        Some("builtin:tree" | "builtin:content") => run_builtin(
+            ctx.spec,
+            ctx.tree,
+            category,
+            block_index,
+            verifier,
+            evidence,
+        ),
+        Some(selector) if selector.starts_with("builtin:") => Err(VerifyError::Verifier {
+            id: format!("{}[{block_index}]", category.as_str()),
+            message: format!("builtin verifier '{selector}' cannot run for this block"),
+        }),
+        Some(_) => {
+            let block = typed_block(ctx.spec, category, block_index)?;
+            let lines = run_script(
+                verifier.as_slice(),
+                ctx.spec_path,
+                category,
+                block_index,
+                ctx.root,
+            )?;
+            check_script_block(
+                verifier_label(verifier.as_slice()),
+                category,
+                block_index,
+                &block,
+                lines,
+                evidence,
+            )
+        }
+        None => Err(VerifyError::Verifier {
+            id: format!("{}[{block_index}]", category.as_str()),
+            message: "missing verifier command".to_owned(),
+        }),
     }
+}
+
+fn run_custom_block(
+    spec_path: &Path,
+    root: &Path,
+    block_index: usize,
+    block: &CustomRequirement,
+    evidence: &mut Vec<Evidence>,
+) -> Result<(), VerifyError> {
+    if is_builtin(&block.verifier) {
+        return Err(VerifyError::Verifier {
+            id: format!("custom[{block_index}]"),
+            message: "custom blocks cannot use builtin verifiers".to_owned(),
+        });
+    }
+    let lines = run_script(
+        block.verifier.as_slice(),
+        spec_path,
+        Category::Custom,
+        block_index,
+        root,
+    )?;
+    if lines.len() != 1 {
+        return Err(VerifyError::Verifier {
+            id: format!("custom[{block_index}]"),
+            message: format!(
+                "custom verifier must emit exactly one evidence line, got {}",
+                lines.len()
+            ),
+        });
+    }
+    let Some(line) = lines.into_iter().next() else {
+        return Err(VerifyError::Verifier {
+            id: format!("custom[{block_index}]"),
+            message: "custom verifier must emit exactly one evidence line, got 0".to_owned(),
+        });
+    };
+    evidence.push(custom_evidence(
+        verifier_label(block.verifier.as_slice()),
+        Category::Custom,
+        line,
+    ));
     Ok(())
 }
 
-fn run_command(
+fn run_builtin(
+    spec: &Spec,
+    tree: &FileTree,
+    category: Category,
+    block_index: usize,
+    verifier: &VerifierCommand,
+    evidence: &mut Vec<Evidence>,
+) -> Result<(), VerifyError> {
+    match verifier.first() {
+        Some("builtin:tree") if category == Category::Tree => {
+            check_tree(&spec.requirements.tree, tree, "builtin:tree", evidence)
+        }
+        Some("builtin:content") if category == Category::Content => {
+            let Some(block) = spec.requirements.content.get(block_index) else {
+                return Err(VerifyError::Coverage(format!(
+                    "content[{block_index}] does not exist"
+                )));
+            };
+            check_content(block, tree, "builtin:content", evidence)
+        }
+        Some(selector) => Err(VerifyError::Verifier {
+            id: format!("{}[{block_index}]", category.as_str()),
+            message: format!("builtin verifier '{selector}' cannot run for this block"),
+        }),
+        None => Err(VerifyError::Verifier {
+            id: format!("{}[{block_index}]", category.as_str()),
+            message: "missing builtin verifier command".to_owned(),
+        }),
+    }
+}
+
+fn run_script(
     command: &[String],
     spec_path: &Path,
     category: Category,
-    block_index: Option<usize>,
+    block_index: usize,
     root: &Path,
 ) -> Result<Vec<WireEvidence>, VerifyError> {
-    let label = match block_index {
-        Some(index) => format!("{}[{index}]", category.as_str()),
-        None => category.as_str().to_owned(),
-    };
+    let label = format!("{}[{block_index}]", category.as_str());
     let mut cmd = Command::new(&command[0]);
     cmd.args(&command[1..])
         .arg(spec_path)
         .arg(category.as_str())
+        .arg(block_index.to_string())
         .current_dir(root)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    if let Some(index) = block_index {
-        cmd.arg(index.to_string());
-    }
     let output = run_with_timeout(cmd, &label)?;
     if !output.status.success() {
         return Err(VerifyError::Verifier {
@@ -487,54 +701,69 @@ struct ScriptItem {
     polarity: Option<Polarity>,
 }
 
-fn typed_blocks(spec: &Spec, category: Category) -> Vec<ScriptBlock> {
+fn typed_block(
+    spec: &Spec,
+    category: Category,
+    block_index: usize,
+) -> Result<ScriptBlock, VerifyError> {
     let r = &spec.requirements;
     match category {
-        Category::Tree => vec![ScriptBlock {
+        Category::Tree => Ok(ScriptBlock {
             target: None,
             items: quantified_items(&r.tree.required, &r.tree.exists, &r.tree.forbidden),
-        }],
-        Category::Content => r
-            .content
-            .iter()
-            .map(|x| ScriptBlock {
-                target: Some(serde_json::json!(x.files)),
-                items: quantified_items(&x.required, &x.exists, &x.forbidden),
-            })
-            .collect(),
-        Category::Dependencies => r
-            .dependencies
-            .iter()
-            .map(|x| ScriptBlock {
-                target: Some(serde_json::json!(x.manifests)),
-                items: quantified_items(&x.required, &x.exists, &x.forbidden),
-            })
-            .collect(),
-        Category::Exports => r
-            .exports
-            .iter()
-            .map(|x| ScriptBlock {
-                target: Some(serde_json::json!(x.package)),
-                items: quantified_items(&x.required, &x.exists, &x.forbidden),
-            })
-            .collect(),
-        Category::Enumerations => r
-            .enumerations
-            .iter()
-            .map(|x| ScriptBlock {
-                target: Some(serde_json::json!(x.name)),
-                items: x
-                    .values
-                    .iter()
-                    .map(|value| ScriptItem {
-                        value: value.clone(),
-                        polarity: None,
-                    })
-                    .collect(),
-            })
-            .collect(),
-        Category::Custom => Vec::new(),
+        }),
+        Category::Content => r.content.get(block_index).map_or_else(
+            || Err(missing_block(category, block_index)),
+            |x| {
+                Ok(ScriptBlock {
+                    target: Some(serde_json::json!(x.files)),
+                    items: quantified_items(&x.required, &x.exists, &x.forbidden),
+                })
+            },
+        ),
+        Category::Dependencies => r.dependencies.get(block_index).map_or_else(
+            || Err(missing_block(category, block_index)),
+            |x| {
+                Ok(ScriptBlock {
+                    target: Some(serde_json::json!(x.manifests)),
+                    items: quantified_items(&x.required, &x.exists, &x.forbidden),
+                })
+            },
+        ),
+        Category::Exports => r.exports.get(block_index).map_or_else(
+            || Err(missing_block(category, block_index)),
+            |x| {
+                Ok(ScriptBlock {
+                    target: Some(serde_json::json!(x.package)),
+                    items: quantified_items(&x.required, &x.exists, &x.forbidden),
+                })
+            },
+        ),
+        Category::Enumerations => r.enumerations.get(block_index).map_or_else(
+            || Err(missing_block(category, block_index)),
+            |x| {
+                Ok(ScriptBlock {
+                    target: Some(serde_json::json!(x.name)),
+                    items: x
+                        .values
+                        .iter()
+                        .map(|value| ScriptItem {
+                            value: value.clone(),
+                            polarity: None,
+                        })
+                        .collect(),
+                })
+            },
+        ),
+        Category::Custom => Err(missing_block(category, block_index)),
     }
+}
+
+fn missing_block(category: Category, block_index: usize) -> VerifyError {
+    VerifyError::Coverage(format!(
+        "{}[{block_index}] does not exist",
+        category.as_str()
+    ))
 }
 
 fn quantified_items(
@@ -560,6 +789,7 @@ fn quantified_items(
 }
 
 fn check_script_block(
+    verifier: String,
     category: Category,
     block_index: usize,
     block: &ScriptBlock,
@@ -605,7 +835,8 @@ fn check_script_block(
             target: block.target.clone(),
             polarity,
             item: Some(item),
-            source: VerifierSource::Custom,
+            source: VerifierSource::Script,
+            verifier: verifier.clone(),
             status: line.status,
             message: line.message,
             observed: line.observed,
@@ -630,13 +861,14 @@ fn expected_items(block: &ScriptBlock) -> Vec<String> {
     block.items.iter().map(|item| item.value.clone()).collect()
 }
 
-fn custom_evidence(category: Category, line: WireEvidence) -> Evidence {
+fn custom_evidence(verifier: String, category: Category, line: WireEvidence) -> Evidence {
     Evidence {
         category,
         target: None,
         polarity: None,
         item: line.item,
-        source: VerifierSource::Custom,
+        source: VerifierSource::Script,
+        verifier,
         status: line.status,
         message: line.message,
         observed: line.observed,
@@ -644,4 +876,8 @@ fn custom_evidence(category: Category, line: WireEvidence) -> Evidence {
         path: line.path,
         extra: line.extra,
     }
+}
+
+fn verifier_label(command: &[String]) -> String {
+    command.join(" ")
 }

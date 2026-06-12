@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "verifiers": {
+    "dependencies": ["scripts/v.sh"]
+  },
+  "requirements": {
+    "tree": {
+      "verifier": ["builtin:tree"],
+      "required": ["README.md"]
+    }
+  }
+}

@@ -14,11 +14,14 @@ Install with
 cargo install --git https://github.com/agent-quality-controls/specular
 ```
 
-Tell your agent to use Specular, make the spec and coverage map, add needed scripts, and keep working until verify exits `0`.
+Tell your agent to use Specular. It should make the spec and coverage map, add
+needed scripts, and keep working until verify exits `0`.
 
 ## What it is
 
-Specular uses JSON spec files to enforce spec-driven development. It gives an agent a test loop instead of a prose-only plan. The agent reads the plan, writes the spec, runs it, fixes the repo, and runs it again.
+Specular uses JSON spec files to enforce spec-driven development. It gives an
+agent a test loop instead of a prose-only plan. The agent reads the plan, writes
+the spec, runs it, fixes the repo, and runs it again.
 
 Exit codes:
 
@@ -63,19 +66,46 @@ Use specular --help for the spec shape and script calls.
 There are three patterns:
 
 1. Predefined groups with built-in checks: `tree`, `content`.
-2. Predefined groups that need your script: `dependencies`, `exports`,
+2. Predefined groups that need a script: `dependencies`, `exports`,
    `enumerations`.
 3. Custom groups: put any JSON under `custom`, then write the script.
 
-Predefined groups have fixed fields. Custom entries can hold any JSON.
+Every non-empty block has one block-level verifier command. Built-ins are
+explicit:
+
+```json
+{
+  "version": 2,
+  "requirements": {
+    "tree": {
+      "verifier": ["builtin:tree"],
+      "required": ["src/lib.rs"]
+    },
+    "content": [
+      {
+        "verifier": ["builtin:content"],
+        "files": ["README.md"],
+        "required": ["Specular is a CLI"]
+      }
+    ]
+  }
+}
+```
+
+Predefined groups have fixed fields. Custom entries can hold any JSON except
+that `verifier` is reserved by Specular.
 
 Run `specular --help` before writing a spec. It includes full examples and the
 script call rules.
 
 ## Verifier scripts
 
-Verifier commands can be any script the OS can run. Python is usually the least
-annoying choice.
+A verifier is one command encoded as argv, not a shell string and not a list of
+verifiers. Scripts can use any language; examples use Python.
+
+```json
+"verifier": ["python3", "scripts/verify_deps.py", "--workspace"]
+```
 
 Typed script blocks are called once per block:
 
@@ -83,11 +113,11 @@ Typed script blocks are called once per block:
 <command...> <spec.json> <category> <blockIndex>
 ```
 
-Custom scripts are called once:
+Custom scripts are called once per entry:
 
 ```text
-<command...> <spec.json> custom
+<command...> <spec.json> custom <blockIndex>
 ```
 
-Verifier scripts print JSON proof lines. Their exit code only says whether the
-script ran cleanly; the proof carries pass and fail results.
+Verifier scripts print JSON proof lines. Their exit code says whether the script
+ran cleanly. The proof carries pass and fail results.

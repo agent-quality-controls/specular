@@ -1,0 +1,213 @@
+{
+  "version": 2,
+  "requirements": {
+    "tree": {
+      "reason": "Plan: save the migration plan and checkable contract before implementation.",
+      "required": [
+        ".plans/2026-06-12-140909-block-level-verifiers.md",
+        ".plans/2026-06-12-140909-block-level-verifiers.md.spec.json",
+        ".plans/2026-06-12-140909-block-level-verifiers.md.spec.coverage.md",
+        "src/model.rs",
+        "src/lint.rs",
+        "src/verify.rs",
+        "src/evidence.rs",
+        "HELP.txt",
+        "README.md",
+        "scripts/verify-repo-quality.py",
+        "scripts/verify-block-level-verifiers.py",
+        "behavior/fixtures",
+        "behavior/golden"
+      ],
+      "verifier": [
+        "builtin:tree"
+      ]
+    },
+    "content": [
+      {
+        "files": [
+          "src/model.rs"
+        ],
+        "reason": "Plan: model owns version 2 and block-level verifier fields.",
+        "required": [
+          "pub struct VerifierCommand",
+          "pub verifier: VerifierCommand",
+          "CustomRequirement",
+          "flatten"
+        ],
+        "forbidden": [
+          "pub verifiers: BTreeMap<String, Vec<String>>",
+          "has_builtin(self)"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
+      },
+      {
+        "files": [
+          "src/lint.rs"
+        ],
+        "reason": "Plan: lint validates block-level verifier commands and builtin compatibility.",
+        "required": [
+          "VERIFIER_MISSING",
+          "UNKNOWN_BUILTIN_VERIFIER",
+          "BUILTIN_CATEGORY_MISMATCH",
+          "VERIFIER_COMMAND_EMPTY",
+          "version must be 2",
+          "builtin:tree",
+          "builtin:content"
+        ],
+        "forbidden": [
+          "CATEGORY_HAS_NO_VERIFIER",
+          "DEAD_VERIFIER",
+          "UNKNOWN_CATEGORY"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
+      },
+      {
+        "files": [
+          "src/verify.rs"
+        ],
+        "reason": "Plan: verify dispatches each block by its own verifier argv.",
+        "required": [
+          "builtin:tree",
+          "builtin:content",
+          "run_builtin",
+          "run_script",
+          "block.verifier",
+          "custom",
+          "block_index"
+        ],
+        "forbidden": [
+          "spec.verifiers.get(category.as_str())"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
+      },
+      {
+        "files": [
+          "src/evidence.rs"
+        ],
+        "reason": "Plan: evidence records the exact verifier and script source.",
+        "required": [
+          "pub verifier: String",
+          "Script"
+        ],
+        "forbidden": [
+          "Custom,"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
+      },
+      {
+        "files": [
+          "HELP.txt"
+        ],
+        "reason": "Plan: help documents the new version 2 format and builtins.",
+        "required": [
+          "\"version\": 2",
+          "\"verifier\"",
+          "builtin:tree",
+          "builtin:content",
+          "scripts/verify_deps.py",
+          "top-level verifiers"
+        ],
+        "forbidden": [
+          "\"verifiers\": {",
+          "builtin when no verifier is declared"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
+      },
+      {
+        "files": [
+          "README.md"
+        ],
+        "reason": "Plan: README explains explicit block-level verifier selection.",
+        "required": [
+          "\"verifier\"",
+          "block-level verifier",
+          "builtin:tree",
+          "builtin:content"
+        ],
+        "forbidden": [
+          "\"verifiers\": {"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
+      },
+      {
+        "files": [
+          "scripts/verify-repo-quality.py"
+        ],
+        "reason": "Plan: existing custom verifier accepts custom per-entry protocol.",
+        "required": [
+          "block_index",
+          "requirements",
+          "custom"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
+      },
+      {
+        "files": [
+          "scripts/verify-block-level-verifiers.py"
+        ],
+        "reason": "Plan: the migration dogfoods Specular with a purpose-built verifier.",
+        "required": [
+          "check_valid_fixture_specs_v2",
+          "check_new_lint_fixtures",
+          "check_golden_reports",
+          "check_protocol_docs",
+          "block-level-verifiers"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
+      }
+    ],
+    "custom": [
+      {
+        "check": "valid-fixture-specs-v2",
+        "reason": "Plan: valid behavior fixture specs migrate to version 2 and block-level verifiers.",
+        "verifier": [
+          "scripts/verify-block-level-verifiers.py"
+        ]
+      },
+      {
+        "check": "new-lint-fixtures",
+        "reason": "Plan: migration adds lint fixtures for missing verifier, unknown builtin, category mismatch, and rejected top-level verifiers.",
+        "verifier": [
+          "scripts/verify-block-level-verifiers.py"
+        ]
+      },
+      {
+        "check": "golden-reports",
+        "reason": "Plan: golden reports include evidence verifier identity and use script source for external verifiers.",
+        "verifier": [
+          "scripts/verify-block-level-verifiers.py"
+        ]
+      },
+      {
+        "check": "protocol-docs",
+        "reason": "Plan: help and README document one block-level verifier command, not a list of verifiers.",
+        "verifier": [
+          "scripts/verify-block-level-verifiers.py"
+        ]
+      },
+      {
+        "check": "repo-plan-specs-v2",
+        "reason": "Plan: local Specular plan specs used by this repo migrate to the version 2 format.",
+        "verifier": [
+          "scripts/verify-block-level-verifiers.py"
+        ]
+      }
+    ]
+  }
+}

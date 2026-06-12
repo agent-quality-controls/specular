@@ -155,19 +155,20 @@ CHECKS = {
 
 
 def main():
-    if len(sys.argv) != 3 or sys.argv[2] != "custom":
-        raise SystemExit("usage: verify-repo-quality.py <spec.json> custom")
+    if len(sys.argv) != 4 or sys.argv[2] != "custom":
+        raise SystemExit("usage: verify-repo-quality.py <spec.json> custom <blockIndex>")
 
     spec = json.loads(Path(sys.argv[1]).read_text())
-    for entry in spec["requirements"].get("custom", []):
-        check = CHECKS.get(entry.get("check"))
-        if check is None:
-            emit(entry, "fail", f"unknown check {entry.get('check')!r}")
-            continue
-        try:
-            check(entry)
-        except Exception as error:
-            emit(entry, "fail", str(error))
+    block_index = int(sys.argv[3])
+    entry = spec["requirements"].get("custom", [])[block_index]
+    check = CHECKS.get(entry.get("check"))
+    if check is None:
+        emit(entry, "fail", f"unknown check {entry.get('check')!r}")
+        return
+    try:
+        check(entry)
+    except Exception as error:
+        emit(entry, "fail", str(error))
 
 
 if __name__ == "__main__":

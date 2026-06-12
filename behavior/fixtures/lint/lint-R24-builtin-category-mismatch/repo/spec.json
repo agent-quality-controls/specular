@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "requirements": {
+    "dependencies": [
+      {
+        "verifier": ["builtin:tree"],
+        "manifests": ["Cargo.toml"],
+        "required": ["serde"]
+      }
+    ]
+  }
+}

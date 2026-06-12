@@ -64,11 +64,30 @@ impl Category {
     pub fn parse(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|c| c.as_str() == name)
     }
+}
 
-    /// Whether specular ships a builtin verifier for this category.
+/// One verifier command. The vector is argv, not a shell string.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(transparent)]
+pub struct VerifierCommand(pub Vec<String>);
+
+impl VerifierCommand {
+    /// Whether the verifier command is missing or empty.
     #[must_use]
-    pub const fn has_builtin(self) -> bool {
-        matches!(self, Self::Tree | Self::Content)
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// The verifier command selector.
+    #[must_use]
+    pub fn first(&self) -> Option<&str> {
+        self.0.first().map(String::as_str)
+    }
+
+    /// The verifier command as argv.
+    #[must_use]
+    pub fn as_slice(&self) -> &[String] {
+        &self.0
     }
 }
 
@@ -78,10 +97,6 @@ impl Category {
 pub struct Spec {
     /// Spec format version; only 1 is supported.
     pub version: u32,
-    /// Verifier overrides: category name -> command argv. A category absent here
-    /// uses its builtin verifier (tree, content) or fails lint.
-    #[serde(default)]
-    pub verifiers: BTreeMap<String, Vec<String>>,
     /// Requirements by category. Unused categories may be omitted.
     #[serde(default)]
     pub requirements: Requirements,
@@ -108,13 +123,16 @@ pub struct Requirements {
     pub enumerations: Vec<EnumerationRequirement>,
     /// Opaque author-defined checks.
     #[serde(default)]
-    pub custom: Vec<serde_json::Value>,
+    pub custom: Vec<CustomRequirement>,
 }
 
 /// Required, existing, and forbidden repository paths.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct TreeRequirement {
+    /// The verifier command for this requirement block.
+    #[serde(default)]
+    pub verifier: VerifierCommand,
     /// Plan citations.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<Reason>,
@@ -133,6 +151,9 @@ pub struct TreeRequirement {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ContentRequirement {
+    /// The verifier command for this requirement block.
+    #[serde(default)]
+    pub verifier: VerifierCommand,
     /// Globs scoping which files are read.
     #[serde(default)]
     pub files: Vec<String>,
@@ -154,6 +175,9 @@ pub struct ContentRequirement {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct DependencyRequirement {
+    /// The verifier command for this requirement block.
+    #[serde(default)]
+    pub verifier: VerifierCommand,
     /// Globs selecting the manifests to inspect.
     #[serde(default)]
     pub manifests: Vec<String>,
@@ -175,6 +199,9 @@ pub struct DependencyRequirement {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct ExportRequirement {
+    /// The verifier command for this requirement block.
+    #[serde(default)]
+    pub verifier: VerifierCommand,
     /// The package whose public surface is checked.
     #[serde(default)]
     pub package: String,
@@ -196,6 +223,9 @@ pub struct ExportRequirement {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EnumerationRequirement {
+    /// The verifier command for this requirement block.
+    #[serde(default)]
+    pub verifier: VerifierCommand,
     /// The set name.
     #[serde(default)]
     pub name: String,
@@ -205,4 +235,15 @@ pub struct EnumerationRequirement {
     /// The exact value set.
     #[serde(default)]
     pub values: Vec<String>,
+}
+
+/// Opaque author-defined check data plus its verifier command.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+pub struct CustomRequirement {
+    /// The verifier command for this requirement block.
+    #[serde(default)]
+    pub verifier: VerifierCommand,
+    /// Custom verifier-owned fields.
+    #[serde(flatten)]
+    pub extra: BTreeMap<String, serde_json::Value>,
 }

@@ -1,12 +1,12 @@
 {
   "suite": "verify",
-  "kind": "approved",
-  "run_id": "2026-06-11T12-40-17.674089Z-4a9fa9db",
-  "run_commit": "4d8c060",
+  "kind": "received",
+  "run_id": "2026-06-12T13-40-18.283982Z-dd736f69",
+  "run_commit": "597cae2",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-11T12:40:17.674089Z",
+  "recorded_at": "2026-06-12T13:40:18.283982Z",
   "fixture_hash": "sha256:417c1eeaa78821503ab4184ecf0020185ffbd3512a84a41cac860220a9237df1",
-  "manifest_hash": "sha256:4a9fa9db2ad3726eae5c854912ab762917b69da1b60fa6552f35a9f6c4fe8aec",
+  "manifest_hash": "sha256:dd736f69a53da81afcf6c05d9b0323cadceaecbf3d2709bdea577f2d683a1d5b",
   "tool_version": "0.1.8",
   "output_schema_version": "1",
   "fixtures": [

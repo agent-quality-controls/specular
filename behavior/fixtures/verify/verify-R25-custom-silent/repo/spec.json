@@ -1,13 +1,20 @@
 {
-  "version": 1,
-  "verifiers": { "custom": ["scripts/custom.sh"] },
+  "version": 2,
   "requirements": {
     "tree": {
-      "required": ["docs/readme.txt"]
+      "required": [
+        "docs/readme.txt"
+      ],
+      "verifier": [
+        "builtin:tree"
+      ]
     },
     "custom": [
       {
-        "check": "silent"
+        "check": "silent",
+        "verifier": [
+          "scripts/custom.sh"
+        ]
       }
     ]
   }

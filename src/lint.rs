@@ -7,7 +7,7 @@ use camino::Utf8Path;
 use globset::GlobBuilder;
 
 use crate::error::{LintError, SpecViolation};
-use crate::model::{Category, ExportRequirement, Spec};
+use crate::model::{Category, ExportRequirement, Spec, VerifierCommand};
 
 /// Validate the spec file and produce the typed contract.
 ///
@@ -35,7 +35,8 @@ pub fn lint(path: &Path) -> Result<Spec, LintError> {
         message: e.to_string(),
     })?;
 
-    semantic_violations(&spec, &mut violations);
+    let missing_verifiers = check_missing_verifier_fields(&text, &mut violations);
+    semantic_violations(&spec, &missing_verifiers, &mut violations);
 
     if violations.is_empty() {
         Ok(spec)
@@ -69,23 +70,88 @@ fn schema_violations(value: &serde_json::Value, out: &mut Vec<SpecViolation>) {
     }
 }
 
-fn semantic_violations(spec: &Spec, out: &mut Vec<SpecViolation>) {
+fn semantic_violations(
+    spec: &Spec,
+    missing_verifiers: &HashSet<String>,
+    out: &mut Vec<SpecViolation>,
+) {
     check_version(spec, out);
     check_paths_and_globs(spec, out);
     check_targets(spec, out);
     check_items(spec, out);
     check_vacuous(spec, out);
-    check_verifiers(spec, out);
+    check_verifiers(spec, missing_verifiers, out);
     check_custom_shape(spec, out);
 }
 
 fn check_version(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    if spec.version != 1 {
+    if spec.version != 2 {
         out.push(SpecViolation {
             code: "JSON_SCHEMA".to_owned(),
-            message: format!("version must be 1, got {}", spec.version),
+            message: format!("version must be 2, got {}", spec.version),
         });
     }
+}
+
+fn check_missing_verifier_fields(text: &str, out: &mut Vec<SpecViolation>) -> HashSet<String> {
+    let mut missing = HashSet::new();
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(text) else {
+        return missing;
+    };
+    let Some(requirements) = value
+        .get("requirements")
+        .and_then(serde_json::Value::as_object)
+    else {
+        return missing;
+    };
+
+    if let Some(tree) = requirements
+        .get("tree")
+        .and_then(serde_json::Value::as_object)
+        && block_has_items(tree)
+        && !tree.contains_key("verifier")
+    {
+        missing.insert("tree".to_owned());
+        out.push(SpecViolation {
+            code: "VERIFIER_MISSING".to_owned(),
+            message: "tree: verifier is required".to_owned(),
+        });
+    }
+
+    for category in [
+        "content",
+        "dependencies",
+        "exports",
+        "enumerations",
+        "custom",
+    ] {
+        let Some(blocks) = requirements
+            .get(category)
+            .and_then(serde_json::Value::as_array)
+        else {
+            continue;
+        };
+        for (index, block) in blocks.iter().enumerate() {
+            let Some(block) = block.as_object() else {
+                continue;
+            };
+            if !block.contains_key("verifier") {
+                missing.insert(format!("{category}[{index}]"));
+                out.push(SpecViolation {
+                    code: "VERIFIER_MISSING".to_owned(),
+                    message: format!("{category}[{index}]: verifier is required"),
+                });
+            }
+        }
+    }
+    missing
+}
+
+fn block_has_items(block: &serde_json::Map<String, serde_json::Value>) -> bool {
+    ["required", "exists", "forbidden", "values"]
+        .iter()
+        .filter_map(|key| block.get(*key))
+        .any(|value| value.as_array().is_some_and(|items| !items.is_empty()))
 }
 
 fn check_path_text(label: &str, value: &str, out: &mut Vec<SpecViolation>) {
@@ -366,42 +432,115 @@ fn check_vacuous(spec: &Spec, out: &mut Vec<SpecViolation>) {
     }
 }
 
-fn check_verifiers(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    for (key, command) in &spec.verifiers {
-        let Some(category) = Category::parse(key) else {
-            out.push(SpecViolation {
-                code: "UNKNOWN_CATEGORY".to_owned(),
-                message: format!("verifiers map names '{key}', which is not a category"),
-            });
-            continue;
-        };
-        if command.is_empty() {
-            out.push(SpecViolation {
-                code: "VERIFIER_COMMAND_EMPTY".to_owned(),
-                message: format!("verifier for '{key}' has an empty command array"),
-            });
-        }
-        if category_is_empty(spec, category) {
-            out.push(SpecViolation {
-                code: "DEAD_VERIFIER".to_owned(),
-                message: format!("verifier for '{key}' is declared but the category is empty"),
-            });
-        }
+fn check_verifiers(spec: &Spec, missing_verifiers: &HashSet<String>, out: &mut Vec<SpecViolation>) {
+    if !category_is_empty(spec, Category::Tree) {
+        check_verifier_command(
+            Category::Tree,
+            "tree",
+            &spec.requirements.tree.verifier,
+            missing_verifiers,
+            out,
+        );
     }
-    for category in Category::ALL {
-        if category_is_empty(spec, category) {
-            continue;
+    for (index, block) in spec.requirements.content.iter().enumerate() {
+        check_verifier_command(
+            Category::Content,
+            &format!("content[{index}]"),
+            &block.verifier,
+            missing_verifiers,
+            out,
+        );
+    }
+    for (index, block) in spec.requirements.dependencies.iter().enumerate() {
+        check_verifier_command(
+            Category::Dependencies,
+            &format!("dependencies[{index}]"),
+            &block.verifier,
+            missing_verifiers,
+            out,
+        );
+    }
+    for (index, block) in spec.requirements.exports.iter().enumerate() {
+        check_verifier_command(
+            Category::Exports,
+            &format!("exports[{index}]"),
+            &block.verifier,
+            missing_verifiers,
+            out,
+        );
+    }
+    for (index, block) in spec.requirements.enumerations.iter().enumerate() {
+        check_verifier_command(
+            Category::Enumerations,
+            &format!("enumerations[{index}]"),
+            &block.verifier,
+            missing_verifiers,
+            out,
+        );
+    }
+    for (index, block) in spec.requirements.custom.iter().enumerate() {
+        check_verifier_command(
+            Category::Custom,
+            &format!("custom[{index}]"),
+            &block.verifier,
+            missing_verifiers,
+            out,
+        );
+    }
+}
+
+fn check_verifier_command(
+    category: Category,
+    label: &str,
+    command: &VerifierCommand,
+    missing_verifiers: &HashSet<String>,
+    out: &mut Vec<SpecViolation>,
+) {
+    if command.is_empty() {
+        if missing_verifiers.contains(label) {
+            return;
         }
-        let overridden = spec.verifiers.contains_key(category.as_str());
-        if !category.has_builtin() && !overridden {
-            out.push(SpecViolation {
-                code: "CATEGORY_HAS_NO_VERIFIER".to_owned(),
-                message: format!(
-                    "category '{}' has requirements but no builtin verifier and no verifier entry",
-                    category.as_str()
-                ),
-            });
-        }
+        out.push(SpecViolation {
+            code: "VERIFIER_COMMAND_EMPTY".to_owned(),
+            message: format!("{label}: verifier command must not be empty"),
+        });
+        return;
+    }
+    if command.0.iter().any(|part| part.is_empty()) {
+        out.push(SpecViolation {
+            code: "VERIFIER_COMMAND_EMPTY".to_owned(),
+            message: format!("{label}: verifier command parts must not be empty"),
+        });
+    }
+    let Some(selector) = command.first() else {
+        return;
+    };
+    if !selector.starts_with("builtin:") {
+        return;
+    }
+    let Some(expected_category) = builtin_category(selector) else {
+        out.push(SpecViolation {
+            code: "UNKNOWN_BUILTIN_VERIFIER".to_owned(),
+            message: format!("{label}: unknown builtin verifier '{selector}'"),
+        });
+        return;
+    };
+    if expected_category != category {
+        out.push(SpecViolation {
+            code: "BUILTIN_CATEGORY_MISMATCH".to_owned(),
+            message: format!(
+                "{label}: builtin verifier '{selector}' cannot verify category '{}'",
+                category.as_str()
+            ),
+        });
+    }
+}
+
+fn builtin_category(selector: &str) -> Option<Category> {
+    match selector {
+        "builtin:tree" => Some(Category::Tree),
+        "builtin:content" => Some(Category::Content),
+        _ => None,
     }
 }
 
@@ -419,13 +558,4 @@ fn category_is_empty(spec: &Spec, category: Category) -> bool {
     }
 }
 
-fn check_custom_shape(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    for (index, entry) in spec.requirements.custom.iter().enumerate() {
-        if !entry.is_object() {
-            out.push(SpecViolation {
-                code: "CUSTOM_SHAPE".to_owned(),
-                message: format!("custom[{index}] must be an object"),
-            });
-        }
-    }
-}
+fn check_custom_shape(_spec: &Spec, _out: &mut Vec<SpecViolation>) {}

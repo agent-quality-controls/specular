@@ -1,0 +1,1 @@
+{"id":"lint-R23-unknown-builtin","commands":[["lint","spec.json"]],"notes":"unknown builtin verifier id; exit 2"}

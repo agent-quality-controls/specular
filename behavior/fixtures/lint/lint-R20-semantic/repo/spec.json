@@ -1,46 +1,101 @@
 {
-  "version": 1,
-  "verifiers": {
-    "dependencies": ["scripts/v.sh"],
-    "enumerations": ["scripts/v.sh"],
-    "notacategory": ["scripts/v.sh"],
-    "custom": ["scripts/v.sh"]
-  },
+  "version": 2,
   "requirements": {
     "tree": {
-      "required": ["a", "a", " has-space ", "has*glob", "/abs"],
-      "exists": ["a"],
-      "forbidden": ["[", "a"]
+      "required": [
+        "a",
+        "a",
+        " has-space ",
+        "has*glob",
+        "/abs"
+      ],
+      "exists": [
+        "a"
+      ],
+      "forbidden": [
+        "[",
+        "a"
+      ],
+      "verifier": [
+        "builtin:tree"
+      ]
     },
     "content": [
       {
-        "files": ["docs/*.txt"],
-        "required": ["x", "x"],
-        "exists": ["x"],
-        "forbidden": ["x"]
+        "files": [
+          "docs/*.txt"
+        ],
+        "required": [
+          "x",
+          "x"
+        ],
+        "exists": [
+          "x"
+        ],
+        "forbidden": [
+          "x"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       },
       {
-        "files": ["docs/*.txt"],
-        "required": ["y"]
+        "files": [
+          "docs/*.txt"
+        ],
+        "required": [
+          "y"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       }
     ],
     "dependencies": [
       {
-        "manifests": ["Cargo.toml"],
-        "required": ["dep"]
+        "manifests": [
+          "Cargo.toml"
+        ],
+        "required": [
+          "dep"
+        ],
+        "verifier": [
+          "scripts/v.sh"
+        ]
       },
       {
-        "manifests": ["Cargo.toml"],
-        "forbidden": ["other"]
+        "manifests": [
+          "Cargo.toml"
+        ],
+        "forbidden": [
+          "other"
+        ],
+        "verifier": [
+          "scripts/v.sh"
+        ]
       }
     ],
     "exports": [
       {
+        "verifier": [
+          "scripts/v.sh"
+        ],
         "package": "p",
-        "required": ["T"],
-        "exists": ["U"]
+        "required": [
+          "T"
+        ],
+        "exists": [
+          "U"
+        ]
       }
     ],
-    "custom": ["not-object"]
+    "custom": [
+      {
+        "verifier": [
+          "scripts/v.sh"
+        ],
+        "check": "semantic-fixture"
+      }
+    ]
   }
 }

@@ -1,0 +1,1 @@
+{"id":"lint-R22-verifier-missing","commands":[["lint","spec.json"]],"notes":"v2 requires every non-empty block to declare verifier; exit 2"}

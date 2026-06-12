@@ -1,22 +1,44 @@
 {
-  "version": 1,
-  "verifiers": { "dependencies": ["scripts/v.sh"] },
+  "version": 2,
   "requirements": {
     "tree": {
-      "required": ["README.md"],
-      "forbidden": ["tmp/**"]
+      "required": [
+        "README.md"
+      ],
+      "forbidden": [
+        "tmp/**"
+      ],
+      "verifier": [
+        "builtin:tree"
+      ]
     },
     "content": [
       {
-        "files": ["docs/*.txt"],
-        "required": ["INVOICE"],
-        "forbidden": ["LEGACY"]
+        "files": [
+          "docs/*.txt"
+        ],
+        "required": [
+          "INVOICE"
+        ],
+        "forbidden": [
+          "LEGACY"
+        ],
+        "verifier": [
+          "builtin:content"
+        ]
       }
     ],
     "dependencies": [
       {
-        "manifests": ["Cargo.toml"],
-        "forbidden": ["pg"]
+        "manifests": [
+          "Cargo.toml"
+        ],
+        "forbidden": [
+          "pg"
+        ],
+        "verifier": [
+          "scripts/v.sh"
+        ]
       }
     ]
   }

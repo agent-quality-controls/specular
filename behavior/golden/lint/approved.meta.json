@@ -1,12 +1,12 @@
 {
   "suite": "lint",
-  "kind": "approved",
-  "run_id": "2026-06-10T17-45-13.199822Z-f49ef2e2",
-  "run_commit": "7ed641a",
+  "kind": "received",
+  "run_id": "2026-06-12T13-40-17.162694Z-dd736f69",
+  "run_commit": "597cae2",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-10T17:45:13.199822Z",
-  "fixture_hash": "sha256:9a102f33d2a4f1cc431cf26b1df8e571c393b05c9a15d30ecbe1a7f39a6937fa",
-  "manifest_hash": "sha256:f49ef2e2f56e2e71003b1819b88f8347e53eaac34ea6bf21db2a81bc4a3b7a25",
+  "recorded_at": "2026-06-12T13:40:17.162694Z",
+  "fixture_hash": "sha256:4f12e8dbf9cecf1fbea75bea41841e017ec8b8dd3b6d7cf5ec1824ca9276401c",
+  "manifest_hash": "sha256:dd736f69a53da81afcf6c05d9b0323cadceaecbf3d2709bdea577f2d683a1d5b",
   "tool_version": "0.1.8",
   "output_schema_version": "1",
   "fixtures": [
@@ -29,7 +29,22 @@
     {
       "path": "behavior/fixtures/lint/lint-R21-vacuous/fixture.json",
       "sha256": "sha256:f853d501ea09f9c49aa935b12f2cd160c2d744d07e79da9eef1223fbf47bd0d3"
+    },
+    {
+      "path": "behavior/fixtures/lint/lint-R22-verifier-missing/fixture.json",
+      "sha256": "sha256:dd761c8644e24326adee71f0cb4c2622a6bb38d1eff0a2cef7792f2b1a2a88b3"
+    },
+    {
+      "path": "behavior/fixtures/lint/lint-R23-unknown-builtin/fixture.json",
+      "sha256": "sha256:372539693b8681c142af2bea9fef9880a015fbeae94a9362f229005796729c53"
+    },
+    {
+      "path": "behavior/fixtures/lint/lint-R24-builtin-category-mismatch/fixture.json",
+      "sha256": "sha256:35fbc246ea8b470da04658caa79b97206c1ea367e439be826a9a26f681103b4b"
+    },
+    {
+      "path": "behavior/fixtures/lint/lint-R25-top-level-verifiers/fixture.json",
+      "sha256": "sha256:ed71762cc98fae0944aea20259bbabe3f13641e2de686f2559f02c05f6dc28ed"
     }
-  ],
-  "comment": "per-item-spec-model-redesign"
+  ]
 }
