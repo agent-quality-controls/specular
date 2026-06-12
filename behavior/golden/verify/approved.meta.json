@@ -1,10 +1,10 @@
 {
   "suite": "verify",
-  "kind": "received",
-  "run_id": "2026-06-12T13-40-18.283982Z-dd736f69",
-  "run_commit": "597cae2",
+  "kind": "approved",
+  "run_id": "2026-06-12T14-20-14.949325Z-dd736f69",
+  "run_commit": "52c9be1",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-12T13:40:18.283982Z",
+  "recorded_at": "2026-06-12T14:20:14.949325Z",
   "fixture_hash": "sha256:417c1eeaa78821503ab4184ecf0020185ffbd3512a84a41cac860220a9237df1",
   "manifest_hash": "sha256:dd736f69a53da81afcf6c05d9b0323cadceaecbf3d2709bdea577f2d683a1d5b",
   "tool_version": "0.1.8",
@@ -46,5 +46,6 @@
       "path": "behavior/fixtures/verify/verify-R26-custom-broken/fixture.json",
       "sha256": "sha256:19d701ff913944d4430c13d0bc60a2d772ca3e9b1644b3eeb9dfec5ccf3c5bc9"
     }
-  ]
+  ],
+  "comment": "Bump specular version to 0.3.0"
 }

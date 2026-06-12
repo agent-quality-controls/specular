@@ -267,7 +267,7 @@ REPORT
   verify:
 
     {
-      "specular_version": "0.2.0",
+      "specular_version": "0.3.0",
       "spec": {"path": "spec.json", "sha256": "..."},
       "verifier_files": [{"path": "scripts/verify_deps.py", "sha256": "..."}],
       "git": [{"path": "spec.json", "state": "clean"}],

@@ -154,7 +154,7 @@ The only output format, for both commands. No flags.
 
 ```json
 {
-  "specular_version": "0.2.0",
+  "specular_version": "0.3.0",
   "spec": {"path": "spec.json", "sha256": "..."},
   "verifier_files": [{"path": "scripts/verify-deps.sh", "sha256": "..."}],
   "git": [{"path": "spec.json", "state": "clean"}],

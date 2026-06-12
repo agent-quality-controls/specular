@@ -95,7 +95,7 @@
         "path": "spec.json",
         "sha256": "4355696d72acf615c92ef2c6cecc19b2d80c293c607531d925c4c5852f4b2f5f"
       },
-      "specular_version": "0.2.0",
+      "specular_version": "0.3.0",
       "verifier_files": [
         {
           "path": "scripts/custom.sh",
@@ -214,7 +214,7 @@
         "path": "spec.json",
         "sha256": "4355696d72acf615c92ef2c6cecc19b2d80c293c607531d925c4c5852f4b2f5f"
       },
-      "specular_version": "0.2.0",
+      "specular_version": "0.3.0",
       "verifier_files": [
         {
           "path": "scripts/custom.sh",
