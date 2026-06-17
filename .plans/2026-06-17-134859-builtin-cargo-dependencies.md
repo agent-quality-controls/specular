@@ -18,36 +18,34 @@ format version and crate version before release.
 
 AQC now has the required lower-level support:
 
-- `aqc-shared` commit `184db42 Add cargo dependency package pattern bans`
-- `DependencyPackagePattern { pattern: String }`
-- `CargoTomlRequirements.banned_dependency_package_patterns`
-- `CargoTomlRequirements.banned_workspace_dependency_package_patterns`
-- `CargoTomlRequirements.banned_patch_dependency_package_patterns`
+- `aqc-shared` commit `4f48e9a Rename forbidden glob requirements`
+- `DependencyPackageGlob { glob: String }`
+- `CargoTomlRequirements.forbidden_dependency_package_globs`
+- `CargoTomlRequirements.forbidden_workspace_dependency_package_globs`
+- `CargoTomlRequirements.forbidden_patch_dependency_package_globs`
 - `aqc-cargo-toml-engine` tests cover exact package identity, renamed
-  dependencies, package-pattern bans, target scopes, workspace dependencies,
+  dependencies, forbidden package globs, target scopes, workspace dependencies,
   patch tables, and expanded dependency subtables.
 
-Guardrail3 also exposes the fields:
+Specular should depend on the Cargo file engine crates directly, not on
+Guardrail3. Guardrail3 is a policy/adapter system; Specular needs the
+Cargo.toml file-engine vocabulary and reconcile behavior.
 
-- `guardrail3` commit `8e55be9d1 Expose cargo dependency pattern bans`
+Implementation dependency rule:
 
-Specular should depend on the AQC engine crates directly, not on Guardrail3.
-Guardrail3 is a policy/adapter system; Specular only needs the Cargo file
-engine vocabulary.
-
-Release blocker:
-
-- `aqc-file-engine-core` and `aqc-cargo-toml-engine` must be pushed and
-  published before Specular can publish to crates.io with this builtin.
-- A local path dependency is acceptable only while developing the change.
+- Use crates.io versions of `aqc-file-engine-core` and
+  `aqc-cargo-toml-engine` once they are published.
+- Use local path dependencies only for a short local integration pass before
+  those crates are published.
 
 ## Semantics
 
 For each dependency block:
 
 - `files` is a list of repo-relative globs selecting Cargo files to inspect.
-- A matched file should normally be a `Cargo.toml`; unreadable or invalid TOML
-  files produce failing evidence for affected positive items.
+- A matched file should normally be a `Cargo.toml`.
+- An unreadable or invalid TOML matched file fails every item in the block
+  because Specular cannot prove presence or absence from that file.
 - `required`: every matched file must declare the exact package in at least one
   dependency-shaped Cargo table.
 - `exists`: at least one matched file must declare the exact package in at least
@@ -72,13 +70,25 @@ expose that without surprising users.
 
 ## Approach
 
-1. Publish or locally stage AQC engine crates.
-   - Push `aqc-shared` commit `184db42`.
-   - Remove `publish = false` from `aqc-file-engine-core` and
-     `aqc-cargo-toml-engine` if publishing is part of this run.
-   - Publish compatible versions before the final Specular release.
-   - During local implementation, use path dependencies only if crates.io
-     versions are not available yet.
+1. Add Cargo file engine dependencies.
+   - Add crates.io dependencies:
+     - `aqc-file-engine-core`
+     - `aqc-cargo-toml-engine`
+     - `toml_edit` only if Specular needs direct table discovery beyond what
+       the file engine exposes.
+   - Import the file-engine API directly:
+     ```rust
+     use aqc_cargo_toml_engine::{
+         CargoTomlEngine, CargoTomlRequirements, DependencyKind,
+         DependencyPackageGlob, DependencyRequirement as CargoDependencyRequirement,
+         DependencyScope, DependencySpec,
+     };
+     use aqc_file_engine_core::{
+         Engine, EngineRequirement, Finding, ForbiddenGlobRequirements,
+         ItemRequirements, Provenance,
+     };
+     ```
+   - Do not depend on `g3rs-cargo-adapter`.
 
 2. Migrate the dependency block target field.
    - In `src/model.rs`, rename `DependencyRequirement.manifests` to `files`.
@@ -98,35 +108,66 @@ expose that without surprising users.
    - Add a module such as `src/cargo_dependencies.rs`.
    - Use `aqc-cargo-toml-engine` and `aqc-file-engine-core` directly.
    - Use `toml_edit` only to enumerate dependency-shaped tables in a matched
-     Cargo file. Let AQC perform package identity checks and pattern checks.
+     Cargo file. Let AQC perform package identity checks and forbidden-glob
+     checks.
    - Build AQC requirements with:
      - `DependencyRequirement { file_key: None, value.package = Some(name) }`
        for exact required, exists, and forbidden items.
-     - `DependencyPackagePattern { pattern }` inside
-       `PatternBanRequirements` for glob forbidden items.
-   - For positive checks, evaluate all dependency-shaped tables in a file and
-     pass when any table satisfies the package requirement.
-   - For forbidden checks, evaluate all dependency-shaped tables in matched
-     files and fail when any exact or pattern match is found.
+     - `DependencyPackageGlob { glob }` inside
+       `ForbiddenGlobRequirements` for forbidden glob items.
+   - Use the Cargo file engine as the package-identity oracle:
+     - For an exact positive item, run a check-only package requirement against
+       each dependency-shaped table scope in a file. The file passes when any
+       scope returns no finding for that item.
+     - For exact forbidden items, run `ItemRequirements.banned` across every
+       discovered dependency-shaped table scope and fail if any finding is
+       reported.
+     - For forbidden glob items, run `ForbiddenGlobRequirements.globs` across
+       every discovered dependency-shaped table scope and fail if any finding
+       is reported.
 
-5. Preserve Specular evidence shape.
+5. Structure `src/cargo_dependencies.rs`.
+   - Public entry point:
+     - `check_cargo_dependencies(block, tree, root, verifier, out)`.
+   - Internal data:
+     - `DependencyTableTarget::Scope(DependencyScope)`
+     - `DependencyTableTarget::Workspace`
+     - `ForbiddenDependencyItem::Exact(String)`
+     - `ForbiddenDependencyItem::Glob(String)`
+   - Internal helpers:
+     - `matched_cargo_files(block.files, tree) -> Vec<FileTreeEntry>`
+     - `read_cargo_file(path) -> Result<Vec<u8>, VerifyError>`
+     - `discover_dependency_tables(bytes) -> Vec<DependencyTableTarget>`
+     - `exact_requirement(package, message) -> CargoDependencyRequirement`
+     - `exact_items(required_or_banned) -> ItemRequirements<CargoDependencyRequirement>`
+     - `glob_items(globs) -> ForbiddenGlobRequirements<DependencyPackageGlob>`
+     - `run_cargo_engine(bytes, CargoTomlRequirements) -> Vec<Finding>`
+     - `file_has_package(bytes, tables, package) -> Result<bool, VerifyError>`
+     - `file_forbidden_hits(bytes, tables, item) -> Result<Vec<String>, VerifyError>`
+   - Keep all Cargo-specific helper code in this module. `src/verify.rs`
+     should only dispatch to it.
+
+6. Preserve Specular evidence shape.
    - Emit one evidence item per declared spec item.
    - Use `source: "builtin"` and verifier `builtin:cargo-dependencies`.
    - Use the dependency block's `files` array as the evidence target.
-   - Include matched file paths and Cargo keys in `message` or `observed` when
-     an item fails.
+   - For `required`, fail with the list of matched files where no dependency
+     table declares the package.
+   - For `exists`, fail when no matched file declares the package.
+   - For `forbidden`, fail with file path plus Cargo table/key hits when AQC
+     reports exact or glob matches.
    - Treat AQC requirement conflicts as failing evidence, not as silent pass.
 
-6. Lint rules for package items.
+7. Lint rules for package items.
    - `required` and `exists` must be non-empty, trimmed, and non-glob.
    - `forbidden` must be non-empty and trimmed.
    - If a `forbidden` item contains glob metacharacters, compile it with
      `globset` during lint.
    - Keep exact required-vs-exact forbidden contradictions as lint errors.
-   - Do not try to lint every pattern-vs-required overlap; AQC detects that
+   - Do not try to lint every glob-vs-required overlap; AQC detects that
      when the builtin verifier builds requirements.
 
-7. Behavior coverage.
+8. Behavior coverage.
    - Add lint fixtures for:
      - `builtin:cargo-dependencies` accepted on dependencies blocks.
      - builtin category mismatch rejected.
@@ -144,8 +185,9 @@ expose that without surprising users.
      - required checks every matched file.
      - exists checks at least one matched file.
      - no matched files fails positive items.
+     - invalid matched Cargo file fails every item in the block.
 
-8. Documentation.
+9. Documentation.
    - Update `HELP.txt` first because agents rely on it.
    - Update `README.md` with the short human-facing install/use section and a
      Cargo builtin example.
@@ -155,7 +197,7 @@ expose that without surprising users.
      - renamed dependency behavior
      - Python custom verifier examples remain valid for non-builtin categories
 
-9. Dogfood contract.
+10. Dogfood contract.
    - Create a Specular spec for this plan after the prose plan is accepted.
    - The spec should check:
      - `builtin:cargo-dependencies` appears in help/docs and builtin registry.
@@ -167,7 +209,7 @@ expose that without surprising users.
    - Use a custom Python verifier where text checks cannot prove fixture
      behavior.
 
-10. Verification gates.
+11. Verification gates.
     - `cargo fmt --check`
     - `cargo clippy --all-targets --all-features -- -D warnings`
     - `cargo test`
@@ -180,8 +222,8 @@ expose that without surprising users.
 
 ## Key Decisions
 
-- Use AQC directly instead of Guardrail3 because Specular needs file-engine
-  facts, not Guardrail policy machinery.
+- Use the Cargo file engine directly instead of Guardrail3 because Specular
+  needs Cargo.toml file-engine facts, not Guardrail policy machinery.
 - Keep Specular dependency semantics package-oriented. The local Cargo key is
   not part of the public item unless a later format adds a structured item.
 - Use `files` rather than `manifests` because the selected inputs are files, and
