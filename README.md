@@ -23,6 +23,10 @@ cargo install --git https://github.com/agent-quality-controls/specular
 Tell your agent to use Specular. It should write the spec, add any scripts, and
 work until verify exits `0`.
 
+Tell it to use the least custom spec that works. It should use a predefined
+category when one fits, use that category's builtin when one exists, and use
+custom only when no predefined category fits.
+
 ## What it is
 
 Specular uses JSON specs to check a plan. It gives an agent a test loop. The
@@ -61,7 +65,10 @@ Use Specular for this plan.
 Make a JSON spec.
 Run specular lint.
 Write a coverage map.
-Add any needed verifier scripts.
+Use predefined categories first.
+Use built-in verifiers when they exist.
+Add verifier scripts only when no built-in fits.
+Use custom only when no predefined category fits.
 Run specular verify before coding.
 Keep working until specular verify exits 0.
 Use specular --help for the spec shape and script calls.
@@ -71,10 +78,12 @@ Use specular --help for the spec shape and script calls.
 
 There are three patterns:
 
-1. Fixed groups with built-ins: `tree`, `content`, Cargo `dependencies`.
-2. Fixed groups with no built-in for your stack: `dependencies`, `exports`,
-   `enumerations`.
-3. Custom groups: put any JSON under `custom`, then write the script.
+1. Predefined categories with built-ins: `tree`, `content`, Cargo
+   `dependencies`. Use these first.
+2. Predefined categories with no built-in for your stack: `dependencies`,
+   `exports`, `enumerations`. Use one script per block.
+3. Custom categories: put any JSON under `custom`, then write the script. Use
+   this only when no predefined category fits.
 
 Every non-empty block has one block-level verifier command. Built-ins are
 explicit:
@@ -107,8 +116,11 @@ explicit:
 }
 ```
 
-Fixed groups have fixed fields. Custom entries can hold any JSON except
+Predefined categories have fixed fields. Custom entries can hold any JSON except
 `verifier`, which Specular owns.
+
+Do not put tree, content, or Cargo package checks in `custom`. Do not write a
+script for checks the built-ins can judge.
 
 For `builtin:cargo-dependencies`, `required`, `exists`, and `forbidden` use
 exact Cargo package names. `forbiddenGlobs` uses package-name globs. Renamed

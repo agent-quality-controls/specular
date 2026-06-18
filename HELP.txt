@@ -36,11 +36,24 @@ SPEC SHAPE
     builtin:content             content only
     builtin:cargo-dependencies  dependencies only, Cargo.toml files
 
+PRIORITY RULE
+  Use the least custom spec that can express the plan.
+
+  1. Use a predefined category when one fits.
+  2. Use that category's builtin verifier when one exists.
+  3. Use an external verifier only for a predefined category with no matching
+     builtin.
+  4. Use custom only when no predefined category fits.
+
+  Do not put file-tree checks, content checks, or Cargo package checks in
+  custom. Do not write a script for tree, content, or Cargo dependency checks
+  that the built-ins can judge.
+
 THREE WAYS TO USE A SPEC
   1. Predefined category with a built-in verifier.
 
-     Use tree, content, or Cargo dependencies and choose the matching builtin
-     explicitly.
+     This is the default. Use tree, content, or Cargo dependencies and choose
+     the matching builtin explicitly.
 
        "requirements": {
          "tree": {
@@ -68,8 +81,8 @@ THREE WAYS TO USE A SPEC
 
   2. Predefined category with an external verifier.
 
-     Use dependencies, exports, or enumerations when the fixed fields fit.
-     Choose one script command for each block.
+     Use this only when the category fields fit but no builtin can judge the
+     ecosystem or data. Choose one script command for each block.
 
        "requirements": {
          "dependencies": [
@@ -83,8 +96,8 @@ THREE WAYS TO USE A SPEC
 
   3. Opaque custom checks.
 
-     Use custom when no predefined category fits. Each entry can contain any
-     JSON object fields except that verifier is reserved by Specular.
+     Use this only when no predefined category fits. Each entry can contain
+     any JSON object fields except that verifier is reserved by Specular.
 
        "requirements": {
          "custom": [
@@ -269,11 +282,13 @@ LINT ERRORS
 WORKFLOW
   1. Write the plan in prose.
   2. Extract a JSON spec for checkable items.
-  3. Choose one verifier for every non-empty block.
-  4. Write script verifiers where no builtin fits.
-  5. Run specular verify before coding and confirm it fails where expected.
-  6. Build until specular verify exits 0.
-  7. Spot-check by hand; the spec is not exhaustive.
+  3. Put each item in the narrowest predefined category that fits.
+  4. Choose the builtin verifier whenever that category has one.
+  5. Write script verifiers only where no builtin fits.
+  6. Use custom only where no predefined category fits.
+  7. Run specular verify before coding and confirm it fails where expected.
+  8. Build until specular verify exits 0.
+  9. Spot-check by hand; the spec is not exhaustive.
 
 REPORT
   lint:
