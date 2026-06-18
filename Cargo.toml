@@ -1,6 +1,6 @@
 [package]
 name = "specular"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Deterministic spec-driven development CLI"
@@ -24,6 +24,7 @@ aqc-file-engine-core = "0.1.0"
 aqc-filetree = "0.1.0"
 aqc-fs-utils = "0.1.0"
 aqc-git-helpers = "0.1.0"
+aqc-rust-syntax = "0.1.0"
 camino = "1.2.2"
 garde = { version = "0.23.0", features = ["derive"] }
 globset = "0.4.18"

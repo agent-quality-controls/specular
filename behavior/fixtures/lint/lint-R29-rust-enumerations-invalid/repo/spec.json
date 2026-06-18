@@ -1,0 +1,12 @@
+{
+  "version": 4,
+  "requirements": {
+    "enumerations": [
+      {
+        "verifier": ["builtin:rust-enumerations"],
+        "name": "Category",
+        "values": ["Tree", "Tree"]
+      }
+    ]
+  }
+}

@@ -21,6 +21,7 @@ use crate::model::{
 };
 
 use crate::cargo_dependencies;
+use crate::rust_enumerations;
 
 const VERIFIER_TIMEOUT: Duration = Duration::from_secs(60);
 
@@ -509,7 +510,12 @@ fn run_typed_block(
     evidence: &mut Vec<Evidence>,
 ) -> Result<(), VerifyError> {
     match verifier.first() {
-        Some("builtin:tree" | "builtin:content" | "builtin:cargo-dependencies") => run_builtin(
+        Some(
+            "builtin:tree"
+            | "builtin:content"
+            | "builtin:cargo-dependencies"
+            | "builtin:rust-enumerations",
+        ) => run_builtin(
             ctx.spec,
             ctx.tree,
             category,
@@ -619,6 +625,19 @@ fn run_builtin(
                 block,
                 tree,
                 "builtin:cargo-dependencies",
+                evidence,
+            )
+        }
+        Some("builtin:rust-enumerations") if category == Category::Enumerations => {
+            let Some(block) = spec.requirements.enumerations.get(block_index) else {
+                return Err(VerifyError::Coverage(format!(
+                    "enumerations[{block_index}] does not exist"
+                )));
+            };
+            rust_enumerations::check_rust_enumerations(
+                block,
+                tree,
+                "builtin:rust-enumerations",
                 evidence,
             )
         }

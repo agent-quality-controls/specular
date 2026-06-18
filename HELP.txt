@@ -16,7 +16,7 @@ EXIT CODES
   Other flags are not supported. lint and verify output is always JSON.
 
 SPEC SHAPE
-  Strict JSON, no comments. Version 3 uses block-level verifier commands.
+  Strict JSON, no comments. Version 4 uses block-level verifier commands.
   top-level verifiers are not supported.
 
   A verifier is one command encoded as argv:
@@ -35,9 +35,11 @@ SPEC SHAPE
     builtin:tree                tree only
     builtin:content             content only
     builtin:cargo-dependencies  dependencies only, Cargo.toml files
+    builtin:rust-enumerations   enumerations only, Rust source files
 
 PRIORITY RULE
   Use the least custom spec that can express the plan.
+  Use built-in verifiers when they exist.
 
   1. Use a predefined category when one fits.
   2. Use that category's builtin verifier when one exists.
@@ -45,15 +47,15 @@ PRIORITY RULE
      builtin.
   4. Use custom only when no predefined category fits.
 
-  Do not put file-tree checks, content checks, or Cargo package checks in
-  custom. Do not write a script for tree, content, or Cargo dependency checks
-  that the built-ins can judge.
+  Do not put file-tree checks, content checks, Cargo package checks, or Rust
+  enum checks in custom. Do not write a script for checks the built-ins can
+  judge.
 
 THREE WAYS TO USE A SPEC
   1. Predefined category with a built-in verifier.
 
-     This is the default. Use tree, content, or Cargo dependencies and choose
-     the matching builtin explicitly.
+     This is the default. Use tree, content, Cargo dependencies, or Rust
+     enumerations and choose the matching builtin explicitly.
 
        "requirements": {
          "tree": {
@@ -75,6 +77,14 @@ THREE WAYS TO USE A SPEC
              "required": ["serde"],
              "forbidden": ["openssl"],
              "forbiddenGlobs": ["g3*"]
+           }
+         ],
+         "enumerations": [
+           {
+             "verifier": ["builtin:rust-enumerations"],
+             "files": ["src/**/*.rs"],
+             "name": "Category",
+             "values": ["Tree", "Content", "Dependencies"]
            }
          ]
        }
@@ -114,7 +124,7 @@ SPEC FORMAT
   Any category may be omitted. List fields default to [].
 
   {
-    "version": 3,
+    "version": 4,
     "requirements": {
       "tree": {
         "verifier": ["builtin:tree"],
@@ -154,7 +164,8 @@ SPEC FORMAT
       ],
       "enumerations": [
         {
-          "verifier": ["scripts/verify_enums.py"],
+          "verifier": ["builtin:rust-enumerations"],
+          "files": ["src/**/*.rs"],
           "name": "Status",
           "values": ["Pass", "Fail"]
         }
@@ -175,7 +186,7 @@ FIELDS
   content       verifier, files, reason, required, exists, forbidden
   dependencies  verifier, files, reason, required, exists, forbidden, forbiddenGlobs
   exports       verifier, package, reason, required, exists, forbidden
-  enumerations  verifier, name, reason, values
+  enumerations  verifier, files, name, reason, values
   custom        verifier plus script-owned object fields
 
 SEMANTICS
@@ -190,6 +201,10 @@ SEMANTICS
   content items are fixed substrings for all quantifiers.
   builtin:cargo-dependencies matches Cargo package identity, so renamed
   dependencies are checked by the `package` value, not the local key.
+  builtin:rust-enumerations matches Rust enum declarations in repo-relative
+  files. `name` is an enum name or inline-module-qualified name such as
+  `wire::Status`; values are the exact variant set. More than one matched enum
+  with different variant sets fails as ambiguous.
   enumerations are exact sets: the named set's values equal values.
   Zero matched places plus non-empty required or exists fails.
   exists is rejected by lint on tree and exports because each has one place.
@@ -278,6 +293,7 @@ LINT ERRORS
   REDUNDANT                  same item is both required and exists in one block
   ITEM_FORMAT                item is empty, untrimmed, or has the wrong glob form
   EXISTS_SINGLE_PLACE        exists used on tree or exports
+  ENUMERATION_FILES_REQUIRED builtin:rust-enumerations used without files
 
 WORKFLOW
   1. Write the plan in prose.
@@ -300,7 +316,7 @@ REPORT
   verify:
 
     {
-      "specular_version": "0.4.0",
+      "specular_version": "0.5.0",
       "spec": {"path": "spec.json", "sha256": "..."},
       "verifier_files": [{"path": "scripts/verify_deps.py", "sha256": "..."}],
       "git": [{"path": "spec.json", "state": "clean"}],

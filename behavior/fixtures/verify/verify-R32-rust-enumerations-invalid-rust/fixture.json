@@ -1,0 +1,1 @@
+{"id":"verify-R32-rust-enumerations-invalid-rust","commands":[["verify","spec.json"]],"notes":"Rust enumeration builtin fails evidence when matched file is not valid rust"}

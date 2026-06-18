@@ -224,11 +224,14 @@ def check_fixtures(_entry):
         require_file(failures, ROOT / rel_path)
     for rel_path in required:
         if rel_path.endswith("spec.json"):
+            needles = ["builtin:rust-enumerations", '"values"']
+            if "lint-R29-rust-enumerations-invalid" not in rel_path:
+                needles.append('"files"')
             require_contains(
                 failures,
                 ROOT,
                 rel_path,
-                ["builtin:rust-enumerations", '"files"', '"values"'],
+                needles,
             )
     fixture_text = "\n".join(
         path.read_text()
@@ -254,8 +257,8 @@ def check_version(_entry):
 def check_dogfood(_entry):
     failures = []
     spec = json.loads(read(ROOT, ".plans/2026-06-18-201059-rust-enumerations-builtin.md.spec.json"))
-    if spec.get("version") not in (3, 4):
-        failures.append("dogfood spec version must be 3 before implementation or 4 after implementation")
+    if spec.get("version") != 4:
+        failures.append("dogfood spec version must be 4")
     coverage = read(ROOT, ".plans/2026-06-18-201059-rust-enumerations-builtin.md.spec.coverage.md")
     required_headings = [
         "Goal",

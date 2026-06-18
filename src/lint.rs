@@ -85,10 +85,10 @@ fn semantic_violations(
 }
 
 fn check_version(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    if spec.version != 3 {
+    if spec.version != 4 {
         out.push(SpecViolation {
             code: "JSON_SCHEMA".to_owned(),
-            message: format!("version must be 3, got {}", spec.version),
+            message: format!("version must be 4, got {}", spec.version),
         });
     }
 }
@@ -208,6 +208,13 @@ fn check_paths_and_globs(spec: &Spec, out: &mut Vec<SpecViolation>) {
             check_glob("dependencies", g, out);
         }
     }
+    for block in &spec.requirements.enumerations {
+        if block.verifier.first() == Some("builtin:rust-enumerations") {
+            for g in &block.files {
+                check_glob("enumerations", g, out);
+            }
+        }
+    }
 }
 
 fn check_targets(spec: &Spec, out: &mut Vec<SpecViolation>) {
@@ -237,7 +244,7 @@ fn check_targets(spec: &Spec, out: &mut Vec<SpecViolation>) {
         spec.requirements
             .enumerations
             .iter()
-            .map(|x| x.name.clone()),
+            .map(|x| format!("{}:{}", x.name, sorted_key(&x.files))),
         out,
     );
 }
@@ -298,19 +305,32 @@ fn check_items(spec: &Spec, out: &mut Vec<SpecViolation>) {
         check_export_items(block, out);
     }
     for block in &spec.requirements.enumerations {
-        let mut seen = HashSet::new();
-        for value in &block.values {
-            check_plain_item("enumerations", &block.name, value, false, out);
-            if !seen.insert(value) {
-                out.push(SpecViolation {
-                    code: "DUPLICATE_ITEM".to_owned(),
-                    message: format!(
-                        "enumerations/{}: item '{value}' appears more than once",
-                        block.name
-                    ),
-                });
-            }
+        check_enumeration(block, out);
+    }
+}
+
+fn check_enumeration(block: &crate::model::EnumerationRequirement, out: &mut Vec<SpecViolation>) {
+    let mut seen = HashSet::new();
+    for value in &block.values {
+        check_plain_item("enumerations", &block.name, value, false, out);
+        if !seen.insert(value) {
+            out.push(SpecViolation {
+                code: "DUPLICATE_ITEM".to_owned(),
+                message: format!(
+                    "enumerations/{}: item '{value}' appears more than once",
+                    block.name
+                ),
+            });
         }
+    }
+    if block.verifier.first() == Some("builtin:rust-enumerations") && block.files.is_empty() {
+        out.push(SpecViolation {
+            code: "ENUMERATION_FILES_REQUIRED".to_owned(),
+            message: format!(
+                "enumerations/{}: files is required for builtin:rust-enumerations",
+                block.name
+            ),
+        });
     }
 }
 
@@ -657,6 +677,7 @@ fn builtin_category(selector: &str) -> Option<Category> {
         "builtin:tree" => Some(Category::Tree),
         "builtin:content" => Some(Category::Content),
         "builtin:cargo-dependencies" => Some(Category::Dependencies),
+        "builtin:rust-enumerations" => Some(Category::Enumerations),
         _ => None,
     }
 }

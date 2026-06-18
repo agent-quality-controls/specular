@@ -160,8 +160,8 @@ def check_fixtures(_entry):
             failures.append(f"missing {rel_path}")
             continue
         spec = json.loads(path.read_text())
-        if spec.get("version") != 3:
-            failures.append(f"{rel_path}: version is not 3")
+        if spec.get("version") != 4:
+            failures.append(f"{rel_path}: version is not 4")
         text = path.read_text()
         if '"manifests"' in text:
             failures.append(f"{rel_path}: manifests remains")
@@ -202,8 +202,8 @@ def check_golden(_entry):
 def check_dogfood(_entry):
     failures = []
     spec = json.loads(read(".plans/2026-06-17-134859-builtin-cargo-dependencies.md.spec.json"))
-    if spec.get("version") != 3:
-        failures.append("dogfood spec version is not 3")
+    if spec.get("version") != 4:
+        failures.append("dogfood spec version is not 4")
     coverage = read(".plans/2026-06-17-134859-builtin-cargo-dependencies.md.spec.coverage.md")
     required_headings = [
         "Goal",

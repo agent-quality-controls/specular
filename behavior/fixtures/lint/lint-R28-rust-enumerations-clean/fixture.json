@@ -1,0 +1,1 @@
+{"id":"lint-R28-rust-enumerations-clean","commands":[["lint","spec.json"]],"notes":"Rust enumeration builtin with files passes lint"}

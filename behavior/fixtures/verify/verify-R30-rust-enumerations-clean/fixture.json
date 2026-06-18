@@ -1,0 +1,1 @@
+{"id":"verify-R30-rust-enumerations-clean","commands":[["verify","spec.json"]],"notes":"Rust enumeration builtin passes exact top-level and wire::Status inline-module enums"}

@@ -95,7 +95,7 @@ impl VerifierCommand {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Spec {
-    /// Spec format version; only 1 is supported.
+    /// Spec format version; only 4 is supported.
     pub version: u32,
     /// Requirements by category. Unused categories may be omitted.
     #[serde(default)]
@@ -229,6 +229,9 @@ pub struct EnumerationRequirement {
     /// The verifier command for this requirement block.
     #[serde(default)]
     pub verifier: VerifierCommand,
+    /// Globs selecting Rust files when using `builtin:rust-enumerations`.
+    #[serde(default)]
+    pub files: Vec<String>,
     /// The set name.
     #[serde(default)]
     pub name: String,

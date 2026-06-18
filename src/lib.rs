@@ -10,6 +10,7 @@ mod error;
 mod evidence;
 mod lint;
 mod model;
+mod rust_enumerations;
 mod verify;
 
 pub use error::{LintError, SpecViolation, VerifyError};

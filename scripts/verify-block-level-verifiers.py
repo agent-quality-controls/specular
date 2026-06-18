@@ -67,8 +67,8 @@ def check_valid_fixture_specs_v2(_entry):
     failures = []
     for rel_path in VALID_FIXTURE_SPECS:
         spec = read_json(rel_path)
-        if spec.get("version") != 3:
-            failures.append(f"{rel_path}: version is {spec.get('version')!r}, expected 3")
+        if spec.get("version") != 4:
+            failures.append(f"{rel_path}: version is {spec.get('version')!r}, expected 4")
         if "verifiers" in spec:
             failures.append(f"{rel_path}: top-level verifiers remains")
         for category, block in requirement_blocks(spec):
@@ -114,7 +114,7 @@ def check_protocol_docs(_entry):
     for rel_path in ("HELP.txt", "README.md"):
         text = (ROOT / rel_path).read_text()
         required = [
-            '"version": 3',
+            '"version": 4',
             '"verifier"',
             "one command",
             "argv",
@@ -136,8 +136,8 @@ def check_repo_plan_specs_v2(_entry):
     for path in sorted((ROOT / ".plans").glob("*.spec.json")):
         rel_path = path.relative_to(ROOT)
         spec = json.loads(path.read_text())
-        if spec.get("version") != 3:
-            failures.append(f"{rel_path}: version is {spec.get('version')!r}, expected 3")
+        if spec.get("version") != 4:
+            failures.append(f"{rel_path}: version is {spec.get('version')!r}, expected 4")
         if "verifiers" in spec:
             failures.append(f"{rel_path}: top-level verifiers remains")
     return failures

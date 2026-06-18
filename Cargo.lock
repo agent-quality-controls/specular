@@ -74,6 +74,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "055f3c59be6c04c61041a85d9f1c6ed4778f2634de95e41352f69b275926eb18"
 
 [[package]]
+name = "aqc-rust-syntax"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6244c7cffade63ef3933247bdc45a0ac15d2e10cdbc76abbdac23de1e08d700b"
+dependencies = [
+ "proc-macro2",
+ "syn",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -952,13 +962,14 @@ checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "specular"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "aqc-cargo-toml-engine",
  "aqc-file-engine-core",
  "aqc-filetree",
  "aqc-fs-utils",
  "aqc-git-helpers",
+ "aqc-rust-syntax",
  "camino",
  "garde",
  "globset",

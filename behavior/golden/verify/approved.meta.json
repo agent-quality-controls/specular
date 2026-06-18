@@ -1,11 +1,11 @@
 {
   "suite": "verify",
   "kind": "approved",
-  "run_id": "2026-06-12T14-20-14.949325Z-dd736f69",
-  "run_commit": "52c9be1",
+  "run_id": "2026-06-18T19-41-02.186044Z-dd736f69",
+  "run_commit": "133be0f",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-12T14:20:14.949325Z",
-  "fixture_hash": "sha256:417c1eeaa78821503ab4184ecf0020185ffbd3512a84a41cac860220a9237df1",
+  "recorded_at": "2026-06-18T19:41:02.186044Z",
+  "fixture_hash": "sha256:ce30828a9a00fec292a3483fd734d786bfbb31e024b03878336755507206a849",
   "manifest_hash": "sha256:dd736f69a53da81afcf6c05d9b0323cadceaecbf3d2709bdea577f2d683a1d5b",
   "tool_version": "0.1.8",
   "output_schema_version": "1",
@@ -45,7 +45,31 @@
     {
       "path": "behavior/fixtures/verify/verify-R26-custom-broken/fixture.json",
       "sha256": "sha256:19d701ff913944d4430c13d0bc60a2d772ca3e9b1644b3eeb9dfec5ccf3c5bc9"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R27-cargo-dependencies-clean/fixture.json",
+      "sha256": "sha256:35c7bd1a428668d56673006d321be3db38fe4e38d41757f42793202b494e4f1b"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R28-cargo-dependencies-failures/fixture.json",
+      "sha256": "sha256:bf0050d1312a0b92dd8895bc2d421a0ed3ae984b6f064d1c4602f102963f93de"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R29-cargo-dependencies-invalid/fixture.json",
+      "sha256": "sha256:311b67352753e45b5c9220f82f4a0eb1655894ef19726ccc8cb353cebfdf8080"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R30-rust-enumerations-clean/fixture.json",
+      "sha256": "sha256:71a979233df38c461011399eea17ab55c5b6a8eb904c8b3291089de8337bec75"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R31-rust-enumerations-failures/fixture.json",
+      "sha256": "sha256:b5b8603b3c7f2d52202046de6aeb15d42765a9c8268f01740196876fedcf0473"
+    },
+    {
+      "path": "behavior/fixtures/verify/verify-R32-rust-enumerations-invalid-rust/fixture.json",
+      "sha256": "sha256:aeaa844e959ee5eb8d1358c787507d00a8efe4e149c5b3a7879dafa9c4218a41"
     }
   ],
-  "comment": "Bump specular version to 0.3.0"
+  "comment": "Bump spec format to v4 and add Rust enum builtin fixtures"
 }

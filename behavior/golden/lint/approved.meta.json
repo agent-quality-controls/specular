@@ -1,11 +1,11 @@
 {
   "suite": "lint",
-  "kind": "received",
-  "run_id": "2026-06-12T13-40-17.162694Z-dd736f69",
-  "run_commit": "597cae2",
+  "kind": "approved",
+  "run_id": "2026-06-18T19-41-01.378994Z-dd736f69",
+  "run_commit": "133be0f",
   "working_tree": "dirty",
-  "recorded_at": "2026-06-12T13:40:17.162694Z",
-  "fixture_hash": "sha256:4f12e8dbf9cecf1fbea75bea41841e017ec8b8dd3b6d7cf5ec1824ca9276401c",
+  "recorded_at": "2026-06-18T19:41:01.378994Z",
+  "fixture_hash": "sha256:0ad8a6c20cd8b99a18cda7c6378bf48ec6f636e53461ac82f06d0648dd91dd88",
   "manifest_hash": "sha256:dd736f69a53da81afcf6c05d9b0323cadceaecbf3d2709bdea577f2d683a1d5b",
   "tool_version": "0.1.8",
   "output_schema_version": "1",
@@ -45,6 +45,23 @@
     {
       "path": "behavior/fixtures/lint/lint-R25-top-level-verifiers/fixture.json",
       "sha256": "sha256:ed71762cc98fae0944aea20259bbabe3f13641e2de686f2559f02c05f6dc28ed"
+    },
+    {
+      "path": "behavior/fixtures/lint/lint-R26-cargo-dependencies-clean/fixture.json",
+      "sha256": "sha256:6182f6774cb83c4378d33d13e8bb11d1fcde1419fa993af1323c4a95075001be"
+    },
+    {
+      "path": "behavior/fixtures/lint/lint-R27-cargo-dependencies-invalid/fixture.json",
+      "sha256": "sha256:d300d15d4fca4c9bae74f98b19c6adf9eaf1c1b277a0e2be03d7af3c95271cbf"
+    },
+    {
+      "path": "behavior/fixtures/lint/lint-R28-rust-enumerations-clean/fixture.json",
+      "sha256": "sha256:8551f1e2ac6a6f68e0b726f66708a37115e67b90ef0970757550964248a0fa40"
+    },
+    {
+      "path": "behavior/fixtures/lint/lint-R29-rust-enumerations-invalid/fixture.json",
+      "sha256": "sha256:829100c79e34d2c61855b8b6fb1b63fa6532fe81fd374d68144a9c0d80439ca8"
     }
-  ]
+  ],
+  "comment": "Bump spec format to v4 and add Rust enum builtin fixtures"
 }

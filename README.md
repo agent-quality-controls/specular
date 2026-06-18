@@ -79,7 +79,7 @@ Use specular --help for the spec shape and script calls.
 There are three patterns:
 
 1. Predefined categories with built-ins: `tree`, `content`, Cargo
-   `dependencies`. Use these first.
+   `dependencies`, and Rust `enumerations`. Use these first.
 2. Predefined categories with no built-in for your stack: `dependencies`,
    `exports`, `enumerations`. Use one script per block.
 3. Custom categories: put any JSON under `custom`, then write the script. Use
@@ -90,7 +90,7 @@ explicit:
 
 ```json
 {
-  "version": 3,
+  "version": 4,
   "requirements": {
     "tree": {
       "verifier": ["builtin:tree"],
@@ -111,6 +111,14 @@ explicit:
         "forbidden": ["openssl"],
         "forbiddenGlobs": ["g3*"]
       }
+    ],
+    "enumerations": [
+      {
+        "verifier": ["builtin:rust-enumerations"],
+        "files": ["src/**/*.rs"],
+        "name": "Category",
+        "values": ["Tree", "Content", "Dependencies"]
+      }
     ]
   }
 }
@@ -119,13 +127,17 @@ explicit:
 Predefined categories have fixed fields. Custom entries can hold any JSON except
 `verifier`, which Specular owns.
 
-Do not put tree, content, or Cargo package checks in `custom`. Do not write a
-script for checks the built-ins can judge.
+Do not put tree, content, Cargo package, or Rust enum checks in `custom`. Do
+not write a script for checks the built-ins can judge.
 
 For `builtin:cargo-dependencies`, `required`, `exists`, and `forbidden` use
 exact Cargo package names. `forbiddenGlobs` uses package-name globs. Renamed
 deps use Cargo package identity, so `serde_json = { package = "serde-json",
 version = "..." }` is checked by `serde-json`.
+
+For `builtin:rust-enumerations`, `files` selects Rust files, `name` is an enum
+name or an inline-module-qualified name such as `wire::Status`, and `values` is
+the exact variant set.
 
 Run `specular --help` before writing a spec. It has full examples and script
 call rules.

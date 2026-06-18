@@ -1,0 +1,1 @@
+{"id":"verify-R31-rust-enumerations-failures","commands":[["verify","spec.json"]],"notes":"Rust enumeration builtin reports missing value, unexpected value, no files matched, missing enum, and ambiguous duplicate names"}

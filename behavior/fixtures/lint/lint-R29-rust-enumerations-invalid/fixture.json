@@ -1,0 +1,1 @@
+{"id":"lint-R29-rust-enumerations-invalid","commands":[["lint","spec.json"]],"notes":"Rust enumeration builtin requires files and rejects duplicate values"}
