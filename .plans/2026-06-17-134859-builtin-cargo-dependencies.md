@@ -7,7 +7,8 @@ Add a Cargo-aware dependency verifier to Specular:
 - `requirements.dependencies[*].verifier` accepts `["builtin:cargo-dependencies"]`.
 - Dependency blocks use `files`, not `manifests`.
 - `required` and `exists` are exact Cargo package names.
-- `forbidden` accepts exact Cargo package names and package-name globs.
+- `forbidden` accepts exact Cargo package names.
+- `forbiddenGlobs` accepts Cargo package-name globs.
 - Matching uses Cargo package identity, so renamed dependencies are checked by
   `package`, not by the left-side local key.
 
@@ -50,8 +51,9 @@ For each dependency block:
   dependency-shaped Cargo table.
 - `exists`: at least one matched file must declare the exact package in at least
   one dependency-shaped Cargo table.
-- `forbidden`: no matched file may declare a package whose package identity
-  equals the exact item or matches the glob item.
+- `forbidden`: no matched file may declare the exact package identity.
+- `forbiddenGlobs`: no matched file may declare a package identity matching the
+  glob.
 
 Dependency-shaped Cargo tables for the initial builtin:
 
@@ -92,6 +94,8 @@ expose that without surprising users.
 
 2. Migrate the dependency block target field.
    - In `src/model.rs`, rename `DependencyRequirement.manifests` to `files`.
+   - In `src/model.rs`, add `DependencyRequirement.forbiddenGlobs` with
+     `#[serde(default)]`.
    - In `src/lint.rs`, validate `dependencies[*].files` as globs.
    - In `src/verify.rs`, use `files` for script protocol block targets.
    - Update `HELP.txt`, `README.md`, fixtures, goldens, and dogfood specs.
@@ -113,8 +117,8 @@ expose that without surprising users.
    - Build AQC requirements with:
      - `DependencyRequirement { file_key: None, value.package = Some(name) }`
        for exact required, exists, and forbidden items.
-     - `DependencyPackageGlob { glob }` inside
-       `ForbiddenGlobRequirements` for forbidden glob items.
+     - `DependencyPackageGlob { glob }` inside `ForbiddenGlobRequirements` for
+       `forbiddenGlobs` items.
    - Use the Cargo file engine as the package-identity oracle:
      - For an exact positive item, run a check-only package requirement against
        each dependency-shaped table scope in a file. The file passes when any
@@ -122,7 +126,7 @@ expose that without surprising users.
      - For exact forbidden items, run `ItemRequirements.banned` across every
        discovered dependency-shaped table scope and fail if any finding is
        reported.
-     - For forbidden glob items, run `ForbiddenGlobRequirements.globs` across
+     - For `forbiddenGlobs` items, run `ForbiddenGlobRequirements.globs` across
        every discovered dependency-shaped table scope and fail if any finding
        is reported.
 
@@ -132,8 +136,6 @@ expose that without surprising users.
    - Internal data:
      - `DependencyTableTarget::Scope(DependencyScope)`
      - `DependencyTableTarget::Workspace`
-     - `ForbiddenDependencyItem::Exact(String)`
-     - `ForbiddenDependencyItem::Glob(String)`
    - Internal helpers:
      - `matched_cargo_files(block.files, tree) -> Vec<FileTreeEntry>`
      - `read_cargo_file(path) -> Result<Vec<u8>, VerifyError>`
@@ -143,7 +145,8 @@ expose that without surprising users.
      - `glob_items(globs) -> ForbiddenGlobRequirements<DependencyPackageGlob>`
      - `run_cargo_engine(bytes, CargoTomlRequirements) -> Vec<Finding>`
      - `file_has_package(bytes, tables, package) -> Result<bool, VerifyError>`
-     - `file_forbidden_hits(bytes, tables, item) -> Result<Vec<String>, VerifyError>`
+     - `file_exact_forbidden_hits(bytes, tables, package) -> Result<Vec<String>, VerifyError>`
+     - `file_glob_forbidden_hits(bytes, tables, glob) -> Result<Vec<String>, VerifyError>`
    - Keep all Cargo-specific helper code in this module. `src/verify.rs`
      should only dispatch to it.
 
@@ -155,17 +158,19 @@ expose that without surprising users.
      table declares the package.
    - For `exists`, fail when no matched file declares the package.
    - For `forbidden`, fail with file path plus Cargo table/key hits when AQC
-     reports exact or glob matches.
+     reports exact package matches.
+   - For `forbiddenGlobs`, fail with file path plus Cargo table/key hits when
+     AQC reports glob package matches.
    - Treat AQC requirement conflicts as failing evidence, not as silent pass.
 
 7. Lint rules for package items.
-   - `required` and `exists` must be non-empty, trimmed, and non-glob.
-   - `forbidden` must be non-empty and trimmed.
-   - If a `forbidden` item contains glob metacharacters, compile it with
-     `globset` during lint.
+   - `required`, `exists`, and `forbidden` must be non-empty, trimmed, and
+     non-glob.
+   - `forbiddenGlobs` items must be non-empty, trimmed, contain a glob
+     metacharacter, and compile with `globset` during lint.
    - Keep exact required-vs-exact forbidden contradictions as lint errors.
-   - Do not try to lint every glob-vs-required overlap; AQC detects that
-     when the builtin verifier builds requirements.
+   - Reject exact `required` or `exists` items that match a `forbiddenGlobs`
+     item as contradictions.
 
 8. Behavior coverage.
    - Add lint fixtures for:
@@ -173,15 +178,18 @@ expose that without surprising users.
      - builtin category mismatch rejected.
      - `files` accepted and `manifests` rejected.
      - `required` and `exists` reject globs.
-     - `forbidden` accepts a valid glob and rejects an invalid glob.
+     - `forbidden` rejects glob metacharacters.
+     - `forbiddenGlobs` accepts a valid glob.
+     - `forbiddenGlobs` rejects non-glob exact strings and invalid globs.
+     - exact `required` or `exists` matching `forbiddenGlobs` is rejected.
    - Add verify fixtures for:
      - exact required package passes.
      - exact required package fails when absent.
      - renamed dependency satisfies exact package identity.
      - exact forbidden catches renamed dependency.
-     - forbidden glob catches plain dependency key.
-     - forbidden glob catches renamed dependency package.
-     - forbidden glob catches expanded dependency subtable.
+     - `forbiddenGlobs` catches plain dependency key.
+     - `forbiddenGlobs` catches renamed dependency package.
+     - `forbiddenGlobs` catches expanded dependency subtable.
      - required checks every matched file.
      - exists checks at least one matched file.
      - no matched files fails positive items.
@@ -193,7 +201,8 @@ expose that without surprising users.
      Cargo builtin example.
    - Document:
      - exact package names for `required` and `exists`
-     - exact or glob package names for `forbidden`
+     - exact package names for `forbidden`
+     - glob package names for `forbiddenGlobs`
      - renamed dependency behavior
      - Python custom verifier examples remain valid for non-builtin categories
 
@@ -203,6 +212,8 @@ expose that without surprising users.
      - `builtin:cargo-dependencies` appears in help/docs and builtin registry.
      - `manifests` is gone from user-facing current docs and model code.
      - `files` is present for dependency blocks.
+     - `forbiddenGlobs` appears in docs, model code, lint coverage, and verify
+       fixtures.
      - AQC dependency crates are present in `Cargo.toml`.
      - behavior fixture files for exact, renamed, glob, subtable, required, and
        exists cases exist.
@@ -226,6 +237,8 @@ expose that without surprising users.
   needs Cargo.toml file-engine facts, not Guardrail policy machinery.
 - Keep Specular dependency semantics package-oriented. The local Cargo key is
   not part of the public item unless a later format adds a structured item.
+- Split exact bans from glob bans so Specular does not infer verifier semantics
+  from punctuation inside a package item.
 - Use `files` rather than `manifests` because the selected inputs are files, and
   Cargo is only one verifier for the dependency category.
 - Keep patch-table checks out of the initial Specular builtin because the
