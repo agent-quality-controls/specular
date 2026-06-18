@@ -1,0 +1,85 @@
+{
+  "version": 3,
+  "requirements": {
+    "tree": {
+      "verifier": [
+        "builtin:tree"
+      ],
+      "reason": "Plan: files to modify and new Cargo dependency checker module.",
+      "required": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "src/model.rs",
+        "src/lint.rs",
+        "src/verify.rs",
+        "src/cargo_dependencies.rs",
+        "HELP.txt",
+        "README.md",
+        "scripts/verify-cargo-dependencies-plan.py",
+        "behavior/fixtures/lint/lint-R26-cargo-dependencies-clean/repo/spec.json",
+        "behavior/fixtures/lint/lint-R27-cargo-dependencies-invalid/repo/spec.json",
+        "behavior/fixtures/verify/verify-R27-cargo-dependencies-clean/repo/spec.json",
+        "behavior/fixtures/verify/verify-R28-cargo-dependencies-failures/repo/spec.json",
+        "behavior/fixtures/verify/verify-R29-cargo-dependencies-invalid/repo/spec.json"
+      ]
+    },
+    "custom": [
+      {
+        "verifier": [
+          "scripts/verify-cargo-dependencies-plan.py"
+        ],
+        "check": "model",
+        "reason": "Plan: dependency blocks use files and forbiddenGlobs, not manifests."
+      },
+      {
+        "verifier": [
+          "scripts/verify-cargo-dependencies-plan.py"
+        ],
+        "check": "lint",
+        "reason": "Plan: lint validates builtin:cargo-dependencies, files, package item formats, and forbiddenGlobs."
+      },
+      {
+        "verifier": [
+          "scripts/verify-cargo-dependencies-plan.py"
+        ],
+        "check": "verify",
+        "reason": "Plan: verify dispatches builtin:cargo-dependencies to a Cargo-specific module backed by AQC."
+      },
+      {
+        "verifier": [
+          "scripts/verify-cargo-dependencies-plan.py"
+        ],
+        "check": "docs",
+        "reason": "Plan: HELP and README document the Cargo builtin, files, forbiddenGlobs, and renamed dependency behavior."
+      },
+      {
+        "verifier": [
+          "scripts/verify-cargo-dependencies-plan.py"
+        ],
+        "check": "dependencies",
+        "reason": "Plan: use crates.io AQC file engine dependencies directly, not Guardrail3."
+      },
+      {
+        "verifier": [
+          "scripts/verify-cargo-dependencies-plan.py"
+        ],
+        "check": "fixtures",
+        "reason": "Plan: lint and verify fixtures cover exact, renamed, glob, subtable, required, exists, no match, and invalid TOML behavior."
+      },
+      {
+        "verifier": [
+          "scripts/verify-cargo-dependencies-plan.py"
+        ],
+        "check": "golden",
+        "reason": "Plan: behavior fixture replay updates approved reports for Cargo dependency cases."
+      },
+      {
+        "verifier": [
+          "scripts/verify-cargo-dependencies-plan.py"
+        ],
+        "check": "dogfood",
+        "reason": "Plan: dogfood spec and coverage map exist and cover every plan heading without UNCOVERED items."
+      }
+    ]
+  }
+}
