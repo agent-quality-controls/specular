@@ -187,19 +187,6 @@ This is a public spec-format change and should bump the spec format version.
    - nested inline module enum can be addressed by `module::Enum`
    - malformed matched Rust file fails
 
-## Guardrail3 Reuse Requirement
-
-Do not accept `aqc-rust-syntax` as complete only because Specular uses it.
-
-Before treating it as the shared boundary, migrate one Guardrail3 enum-related
-consumer to use it for enum discovery. Good candidates:
-
-- `g3rs-code-source-checks` large type inventory enum discovery.
-- `g3rs-garde-ingestion` enum target discovery.
-
-That migration proves the crate is a shared syntax fact boundary rather than a
-Specular-specific adapter.
-
 ## Explicit Non-Goals
 
 - Rust export verifier.
@@ -252,8 +239,7 @@ In `specular`:
 
 1. Plan and implement `aqc-rust-syntax` in `aqc-shared`.
 2. Publish `aqc-rust-syntax`.
-3. Migrate one Guardrail3 enum consumer to prove reuse.
-4. Create a Specular dogfood spec for `builtin:rust-enumerations`.
-5. Implement the Specular builtin.
-6. Bump Specular spec format and crate version.
-7. Release and install Specular.
+3. Create a Specular dogfood spec for `builtin:rust-enumerations`.
+4. Implement the Specular builtin.
+5. Bump Specular spec format and crate version.
+6. Release and install Specular.

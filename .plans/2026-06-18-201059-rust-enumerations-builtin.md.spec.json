@@ -1,0 +1,118 @@
+{
+  "version": 3,
+  "requirements": {
+    "tree": {
+      "verifier": [
+        "builtin:tree"
+      ],
+      "reason": "Plan: Specular adds a Rust enumeration builtin, fixtures, dogfood spec, and docs.",
+      "required": [
+        ".plans/2026-06-18-201059-rust-enumerations-builtin.md",
+        ".plans/2026-06-18-201059-rust-enumerations-builtin.md.spec.json",
+        ".plans/2026-06-18-201059-rust-enumerations-builtin.md.spec.coverage.md",
+        "scripts/verify-rust-enumerations-plan.py",
+        "Cargo.toml",
+        "Cargo.lock",
+        "src/model.rs",
+        "src/lint.rs",
+        "src/verify.rs",
+        "src/lib.rs",
+        "src/rust_enumerations.rs",
+        "HELP.txt",
+        "README.md",
+        "behavior/fixtures/lint/lint-R28-rust-enumerations-clean/repo/spec.json",
+        "behavior/fixtures/lint/lint-R29-rust-enumerations-invalid/repo/spec.json",
+        "behavior/fixtures/verify/verify-R30-rust-enumerations-clean/repo/spec.json",
+        "behavior/fixtures/verify/verify-R30-rust-enumerations-clean/repo/src/model.rs",
+        "behavior/fixtures/verify/verify-R31-rust-enumerations-failures/repo/spec.json",
+        "behavior/fixtures/verify/verify-R31-rust-enumerations-failures/repo/src/model.rs",
+        "behavior/fixtures/verify/verify-R32-rust-enumerations-invalid-rust/repo/spec.json",
+        "behavior/fixtures/verify/verify-R32-rust-enumerations-invalid-rust/repo/src/model.rs"
+      ]
+    },
+    "content": [
+      {
+        "verifier": [
+          "builtin:content"
+        ],
+        "files": [
+          ".plans/2026-06-18-201059-rust-enumerations-builtin.md"
+        ],
+        "reason": "Plan: g3 migration is explicitly removed and the remaining work order excludes it.",
+        "forbidden": [
+          "Guardrail3 Reuse Requirement",
+          "Migrate one Guardrail3 enum consumer"
+        ],
+        "required": [
+          "Do not combine Rust source parsing with crate walking",
+          "`builtin:rust-enumerations`"
+        ]
+      }
+    ],
+    "custom": [
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "aqc-crate",
+        "reason": "Plan: aqc-shared provides aqc-rust-syntax as a file-local Rust syntax fact crate."
+      },
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "aqc-tests",
+        "reason": "Plan: aqc-rust-syntax fixtures cover enum forms, visibilities, inline modules, duplicates, BOM, malformed Rust, and attributes."
+      },
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "model",
+        "reason": "Plan: EnumerationRequirement gains files and builtin enum specs use repo-relative file globs."
+      },
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "lint",
+        "reason": "Plan: lint accepts builtin:rust-enumerations only for enumerations and requires non-empty files for that builtin."
+      },
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "verify",
+        "reason": "Plan: verify dispatches builtin:rust-enumerations through a dedicated Rust enumeration module using aqc-rust-syntax."
+      },
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "docs",
+        "reason": "Plan: help and README document builtin:rust-enumerations, files, and builtin-first usage."
+      },
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "fixtures",
+        "reason": "Plan: lint and verify fixtures cover clean, invalid, failing, ambiguous, nested, duplicate, no-match, and parse-error behavior."
+      },
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "version",
+        "reason": "Plan: this is a public spec-format change and bumps Specular version."
+      },
+      {
+        "verifier": [
+          "scripts/verify-rust-enumerations-plan.py"
+        ],
+        "check": "dogfood",
+        "reason": "Plan: dogfood spec and coverage map exist and cover every plan heading without UNCOVERED items."
+      }
+    ]
+  }
+}
