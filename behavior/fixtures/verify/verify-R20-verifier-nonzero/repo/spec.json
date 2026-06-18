@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "requirements": {
     "tree": {
       "required": [
@@ -33,7 +33,7 @@
     ],
     "dependencies": [
       {
-        "manifests": [
+        "files": [
           "go.mod"
         ],
         "forbidden": [

@@ -1,6 +1,6 @@
 [package]
 name = "specular"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Deterministic spec-driven development CLI"
@@ -19,6 +19,8 @@ include = [
 ]
 
 [dependencies]
+aqc-cargo-toml-engine = "0.1.0"
+aqc-file-engine-core = "0.1.0"
 aqc-filetree = "0.1.0"
 aqc-fs-utils = "0.1.0"
 aqc-git-helpers = "0.1.0"
@@ -30,6 +32,7 @@ schemars = "1.2.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 sha2 = "0.11.0"
+toml_edit = "0.25.12"
 
 [lints.rust]
 unsafe_code = "forbid"

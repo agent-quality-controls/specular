@@ -1,0 +1,16 @@
+[package]
+name = "cargo-clean"
+version = "0.1.0"
+
+[dependencies]
+serde = "1"
+renamed = { package = "renamed-package", version = "1" }
+
+[dev-dependencies]
+tokio = "1"
+
+[target.'cfg(unix)'.dependencies]
+camino = "1"
+
+[workspace.dependencies]
+workspace-dep = "1"

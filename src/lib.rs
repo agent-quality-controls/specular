@@ -5,6 +5,7 @@
 //! [`Report`] of per-item [`Evidence`]. The library records facts and
 //! never judges callers: no roles, no approval, no trust grades.
 
+mod cargo_dependencies;
 mod error;
 mod evidence;
 mod lint;

@@ -1,0 +1,1 @@
+{"id":"lint-R26-cargo-dependencies-clean","commands":[["lint","spec.json"]],"notes":"valid Cargo dependency builtin block with files, exact items, and forbiddenGlobs; exit 0"}

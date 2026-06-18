@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "requirements": {
     "tree": {
       "required": [
@@ -30,7 +30,7 @@
     ],
     "dependencies": [
       {
-        "manifests": [
+        "files": [
           "Cargo.toml"
         ],
         "forbidden": [

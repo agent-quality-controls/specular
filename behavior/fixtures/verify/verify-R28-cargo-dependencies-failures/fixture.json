@@ -1,0 +1,1 @@
+{"id":"verify-R28-cargo-dependencies-failures","commands":[["verify","spec.json"]],"notes":"Cargo builtin fails missing required/exists, renamed exact forbidden, workspace forbidden, and package-name glob hits; exit 1"}

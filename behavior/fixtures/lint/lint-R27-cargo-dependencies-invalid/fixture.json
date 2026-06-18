@@ -1,0 +1,1 @@
+{"id":"lint-R27-cargo-dependencies-invalid","commands":[["lint","spec.json"]],"notes":"invalid Cargo dependency item formats and forbiddenGlobs contradictions; exit 2"}

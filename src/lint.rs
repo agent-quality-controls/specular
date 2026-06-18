@@ -85,10 +85,10 @@ fn semantic_violations(
 }
 
 fn check_version(spec: &Spec, out: &mut Vec<SpecViolation>) {
-    if spec.version != 2 {
+    if spec.version != 3 {
         out.push(SpecViolation {
             code: "JSON_SCHEMA".to_owned(),
-            message: format!("version must be 2, got {}", spec.version),
+            message: format!("version must be 3, got {}", spec.version),
         });
     }
 }
@@ -148,10 +148,16 @@ fn check_missing_verifier_fields(text: &str, out: &mut Vec<SpecViolation>) -> Ha
 }
 
 fn block_has_items(block: &serde_json::Map<String, serde_json::Value>) -> bool {
-    ["required", "exists", "forbidden", "values"]
-        .iter()
-        .filter_map(|key| block.get(*key))
-        .any(|value| value.as_array().is_some_and(|items| !items.is_empty()))
+    [
+        "required",
+        "exists",
+        "forbidden",
+        "forbiddenGlobs",
+        "values",
+    ]
+    .iter()
+    .filter_map(|key| block.get(*key))
+    .any(|value| value.as_array().is_some_and(|items| !items.is_empty()))
 }
 
 fn check_path_text(label: &str, value: &str, out: &mut Vec<SpecViolation>) {
@@ -198,7 +204,7 @@ fn check_paths_and_globs(spec: &Spec, out: &mut Vec<SpecViolation>) {
         }
     }
     for block in &spec.requirements.dependencies {
-        for g in &block.manifests {
+        for g in &block.files {
             check_glob("dependencies", g, out);
         }
     }
@@ -218,7 +224,7 @@ fn check_targets(spec: &Spec, out: &mut Vec<SpecViolation>) {
         spec.requirements
             .dependencies
             .iter()
-            .map(|x| sorted_key(&x.manifests)),
+            .map(|x| sorted_key(&x.files)),
         out,
     );
     duplicate_targets(
@@ -286,15 +292,7 @@ fn check_items(spec: &Spec, out: &mut Vec<SpecViolation>) {
         );
     }
     for block in &spec.requirements.dependencies {
-        let target = sorted_key(&block.manifests);
-        check_item_lists(
-            "dependencies",
-            &target,
-            &block.required,
-            &block.exists,
-            &block.forbidden,
-            out,
-        );
+        check_dependency_items(block, out);
     }
     for block in &spec.requirements.exports {
         check_export_items(block, out);
@@ -314,6 +312,66 @@ fn check_items(spec: &Spec, out: &mut Vec<SpecViolation>) {
             }
         }
     }
+}
+
+fn check_dependency_items(
+    block: &crate::model::DependencyRequirement,
+    out: &mut Vec<SpecViolation>,
+) {
+    let target = sorted_key(&block.files);
+    let label = target_label("dependencies", &target);
+    let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
+    for item in block
+        .required
+        .iter()
+        .chain(&block.exists)
+        .chain(&block.forbidden)
+    {
+        *counts.entry(item.as_str()).or_insert(0) += 1;
+    }
+    for (item, count) in counts {
+        if count > 1 {
+            out.push(SpecViolation {
+                code: "DUPLICATE_ITEM".to_owned(),
+                message: format!("{label}: item '{item}' appears more than once"),
+            });
+        }
+    }
+
+    for item in &block.required {
+        check_plain_item("dependencies", &target, item, false, out);
+    }
+    for item in &block.exists {
+        check_plain_item("dependencies", &target, item, false, out);
+    }
+    for item in &block.forbidden {
+        check_plain_item("dependencies", &target, item, false, out);
+    }
+    for item in &block.forbidden_globs {
+        check_forbidden_glob_item(&target, item, out);
+    }
+
+    let required_set: HashSet<&str> = block.required.iter().map(String::as_str).collect();
+    let exists_set: HashSet<&str> = block.exists.iter().map(String::as_str).collect();
+    let forbidden_set: HashSet<&str> = block.forbidden.iter().map(String::as_str).collect();
+    for item in required_set.intersection(&forbidden_set) {
+        out.push(SpecViolation {
+            code: "CONTRADICTION".to_owned(),
+            message: format!("{label}: item '{item}' is both required and forbidden"),
+        });
+    }
+    for item in required_set.intersection(&exists_set) {
+        out.push(SpecViolation {
+            code: "REDUNDANT".to_owned(),
+            message: format!("{label}: item '{item}' is both required and exists"),
+        });
+    }
+    check_forbidden_glob_contradictions(
+        &target,
+        block.required.iter().chain(&block.exists),
+        &block.forbidden_globs,
+        out,
+    );
 }
 
 fn check_export_items(block: &ExportRequirement, out: &mut Vec<SpecViolation>) {
@@ -399,6 +457,64 @@ fn check_plain_item(
     }
     if also_check_path {
         check_path_text(category, item, out);
+    }
+}
+
+fn check_forbidden_glob_item(target: &str, item: &str, out: &mut Vec<SpecViolation>) {
+    if item.is_empty() || item.trim() != item || !contains_glob_meta(item) {
+        out.push(SpecViolation {
+            code: "ITEM_FORMAT".to_owned(),
+            message: format!(
+                "{}: forbiddenGlobs item '{item}' must be non-empty, trimmed, and contain glob metacharacters",
+                target_label("dependencies", target)
+            ),
+        });
+        return;
+    }
+    if let Err(error) = GlobBuilder::new(item).literal_separator(true).build() {
+        out.push(SpecViolation {
+            code: "GLOB".to_owned(),
+            message: format!(
+                "{}: forbiddenGlobs item '{item}' does not compile: {error}",
+                target_label("dependencies", target)
+            ),
+        });
+    }
+}
+
+fn contains_glob_meta(item: &str) -> bool {
+    item.contains('*') || item.contains('?') || item.contains('[')
+}
+
+fn check_forbidden_glob_contradictions<'a>(
+    target: &str,
+    positives: impl Iterator<Item = &'a String>,
+    forbidden_globs: &[String],
+    out: &mut Vec<SpecViolation>,
+) {
+    let compiled = forbidden_globs
+        .iter()
+        .filter(|glob| contains_glob_meta(glob))
+        .filter_map(|glob| {
+            GlobBuilder::new(glob)
+                .literal_separator(true)
+                .build()
+                .ok()
+                .map(|compiled| (glob, compiled.compile_matcher()))
+        })
+        .collect::<Vec<_>>();
+    for item in positives {
+        for (glob, matcher) in &compiled {
+            if matcher.is_match(item) {
+                out.push(SpecViolation {
+                    code: "CONTRADICTION".to_owned(),
+                    message: format!(
+                        "{}: item '{item}' is required or exists but matches forbiddenGlobs item '{glob}'",
+                        target_label("dependencies", target)
+                    ),
+                });
+            }
+        }
     }
 }
 
@@ -540,6 +656,7 @@ fn builtin_category(selector: &str) -> Option<Category> {
     match selector {
         "builtin:tree" => Some(Category::Tree),
         "builtin:content" => Some(Category::Content),
+        "builtin:cargo-dependencies" => Some(Category::Dependencies),
         _ => None,
     }
 }

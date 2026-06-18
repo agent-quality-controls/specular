@@ -1,27 +1,33 @@
-# Specular is a CLI for enforcing spec-driven development.
+# Specular
 
 [![ci](https://img.shields.io/github/actions/workflow/status/agent-quality-controls/specular/ci.yml?branch=main&label=ci)](https://github.com/agent-quality-controls/specular/actions/workflows/ci.yml)
 [![codeql](https://img.shields.io/github/actions/workflow/status/agent-quality-controls/specular/codeql.yml?branch=main&label=codeql)](https://github.com/agent-quality-controls/specular/actions/workflows/codeql.yml)
 [![license](https://img.shields.io/github/license/agent-quality-controls/specular)](LICENSE)
 [![rust](https://img.shields.io/badge/rust-1.85%2B-orange)](Cargo.toml)
 
-It turns a prose plan into JSON checks that a machine can enforce.
+Specular is a CLI for enforcing spec-driven development.
+
+It turns a plan into JSON checks.
 
 Use it when an agent builds code from a plan and "done" is too weak.
+
+Use it for code, docs, deps, and checks.
+
+It is strict. It prints JSON. It fails when work drifts from the spec.
 
 Install with
 ```bash
 cargo install --git https://github.com/agent-quality-controls/specular
 ```
 
-Tell your agent to use Specular. It should make the spec and coverage map, add
-needed scripts, and keep working until verify exits `0`.
+Tell your agent to use Specular. It should write the spec, add any scripts, and
+work until verify exits `0`.
 
 ## What it is
 
-Specular uses JSON spec files to enforce spec-driven development. It gives an
-agent a test loop instead of a prose-only plan. The agent reads the plan, writes
-the spec, runs it, fixes the repo, and runs it again.
+Specular uses JSON specs to check a plan. It gives an agent a test loop. The
+agent reads the plan, writes the spec, runs it, fixes the repo, and runs it
+again.
 
 Exit codes:
 
@@ -44,7 +50,7 @@ Use this loop:
 5. Run `specular verify` until it exits `0`.
 
 Use it for plans with clear parts: files, text, exports, deps, named cases, or
-checks a script can test.
+script checks.
 
 ## Tell your agent
 
@@ -65,8 +71,8 @@ Use specular --help for the spec shape and script calls.
 
 There are three patterns:
 
-1. Predefined groups with built-in checks: `tree`, `content`.
-2. Predefined groups that need a script: `dependencies`, `exports`,
+1. Fixed groups with built-ins: `tree`, `content`, Cargo `dependencies`.
+2. Fixed groups with no built-in for your stack: `dependencies`, `exports`,
    `enumerations`.
 3. Custom groups: put any JSON under `custom`, then write the script.
 
@@ -75,7 +81,7 @@ explicit:
 
 ```json
 {
-  "version": 2,
+  "version": 3,
   "requirements": {
     "tree": {
       "verifier": ["builtin:tree"],
@@ -87,21 +93,35 @@ explicit:
         "files": ["README.md"],
         "required": ["Specular is a CLI"]
       }
+    ],
+    "dependencies": [
+      {
+        "verifier": ["builtin:cargo-dependencies"],
+        "files": ["Cargo.toml"],
+        "required": ["serde"],
+        "forbidden": ["openssl"],
+        "forbiddenGlobs": ["g3*"]
+      }
     ]
   }
 }
 ```
 
-Predefined groups have fixed fields. Custom entries can hold any JSON except
-that `verifier` is reserved by Specular.
+Fixed groups have fixed fields. Custom entries can hold any JSON except
+`verifier`, which Specular owns.
 
-Run `specular --help` before writing a spec. It includes full examples and the
-script call rules.
+For `builtin:cargo-dependencies`, `required`, `exists`, and `forbidden` use
+exact Cargo package names. `forbiddenGlobs` uses package-name globs. Renamed
+deps use Cargo package identity, so `serde_json = { package = "serde-json",
+version = "..." }` is checked by `serde-json`.
+
+Run `specular --help` before writing a spec. It has full examples and script
+call rules.
 
 ## Verifier scripts
 
-A verifier is one command encoded as argv, not a shell string and not a list of
-verifiers. Scripts can use any language; examples use Python.
+A verifier is one command. It is encoded as argv, not as a shell string or a
+list of verifiers. Scripts can use any language; examples use Python.
 
 ```json
 "verifier": ["python3", "scripts/verify_deps.py", "--workspace"]
@@ -120,4 +140,4 @@ Custom scripts are called once per entry:
 ```
 
 Verifier scripts print JSON proof lines. Their exit code says whether the script
-ran cleanly. The proof carries pass and fail results.
+ran cleanly. The proof carries pass and fail.

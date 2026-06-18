@@ -1,101 +1,17 @@
 [
   {
+    "fixture": "verify-R00-clean-golden",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 0,
-    "fixture": "verify-R00-clean-golden",
     "output": {
-      "conforms": true,
-      "evidence": [
-        {
-          "category": "tree",
-          "item": "docs/readme.txt",
-          "polarity": "required",
-          "source": "builtin",
-          "status": "pass",
-          "verifier": "builtin:tree"
-        },
-        {
-          "category": "tree",
-          "item": "junk/**",
-          "polarity": "forbidden",
-          "source": "builtin",
-          "status": "pass",
-          "verifier": "builtin:tree"
-        },
-        {
-          "category": "content",
-          "item": "INVOICE",
-          "polarity": "required",
-          "source": "builtin",
-          "status": "pass",
-          "target": [
-            "docs/*.txt"
-          ],
-          "verifier": "builtin:content"
-        },
-        {
-          "category": "content",
-          "item": "ledger",
-          "polarity": "exists",
-          "source": "builtin",
-          "status": "pass",
-          "target": [
-            "docs/*.txt"
-          ],
-          "verifier": "builtin:content"
-        },
-        {
-          "category": "content",
-          "item": "LEGACY",
-          "polarity": "forbidden",
-          "source": "builtin",
-          "status": "pass",
-          "target": [
-            "docs/*.txt"
-          ],
-          "verifier": "builtin:content"
-        },
-        {
-          "category": "dependencies",
-          "item": "pg",
-          "polarity": "forbidden",
-          "source": "script",
-          "status": "pass",
-          "target": [
-            "go.mod"
-          ],
-          "verifier": "scripts/deps.sh"
-        },
-        {
-          "category": "custom",
-          "check": "version-sync",
-          "source": "script",
-          "status": "pass",
-          "verifier": "scripts/custom.sh"
-        }
-      ],
-      "git": [
-        {
-          "path": "spec.json",
-          "state": "not-a-repository"
-        },
-        {
-          "path": "scripts/custom.sh",
-          "state": "not-a-repository"
-        },
-        {
-          "path": "scripts/deps.sh",
-          "state": "not-a-repository"
-        }
-      ],
+      "specular_version": "0.4.0",
       "spec": {
         "path": "spec.json",
-        "sha256": "4355696d72acf615c92ef2c6cecc19b2d80c293c607531d925c4c5852f4b2f5f"
+        "sha256": "039d3d2618381285621fcdfeb6a829dcc366c9ebb99dcb9c15df0a9dd5a0142a"
       },
-      "specular_version": "0.3.0",
       "verifier_files": [
         {
           "path": "scripts/custom.sh",
@@ -105,95 +21,114 @@
           "path": "scripts/deps.sh",
           "sha256": "11a003d57792306800283a77e95c346f23a294f369af47b75a1d7b4fa42b62e5"
         }
-      ]
+      ],
+      "git": [
+        {
+          "path": "spec.json",
+          "state": "not-a-repository"
+        },
+        {
+          "path": "scripts/custom.sh",
+          "state": "not-a-repository"
+        },
+        {
+          "path": "scripts/deps.sh",
+          "state": "not-a-repository"
+        }
+      ],
+      "evidence": [
+        {
+          "category": "tree",
+          "polarity": "required",
+          "item": "docs/readme.txt",
+          "source": "builtin",
+          "verifier": "builtin:tree",
+          "status": "pass"
+        },
+        {
+          "category": "tree",
+          "polarity": "forbidden",
+          "item": "junk/**",
+          "source": "builtin",
+          "verifier": "builtin:tree",
+          "status": "pass"
+        },
+        {
+          "category": "content",
+          "target": [
+            "docs/*.txt"
+          ],
+          "polarity": "required",
+          "item": "INVOICE",
+          "source": "builtin",
+          "verifier": "builtin:content",
+          "status": "pass"
+        },
+        {
+          "category": "content",
+          "target": [
+            "docs/*.txt"
+          ],
+          "polarity": "exists",
+          "item": "ledger",
+          "source": "builtin",
+          "verifier": "builtin:content",
+          "status": "pass"
+        },
+        {
+          "category": "content",
+          "target": [
+            "docs/*.txt"
+          ],
+          "polarity": "forbidden",
+          "item": "LEGACY",
+          "source": "builtin",
+          "verifier": "builtin:content",
+          "status": "pass"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "go.mod"
+          ],
+          "polarity": "forbidden",
+          "item": "pg",
+          "source": "script",
+          "verifier": "scripts/deps.sh",
+          "status": "pass"
+        },
+        {
+          "category": "custom",
+          "source": "script",
+          "verifier": "scripts/custom.sh",
+          "status": "pass",
+          "check": "version-sync"
+        }
+      ],
+      "conforms": true
     }
   },
   {
+    "fixture": "verify-R10-requirement-failures",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 1,
-    "fixture": "verify-R10-requirement-failures",
     "output": {
-      "conforms": false,
-      "evidence": [
+      "specular_version": "0.4.0",
+      "spec": {
+        "path": "spec.json",
+        "sha256": "039d3d2618381285621fcdfeb6a829dcc366c9ebb99dcb9c15df0a9dd5a0142a"
+      },
+      "verifier_files": [
         {
-          "category": "tree",
-          "item": "docs/readme.txt",
-          "message": "missing required path: docs/readme.txt",
-          "polarity": "required",
-          "source": "builtin",
-          "status": "fail",
-          "verifier": "builtin:tree"
+          "path": "scripts/custom.sh",
+          "sha256": "acc85a7f54701223b49af2a9f7fc9c42d0caca859435edfdc8000dd124f8667d"
         },
         {
-          "category": "tree",
-          "item": "junk/**",
-          "message": "forbidden paths present: junk/leftover.txt",
-          "polarity": "forbidden",
-          "source": "builtin",
-          "status": "fail",
-          "verifier": "builtin:tree"
-        },
-        {
-          "category": "content",
-          "item": "INVOICE",
-          "message": "missing in docs/other.txt",
-          "polarity": "required",
-          "source": "builtin",
-          "status": "fail",
-          "target": [
-            "docs/*.txt"
-          ],
-          "verifier": "builtin:content"
-        },
-        {
-          "category": "content",
-          "item": "ledger",
-          "message": "found in no scoped file: ledger",
-          "polarity": "exists",
-          "source": "builtin",
-          "status": "fail",
-          "target": [
-            "docs/*.txt"
-          ],
-          "verifier": "builtin:content"
-        },
-        {
-          "category": "content",
-          "item": "LEGACY",
-          "message": "forbidden substring found in docs/other.txt",
-          "polarity": "forbidden",
-          "source": "builtin",
-          "status": "fail",
-          "target": [
-            "docs/*.txt"
-          ],
-          "verifier": "builtin:content"
-        },
-        {
-          "category": "dependencies",
-          "expected": "absent",
-          "item": "pg",
-          "message": "pg declared",
-          "observed": "pg 1.0",
-          "path": "go.mod",
-          "polarity": "forbidden",
-          "source": "script",
-          "status": "fail",
-          "target": [
-            "go.mod"
-          ],
-          "verifier": "scripts/deps.sh"
-        },
-        {
-          "category": "custom",
-          "check": "version-sync",
-          "message": "versions differ",
-          "source": "script",
-          "status": "fail",
-          "verifier": "scripts/custom.sh"
+          "path": "scripts/deps.sh",
+          "sha256": "0181bd2e110ed845d09f5af56037535984cc359bdb5f17ddb189084dd56492c4"
         }
       ],
       "git": [
@@ -210,66 +145,131 @@
           "state": "not-a-repository"
         }
       ],
-      "spec": {
-        "path": "spec.json",
-        "sha256": "4355696d72acf615c92ef2c6cecc19b2d80c293c607531d925c4c5852f4b2f5f"
-      },
-      "specular_version": "0.3.0",
-      "verifier_files": [
+      "evidence": [
         {
-          "path": "scripts/custom.sh",
-          "sha256": "acc85a7f54701223b49af2a9f7fc9c42d0caca859435edfdc8000dd124f8667d"
+          "category": "tree",
+          "polarity": "required",
+          "item": "docs/readme.txt",
+          "source": "builtin",
+          "verifier": "builtin:tree",
+          "status": "fail",
+          "message": "missing required path: docs/readme.txt"
         },
         {
-          "path": "scripts/deps.sh",
-          "sha256": "0181bd2e110ed845d09f5af56037535984cc359bdb5f17ddb189084dd56492c4"
+          "category": "tree",
+          "polarity": "forbidden",
+          "item": "junk/**",
+          "source": "builtin",
+          "verifier": "builtin:tree",
+          "status": "fail",
+          "message": "forbidden paths present: junk/leftover.txt"
+        },
+        {
+          "category": "content",
+          "target": [
+            "docs/*.txt"
+          ],
+          "polarity": "required",
+          "item": "INVOICE",
+          "source": "builtin",
+          "verifier": "builtin:content",
+          "status": "fail",
+          "message": "missing in docs/other.txt"
+        },
+        {
+          "category": "content",
+          "target": [
+            "docs/*.txt"
+          ],
+          "polarity": "exists",
+          "item": "ledger",
+          "source": "builtin",
+          "verifier": "builtin:content",
+          "status": "fail",
+          "message": "found in no scoped file: ledger"
+        },
+        {
+          "category": "content",
+          "target": [
+            "docs/*.txt"
+          ],
+          "polarity": "forbidden",
+          "item": "LEGACY",
+          "source": "builtin",
+          "verifier": "builtin:content",
+          "status": "fail",
+          "message": "forbidden substring found in docs/other.txt"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "go.mod"
+          ],
+          "polarity": "forbidden",
+          "item": "pg",
+          "source": "script",
+          "verifier": "scripts/deps.sh",
+          "status": "fail",
+          "message": "pg declared",
+          "observed": "pg 1.0",
+          "expected": "absent",
+          "path": "go.mod"
+        },
+        {
+          "category": "custom",
+          "source": "script",
+          "verifier": "scripts/custom.sh",
+          "status": "fail",
+          "message": "versions differ",
+          "check": "version-sync"
         }
-      ]
+      ],
+      "conforms": false
     }
   },
   {
+    "fixture": "verify-R20-verifier-nonzero",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 2,
-    "fixture": "verify-R20-verifier-nonzero",
     "output": {
       "message": "verifier dependencies[0]: exit Some(3); stderr: ",
       "result": "error"
     }
   },
   {
+    "fixture": "verify-R21-protocol-violation",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 2,
-    "fixture": "verify-R21-protocol-violation",
     "output": {
       "message": "verifier dependencies[0]: reported item 'not-in-block', expected one of [pg]",
       "result": "error"
     }
   },
   {
+    "fixture": "verify-R22-coverage-miss",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 2,
-    "fixture": "verify-R22-coverage-miss",
     "output": {
       "message": "coverage: dependencies[0] item 'pg' produced no evidence",
       "result": "error"
     }
   },
   {
+    "fixture": "verify-R23-invalid-spec",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 2,
-    "fixture": "verify-R23-invalid-spec",
     "output": {
       "result": "fail",
       "violations": [
@@ -281,39 +281,322 @@
     }
   },
   {
+    "fixture": "verify-R24-verifier-missing",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 2,
-    "fixture": "verify-R24-verifier-missing",
     "output": {
       "message": "verifier dependencies[0]: No such file or directory (os error 2)",
       "result": "error"
     }
   },
   {
+    "fixture": "verify-R25-custom-silent",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 2,
-    "fixture": "verify-R25-custom-silent",
     "output": {
       "message": "verifier custom[0]: custom verifier must emit exactly one evidence line, got 0",
       "result": "error"
     }
   },
   {
+    "fixture": "verify-R26-custom-broken",
     "command": [
       "verify",
       "spec.json"
     ],
     "exit_code": 2,
-    "fixture": "verify-R26-custom-broken",
     "output": {
       "message": "verifier custom[0]: exit Some(4); stderr: ",
       "result": "error"
+    }
+  },
+  {
+    "fixture": "verify-R27-cargo-dependencies-clean",
+    "command": [
+      "verify",
+      "spec.json"
+    ],
+    "exit_code": 0,
+    "output": {
+      "specular_version": "0.4.0",
+      "spec": {
+        "path": "spec.json",
+        "sha256": "9e51a47b7e55d6bd40c3336d967bbf67c6e2b9a8a8236b066e382352f521dce9"
+      },
+      "verifier_files": [],
+      "git": [
+        {
+          "path": "spec.json",
+          "state": "not-a-repository"
+        }
+      ],
+      "evidence": [
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "required",
+          "item": "serde",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "pass"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "required",
+          "item": "renamed-package",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "pass"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "exists",
+          "item": "tokio",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "pass"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "exists",
+          "item": "camino",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "pass"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "exists",
+          "item": "workspace-dep",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "pass"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "openssl",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "pass"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "g3*",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "pass"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "guardrail*",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "pass"
+        }
+      ],
+      "conforms": true
+    }
+  },
+  {
+    "fixture": "verify-R28-cargo-dependencies-failures",
+    "command": [
+      "verify",
+      "spec.json"
+    ],
+    "exit_code": 1,
+    "output": {
+      "specular_version": "0.4.0",
+      "spec": {
+        "path": "spec.json",
+        "sha256": "47accf67f5f5b38f012cd95e4610630994d8b36093ee634c23104f64e558092b"
+      },
+      "verifier_files": [],
+      "git": [
+        {
+          "path": "spec.json",
+          "state": "not-a-repository"
+        }
+      ],
+      "evidence": [
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "required",
+          "item": "serde",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "missing in Cargo.toml"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "exists",
+          "item": "tokio",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "found in no matched Cargo file: tokio"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "renamed-package",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "Cargo.toml [dependencies]: [dependencies].renamed = DependencySpec { version: Some(\"1\"), features: {}, default_features: None, optional: None, workspace: None, path: None, git: None, branch: None, tag: None, rev: None, registry: None, package: Some(\"renamed-package\") }"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "openssl",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "Cargo.toml [workspace.dependencies]: [workspace.dependencies].openssl = DependencySpec { version: Some(\"1\"), features: {}, default_features: None, optional: None, workspace: None, path: None, git: None, branch: None, tag: None, rev: None, registry: None, package: Some(\"openssl\") }"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "g3*",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "Cargo.toml [dependencies]: [dependencies].g3rs = DependencySpec { version: Some(\"1\"), features: {}, default_features: None, optional: None, workspace: None, path: None, git: None, branch: None, tag: None, rev: None, registry: None, package: None }"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "guardrail*",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "Cargo.toml [target.'cfg(unix)'.dependencies]: [target.'cfg(unix)'.dependencies].guardrail3 = DependencySpec { version: Some(\"1\"), features: {}, default_features: None, optional: None, workspace: None, path: None, git: None, branch: None, tag: None, rev: None, registry: None, package: None }"
+        }
+      ],
+      "conforms": false
+    }
+  },
+  {
+    "fixture": "verify-R29-cargo-dependencies-invalid",
+    "command": [
+      "verify",
+      "spec.json"
+    ],
+    "exit_code": 1,
+    "output": {
+      "specular_version": "0.4.0",
+      "spec": {
+        "path": "spec.json",
+        "sha256": "1fe2222894461c63e26cd38621c52f09b26e8ec8bb82c41f07a37003852d66ec"
+      },
+      "verifier_files": [],
+      "git": [
+        {
+          "path": "spec.json",
+          "state": "not-a-repository"
+        }
+      ],
+      "evidence": [
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "required",
+          "item": "serde",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "Cargo.toml invalid TOML: TOML parse error at line 1, column 5\n  |\n1 | not valid toml\n  |     ^\nkey with no value, expected `=`\n"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "exists",
+          "item": "tokio",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "Cargo.toml invalid TOML: TOML parse error at line 1, column 5\n  |\n1 | not valid toml\n  |     ^\nkey with no value, expected `=`\n"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "openssl",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "Cargo.toml invalid TOML: TOML parse error at line 1, column 5\n  |\n1 | not valid toml\n  |     ^\nkey with no value, expected `=`\n"
+        },
+        {
+          "category": "dependencies",
+          "target": [
+            "Cargo.toml"
+          ],
+          "polarity": "forbidden",
+          "item": "g3*",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
+          "status": "fail",
+          "message": "Cargo.toml invalid TOML: TOML parse error at line 1, column 5\n  |\n1 | not valid toml\n  |     ^\nkey with no value, expected `=`\n"
+        }
+      ],
+      "conforms": false
     }
   }
 ]

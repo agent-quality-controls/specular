@@ -16,8 +16,11 @@ use crate::evidence::{
     Evidence, FileStamp, GitDiagnostic, Polarity, Report, Status, VerifierSource, WireEvidence,
 };
 use crate::model::{
-    Category, ContentRequirement, CustomRequirement, Spec, TreeRequirement, VerifierCommand,
+    Category, ContentRequirement, CustomRequirement, DependencyRequirement, Spec, TreeRequirement,
+    VerifierCommand,
 };
+
+use crate::cargo_dependencies;
 
 const VERIFIER_TIMEOUT: Duration = Duration::from_secs(60);
 
@@ -506,7 +509,7 @@ fn run_typed_block(
     evidence: &mut Vec<Evidence>,
 ) -> Result<(), VerifyError> {
     match verifier.first() {
-        Some("builtin:tree" | "builtin:content") => run_builtin(
+        Some("builtin:tree" | "builtin:content" | "builtin:cargo-dependencies") => run_builtin(
             ctx.spec,
             ctx.tree,
             category,
@@ -605,6 +608,19 @@ fn run_builtin(
                 )));
             };
             check_content(block, tree, "builtin:content", evidence)
+        }
+        Some("builtin:cargo-dependencies") if category == Category::Dependencies => {
+            let Some(block) = spec.requirements.dependencies.get(block_index) else {
+                return Err(VerifyError::Coverage(format!(
+                    "dependencies[{block_index}] does not exist"
+                )));
+            };
+            cargo_dependencies::check_cargo_dependencies(
+                block,
+                tree,
+                "builtin:cargo-dependencies",
+                evidence,
+            )
         }
         Some(selector) => Err(VerifyError::Verifier {
             id: format!("{}[{block_index}]", category.as_str()),
@@ -725,8 +741,8 @@ fn typed_block(
             || Err(missing_block(category, block_index)),
             |x| {
                 Ok(ScriptBlock {
-                    target: Some(serde_json::json!(x.manifests)),
-                    items: quantified_items(&x.required, &x.exists, &x.forbidden),
+                    target: Some(serde_json::json!(x.files)),
+                    items: dependency_script_items(x),
                 })
             },
         ),
@@ -782,6 +798,16 @@ fn quantified_items(
             polarity: Some(Polarity::Exists),
         }))
         .chain(forbidden.iter().map(|value| ScriptItem {
+            value: value.clone(),
+            polarity: Some(Polarity::Forbidden),
+        }))
+        .collect()
+}
+
+fn dependency_script_items(block: &DependencyRequirement) -> Vec<ScriptItem> {
+    quantified_items(&block.required, &block.exists, &block.forbidden)
+        .into_iter()
+        .chain(block.forbidden_globs.iter().map(|value| ScriptItem {
             value: value.clone(),
             polarity: Some(Polarity::Forbidden),
         }))

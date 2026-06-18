@@ -33,6 +33,11 @@ def require_absent(failures, rel_path, needles):
             failures.append(f"{rel_path}: forbidden {needle!r}")
 
 
+def require_contains_casefold(failures, rel_path, needle):
+    if needle.casefold() not in read(rel_path).casefold():
+        failures.append(f"{rel_path}: missing {needle!r}")
+
+
 def check_model(_entry):
     failures = []
     require_contains(
@@ -72,13 +77,13 @@ def check_verify(_entry):
         failures,
         "src/verify.rs",
         [
-            "mod cargo_dependencies;",
             "check_cargo_dependencies",
             '"builtin:cargo-dependencies"',
             "x.files",
-            "x.forbidden_globs",
+            "forbidden_globs",
         ],
     )
+    require_contains(failures, "src/lib.rs", ["mod cargo_dependencies;"])
     require_absent(failures, "src/verify.rs", ["x.manifests"])
     require_contains(
         failures,
@@ -109,10 +114,10 @@ def check_docs(_entry):
                 "builtin:cargo-dependencies",
                 "files",
                 "forbiddenGlobs",
-                "renamed",
             ],
         )
         require_absent(failures, rel_path, ['"manifests"'])
+        require_contains_casefold(failures, rel_path, "renamed")
     return failures
 
 

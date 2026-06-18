@@ -25,7 +25,7 @@ pub enum Category {
     Tree,
     /// Required, existing, or forbidden fixed substrings in scoped files.
     Content,
-    /// Required, existing, and forbidden packages in manifests.
+    /// Required, existing, and forbidden packages in dependency files.
     Dependencies,
     /// Public items exposed by a package.
     Exports,
@@ -112,7 +112,7 @@ pub struct Requirements {
     /// Required, existing, or forbidden fixed substrings in scoped files.
     #[serde(default)]
     pub content: Vec<ContentRequirement>,
-    /// Required, existing, and forbidden packages in manifests.
+    /// Required, existing, and forbidden packages in dependency files.
     #[serde(default)]
     pub dependencies: Vec<DependencyRequirement>,
     /// Public items exposed by a package.
@@ -171,16 +171,16 @@ pub struct ContentRequirement {
     pub forbidden: Vec<String>,
 }
 
-/// Required, existing, and forbidden packages in manifests.
+/// Required, existing, and forbidden packages in dependency files.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct DependencyRequirement {
     /// The verifier command for this requirement block.
     #[serde(default)]
     pub verifier: VerifierCommand,
-    /// Globs selecting the manifests to inspect.
+    /// Globs selecting the dependency files to inspect.
     #[serde(default)]
-    pub manifests: Vec<String>,
+    pub files: Vec<String>,
     /// Plan citations.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<Reason>,
@@ -190,9 +190,12 @@ pub struct DependencyRequirement {
     /// Packages that must be declared in at least one matched manifest.
     #[serde(default)]
     pub exists: Vec<String>,
-    /// Packages or package globs that must not be declared.
+    /// Packages that must not be declared.
     #[serde(default)]
     pub forbidden: Vec<String>,
+    /// Cargo package-name globs that must not be declared.
+    #[serde(default)]
+    pub forbidden_globs: Vec<String>,
 }
 
 /// Public items exposed by a package.

@@ -1,0 +1,1 @@
+{"id":"verify-R29-cargo-dependencies-invalid","commands":[["verify","spec.json"]],"notes":"invalid matched Cargo.toml fails every item in the dependency block; exit 1"}

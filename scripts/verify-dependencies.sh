@@ -67,3 +67,13 @@ echo "$BLOCK" | jq -r '.forbidden[]?' | while IFS= read -r item; do
       '{item: $item, status: "fail", message: ("forbidden package declared; source: " + $source), observed: $observed}'
   fi
 done
+
+echo "$BLOCK" | jq -r '.forbiddenGlobs[]?' | while IFS= read -r item; do
+  HITS=$(matches_declared "$item" | tr '\n' ' ')
+  if [ -z "${HITS// /}" ]; then
+    jq -nc --arg item "$item" '{item: $item, status: "pass"}'
+  else
+    jq -nc --arg item "$item" --arg observed "$HITS" --arg source "$SOURCE" \
+      '{item: $item, status: "fail", message: ("forbidden package declared; source: " + $source), observed: $observed}'
+  fi
+done

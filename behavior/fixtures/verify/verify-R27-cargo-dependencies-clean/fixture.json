@@ -1,0 +1,1 @@
+{"id":"verify-R27-cargo-dependencies-clean","commands":[["verify","spec.json"]],"notes":"Cargo builtin passes exact required, exists, renamed package identity, target table, workspace deps, and forbiddenGlobs; exit 0"}

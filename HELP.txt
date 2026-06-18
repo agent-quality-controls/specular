@@ -16,7 +16,7 @@ EXIT CODES
   Other flags are not supported. lint and verify output is always JSON.
 
 SPEC SHAPE
-  Strict JSON, no comments. Version 2 uses block-level verifier commands.
+  Strict JSON, no comments. Version 3 uses block-level verifier commands.
   top-level verifiers are not supported.
 
   A verifier is one command encoded as argv:
@@ -32,13 +32,15 @@ SPEC SHAPE
 
   Initial built-ins:
 
-    builtin:tree     tree only
-    builtin:content  content only
+    builtin:tree                tree only
+    builtin:content             content only
+    builtin:cargo-dependencies  dependencies only, Cargo.toml files
 
 THREE WAYS TO USE A SPEC
   1. Predefined category with a built-in verifier.
 
-     Use tree or content and choose the matching builtin explicitly.
+     Use tree, content, or Cargo dependencies and choose the matching builtin
+     explicitly.
 
        "requirements": {
          "tree": {
@@ -52,6 +54,15 @@ THREE WAYS TO USE A SPEC
              "files": ["**/*.rs"],
              "forbidden": ["#[test]"]
            }
+         ],
+         "dependencies": [
+           {
+             "verifier": ["builtin:cargo-dependencies"],
+             "files": ["Cargo.toml"],
+             "required": ["serde"],
+             "forbidden": ["openssl"],
+             "forbiddenGlobs": ["g3*"]
+           }
          ]
        }
 
@@ -64,7 +75,7 @@ THREE WAYS TO USE A SPEC
          "dependencies": [
            {
              "verifier": ["scripts/verify_deps.py"],
-             "manifests": ["Cargo.toml"],
+             "files": ["package.json"],
              "required": ["serde"]
            }
          ]
@@ -90,7 +101,7 @@ SPEC FORMAT
   Any category may be omitted. List fields default to [].
 
   {
-    "version": 2,
+    "version": 3,
     "requirements": {
       "tree": {
         "verifier": ["builtin:tree"],
@@ -114,10 +125,11 @@ SPEC FORMAT
       ],
       "dependencies": [
         {
-          "verifier": ["scripts/verify_deps.py"],
-          "manifests": ["Cargo.toml"],
+          "verifier": ["builtin:cargo-dependencies"],
+          "files": ["Cargo.toml"],
           "required": ["serde"],
-          "forbidden": ["openssl", "guardrail*", "g3*"]
+          "forbidden": ["openssl"],
+          "forbiddenGlobs": ["guardrail*", "g3*"]
         }
       ],
       "exports": [
@@ -148,7 +160,7 @@ SPEC FORMAT
 FIELDS
   tree          verifier, reason, required, exists, forbidden
   content       verifier, files, reason, required, exists, forbidden
-  dependencies  verifier, manifests, reason, required, exists, forbidden
+  dependencies  verifier, files, reason, required, exists, forbidden, forbiddenGlobs
   exports       verifier, package, reason, required, exists, forbidden
   enumerations  verifier, name, reason, values
   custom        verifier plus script-owned object fields
@@ -159,8 +171,12 @@ SEMANTICS
   forbidden  each item is present in no matched place
 
   required and exists items are exact strings.
-  forbidden items may be globs in tree and dependencies.
+  forbidden items are exact strings in content and dependencies; tree
+  forbidden items are path globs.
+  dependencies forbiddenGlobs items are Cargo package-name globs.
   content items are fixed substrings for all quantifiers.
+  builtin:cargo-dependencies matches Cargo package identity, so renamed
+  dependencies are checked by the `package` value, not the local key.
   enumerations are exact sets: the named set's values equal values.
   Zero matched places plus non-empty required or exists fails.
   exists is rejected by lint on tree and exports because each has one place.
@@ -214,6 +230,8 @@ COMPLETE TYPED VERIFIER
       print(json.dumps({"item": item, "status": "pass"}))
   for item in block.get("forbidden", []):
       print(json.dumps({"item": item, "status": "pass"}))
+  for item in block.get("forbiddenGlobs", []):
+      print(json.dumps({"item": item, "status": "pass"}))
 
 COMPLETE CUSTOM VERIFIER
   This Python example reads one opaque custom entry and returns one evidence line.
@@ -245,7 +263,7 @@ LINT ERRORS
   DUPLICATE_ITEM             same item appears twice in one block
   CONTRADICTION              same item is required and forbidden in one block
   REDUNDANT                  same item is both required and exists in one block
-  ITEM_FORMAT                required/exists item is empty, untrimmed, or a glob
+  ITEM_FORMAT                item is empty, untrimmed, or has the wrong glob form
   EXISTS_SINGLE_PLACE        exists used on tree or exports
 
 WORKFLOW
@@ -267,7 +285,7 @@ REPORT
   verify:
 
     {
-      "specular_version": "0.3.0",
+      "specular_version": "0.4.0",
       "spec": {"path": "spec.json", "sha256": "..."},
       "verifier_files": [{"path": "scripts/verify_deps.py", "sha256": "..."}],
       "git": [{"path": "spec.json", "state": "clean"}],
@@ -285,8 +303,8 @@ REPORT
           "category": "dependencies",
           "target": ["Cargo.toml"],
           "item": "guardrail*",
-          "source": "script",
-          "verifier": "scripts/verify_deps.py",
+          "source": "builtin",
+          "verifier": "builtin:cargo-dependencies",
           "status": "pass"
         },
         {

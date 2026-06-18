@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "requirements": {
     "tree": {
       "reason": "Plan: save the migration plan and checkable contract before implementation.",
@@ -27,7 +27,7 @@
         "files": [
           "src/model.rs"
         ],
-        "reason": "Plan: model owns version 2 and block-level verifier fields.",
+        "reason": "Plan: model owns version 3 and block-level verifier fields.",
         "required": [
           "pub struct VerifierCommand",
           "pub verifier: VerifierCommand",
@@ -52,7 +52,7 @@
           "UNKNOWN_BUILTIN_VERIFIER",
           "BUILTIN_CATEGORY_MISMATCH",
           "VERIFIER_COMMAND_EMPTY",
-          "version must be 2",
+          "version must be 3",
           "builtin:tree",
           "builtin:content"
         ],
@@ -106,9 +106,9 @@
         "files": [
           "HELP.txt"
         ],
-        "reason": "Plan: help documents the new version 2 format and builtins.",
+        "reason": "Plan: help documents the new version 3 format and builtins.",
         "required": [
-          "\"version\": 2",
+          "\"version\": 3",
           "\"verifier\"",
           "builtin:tree",
           "builtin:content",

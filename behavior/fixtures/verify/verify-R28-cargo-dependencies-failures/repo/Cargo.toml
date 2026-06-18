@@ -1,0 +1,13 @@
+[package]
+name = "cargo-failures"
+version = "0.1.0"
+
+[dependencies]
+renamed = { package = "renamed-package", version = "1" }
+g3rs = "1"
+
+[target.'cfg(unix)'.dependencies]
+guardrail3 = "1"
+
+[workspace.dependencies]
+openssl = "1"

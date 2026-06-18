@@ -1,0 +1,15 @@
+{
+  "version": 3,
+  "requirements": {
+    "dependencies": [
+      {
+        "verifier": ["builtin:cargo-dependencies"],
+        "files": ["Cargo.toml"],
+        "required": ["serde"],
+        "exists": ["tokio"],
+        "forbidden": ["bad*"],
+        "forbiddenGlobs": ["serde", "[", "tok*"]
+      }
+    ]
+  }
+}

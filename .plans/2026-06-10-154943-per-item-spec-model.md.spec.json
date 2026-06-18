@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "requirements": {
     "tree": {
       "reason": [
@@ -40,11 +40,11 @@
           "\"tree\": {",
           "\"custom\":",
           "required   each item is present in every matched place",
-          "Typed categories run once per block",
-          "Custom runs once",
-          "Output is always JSON.",
+          "External typed verifier blocks run once per block",
+          "External custom verifier entries run once per entry",
+          "output is always JSON.",
           "DUPLICATE_TARGET",
-          "CUSTOM_SHAPE",
+          "VERIFIER_MISSING",
           "\"conforms\": false"
         ],
         "forbidden": [
@@ -62,7 +62,7 @@
         "reason": "Plan: model has no IDs, tree is an object, schemas are deleted, custom is opaque.",
         "required": [
           "pub tree: TreeRequirement",
-          "pub custom: Vec<serde_json::Value>",
+          "pub custom: Vec<CustomRequirement>",
           "pub enum Category",
           "Custom"
         ],
@@ -87,8 +87,8 @@
           "REDUNDANT",
           "ITEM_FORMAT",
           "EXISTS_SINGLE_PLACE",
-          "DEAD_VERIFIER",
-          "CUSTOM_SHAPE"
+          "UNKNOWN_BUILTIN_VERIFIER",
+          "VERIFIER_MISSING"
         ],
         "forbidden": [
           "DUPLICATE_ID",
@@ -107,7 +107,7 @@
         "required": [
           "const VERIFIER_TIMEOUT: Duration = Duration::from_secs(60)",
           "block_index",
-          "custom verifier emitted zero evidence lines",
+          "custom verifier must emit exactly one evidence line",
           "reported item",
           "produced no evidence"
         ],
@@ -140,7 +140,7 @@
     ],
     "dependencies": [
       {
-        "manifests": [
+        "files": [
           "Cargo.toml"
         ],
         "reason": "Plan: no new dependency is required; existing serde/jsonschema/globset stack remains.",
@@ -159,7 +159,9 @@
           "validator",
           "jsonc-parser",
           "serde_json_canonicalizer",
-          "canon-json",
+          "canon-json"
+        ],
+        "forbiddenGlobs": [
           "guardrail*",
           "g3*"
         ],
@@ -230,10 +232,10 @@
       },
       {
         "name": "VerifierSource",
-        "reason": "Plan: source is builtin or custom.",
+        "reason": "Plan: source is builtin or script.",
         "values": [
           "Builtin",
-          "Custom"
+          "Script"
         ],
         "verifier": [
           "scripts/verify-enumerations.sh"
@@ -257,7 +259,7 @@
         "check": "help-json-only",
         "file": "HELP.txt",
         "mode": "contains",
-        "text": "No flags exist. Output is always JSON.",
+        "text": "output is always JSON.",
         "verifier": [
           "scripts/verify-custom.sh"
         ]
