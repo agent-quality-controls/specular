@@ -69,9 +69,9 @@ checksum = "0819657ebf518732e8e4702ed557bf925f8933cd82d41cda971b0830f325c2ff"
 
 [[package]]
 name = "aqc-git-helpers"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "055f3c59be6c04c61041a85d9f1c6ed4778f2634de95e41352f69b275926eb18"
+checksum = "dfef6f9f98e1ae5d0d3cd72a466b931c85aace09ec4a91ce452d9e5e747948f6"
 
 [[package]]
 name = "aqc-rust-syntax"
