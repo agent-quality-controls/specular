@@ -21,7 +21,7 @@ include = [
 [dependencies]
 aqc-cargo-toml-engine = "0.1.0"
 aqc-file-engine-core = "0.1.0"
-aqc-filetree = "0.1.0"
+aqc-filetree = "0.2.0"
 aqc-fs-utils = "0.1.0"
 aqc-git-helpers = "0.1.0"
 aqc-rust-syntax = "0.1.0"

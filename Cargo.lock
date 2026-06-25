@@ -53,9 +53,9 @@ dependencies = [
 
 [[package]]
 name = "aqc-filetree"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93f9704a4d525ad7a3719c0a791098d85f57bae7fa0aefe8c7db772b1a7fdebf"
+checksum = "348d3a1b9b581e64dabcbcc6b84e213ad00ceb1fc9f02ebe51d1832f784b9607"
 dependencies = [
  "globset",
  "ignore",
