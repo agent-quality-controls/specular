@@ -33,11 +33,11 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "aqc-cargo-toml-engine"
-version = "0.1.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7329afb9b1ad8c139d555d7984e91a3f486416f2bbed96e5fd4248b6d8f8cc4"
+checksum = "c68916c0bd94142379c15d81504ab20a85209abfb628244cdfcdbc03eddadb2a"
 dependencies = [
- "aqc-file-engine-core",
+ "aqc-file-engine-core 0.3.1",
  "globset",
  "toml_edit",
 ]
@@ -47,6 +47,15 @@ name = "aqc-file-engine-core"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3427b27d0ec0a0e7b5bcbb031dc45dc50c6268d396525027a2128142979fdf3b"
+dependencies = [
+ "toml_edit",
+]
+
+[[package]]
+name = "aqc-file-engine-core"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3051fd046e1e66456be201723d232db76f0d9ce7e48a459aa694018c31b2345b"
 dependencies = [
  "toml_edit",
 ]
@@ -965,7 +974,7 @@ name = "specular"
 version = "0.5.0"
 dependencies = [
  "aqc-cargo-toml-engine",
- "aqc-file-engine-core",
+ "aqc-file-engine-core 0.1.0",
  "aqc-filetree",
  "aqc-fs-utils",
  "aqc-git-helpers",
